@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX 245,91° Geodetische Cockpit — 365,2422d Zonnejaar, Horizon & A. Ott 573 Planimeter + Loep</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050811;
+            --panel-bg: rgba(9, 14, 26, 0.94);
+            --border-cyan: #00f5d4;
+            --accent-gold: #ffd166;
+            --accent-coral: #ff5c77;
+            --accent-purple: #b388ff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-deep);
+            color: #e2e8f0;
+            overflow: hidden;
+            user-select: none;
+        }
+        .mono {
+            font-family: 'Fira Code', monospace;
+        }
+        .vortex-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 245, 212, 0.38);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8), inset 0 0 14px rgba(0, 245, 212, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        .vortex-header {
+            background: linear-gradient(90deg, rgba(0, 245, 212, 0.16) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border-bottom: 1px solid rgba(0, 245, 212, 0.32);
+            cursor: pointer;
+        }
+        .vortex-header:hover {
+            background: linear-gradient(90deg, rgba(0, 245, 212, 0.26) 0%, rgba(30, 41, 59, 0.95) 100%);
+        }
+        .month-card {
+            transition: all 0.15s ease;
+            border: 1px solid rgba(51, 65, 85, 0.85);
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .month-card:hover {
+            border-color: #00f5d4;
+            background: rgba(0, 245, 212, 0.14);
+            transform: translateY(-1px);
+        }
+        .month-card.active {
+            border-color: #ffd166;
+            background: linear-gradient(180deg, rgba(255, 209, 102, 0.25) 0%, rgba(15, 23, 42, 0.95) 100%);
+            box-shadow: 0 0 14px rgba(255, 209, 102, 0.4);
+        }
+        input[type=range].solar-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            background: linear-gradient(90deg, #0284c7 0%, #10b981 25%, #ffd166 50%, #f97316 75%, #6366f1 100%);
+            height: 7px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+        input[type=range].solar-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffd166;
+            border: 2px solid #060911;
+            box-shadow: 0 0 10px #ffd166;
+            cursor: pointer;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050811;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f5d4;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+    <!-- ========================================================================= -->
+    <!-- BOVENSTE HOOFDPANEEL: TROPISCH ZONNEJAAR (365,2422 DAGEN) & ALLE 12 MAANDEN -->
+    <!-- ========================================================================= -->
+    <header id="solarYearHeader" class="w-full vortex-panel z-30 shrink-0 border-t-0 border-x-0 px-3.5 py-2 transition-all">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
+            <div class="flex items-center gap-2.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_#ffd166] animate-pulse"></div>
+                <h1 class="text-xs md:text-sm font-bold tracking-wider uppercase text-white">
+                    TROPISCH ZONNEJAAR (365,2422d) • HORIZON-ASTROMETRIE & A. OTT 573 PLANIMETER + LOEP
+                </h1>
+                <span class="hidden md:inline-block mono text-[11px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-[#ffd166] border border-amber-400/50">
+                    365d 05u 48m 45s
+                </span>
+            </div>
+
+            <!-- Snelknoppen Zonnejaar & Paneel-Bediening -->
+            <div class="flex flex-wrap items-center gap-1 mono text-[11px]">
+                <button onclick="setSolarDay(79.25)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/40 transition">
+                    🌱 20 Mrt
+                </button>
+                <button onclick="setSolarDay(140.5)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-amber-900/70 text-amber-300 border border-amber-500/40 transition">
+                    🐂 21 Mei (Stier)
+                </button>
+                <button onclick="setSolarDay(172.25)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-yellow-900/70 text-yellow-200 border border-yellow-500/40 transition">
+                    ☀️ 21 Jun
+                </button>
+                <button onclick="setSolarDay(224.5)" class="px-2 py-0.5 rounded bg-rose-950/90 hover:bg-rose-800 text-rose-200 border border-rose-400 font-bold transition">
+                    🌑 12 Aug Eclips
+                </button>
+                <button onclick="setSolarDay(289.85)" class="px-2 py-0.5 rounded bg-cyan-950/90 hover:bg-cyan-800 text-[#00f5d4] border border-[#00f5d4] font-bold transition">
+                    ⚡ 16 Okt Lock
+                </button>
+                <button onclick="setSolarDay(305.5)" class="px-2 py-0.5 rounded bg-purple-950/90 hover:bg-purple-800 text-purple-200 border border-purple-400 font-semibold transition">
+                    🔭 1 Nov Resonantie
+                </button>
+                <button onclick="toggleTopCalendar()" id="btnCollapseTop" class="ml-1 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 font-semibold">
+                    ▲ Kalenderbalk
+                </button>
+                <button onclick="toggleAllSidePanels()" id="togglePanelsBtn" class="px-2 py-0.5 rounded bg-emerald-950 hover:bg-emerald-800 text-[#00f5d4] border border-[#00f5d4] font-bold">
+                    👁️ Alle Panelen: AAN
+                </button>
+            </div>
+        </div>
+
+        <!-- Inklapbare 12 Maanden & 365,2422d Telemetrie Sectie -->
+        <div id="topCalendarCollapsible" class="pt-2 space-y-2">
+            <!-- Alle 12 Maanden (JAN t/m DEC) -->
+            <div id="monthsGrid" class="grid grid-cols-6 lg:grid-cols-12 gap-1"></div>
+
+            <!-- Dag-Slider + Uur-Slider (UTC/CET) + Live Zonnejaar & Sterrentijd Telemetrie -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-center bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+                <!-- Dag in het Zonnejaar (4 kol) -->
+                <div class="lg:col-span-4 flex flex-col gap-0.5">
+                    <div class="flex justify-between items-center text-[11px] mono">
+                        <span class="flex items-center gap-1.5">
+                            <button id="playSolarBtn" class="px-2 py-0.5 rounded bg-[#00f5d4]/20 text-[#00f5d4] border border-[#00f5d4]/50 hover:bg-[#00f5d4]/30 font-bold">
+                                ▶ Jaar
+                            </button>
+                            <span id="activeDateString" class="text-white font-bold">16 Oktober</span>
+                        </span>
+                        <span class="text-[#ffd166] font-bold">
+                            DOY <span id="doyReadout">289,85</span> / 365,2422d
+                        </span>
+                    </div>
+                    <input type="range" id="solarDaySlider" min="0" max="365.2422" step="0.01" value="289.85" class="solar-slider my-0.5">
+                </div>
+
+                <!-- Tijdstip op de Dag (00:00 - 24:00 CET) & Sterrentijd (3 kol) -->
+                <div class="lg:col-span-3 flex flex-col gap-0.5 border-l border-slate-800 pl-2.5">
+                    <div class="flex justify-between items-center text-[11px] mono">
+                        <span class="text-cyan-300 font-semibold">🕒 TIJD (CET): <strong id="obsTimeReadout" class="text-white">20:34</strong></span>
+                        <span class="text-purple-300">LST: <strong id="lstReadout" class="text-[#ffd166]">22h 14m</strong></span>
+                    </div>
+                    <input type="range" id="obsHourSlider" min="0" max="24" step="0.05" value="20.566" class="w-full accent-[#00f5d4] bg-slate-800 h-1.5 rounded cursor-pointer my-1">
+                    <div class="flex justify-between text-[9px] mono text-slate-400">
+                        <button onclick="setObsHour(0)" class="hover:text-white">00:00</button>
+                        <button onclick="setObsHour(6)" class="hover:text-white">06:00</button>
+                        <button onclick="setObsHour(12)" class="hover:text-white">12:00</button>
+                        <button onclick="setObsHour(20.566)" class="text-[#00f5d4] hover:underline">20:34 Lock</button>
+                        <button onclick="setObsHour(23.99)" class="hover:text-white">24:00</button>
+                    </div>
+                </div>
+
+                <!-- Live Geodetische & Astronomische Kernwaarden (5 kol) -->
+                <div class="lg:col-span-5 grid grid-cols-3 sm:grid-cols-5 gap-1.5 mono text-[11px]">
+                    <div class="bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
+                        <span class="text-[9px] text-slate-400 block uppercase">Zon λ☉ / δ☉</span>
+                        <span id="telLambdaDec" class="font-bold text-[#ffd166]">203,1° / -9,1°</span>
+                    </div>
+                    <div class="bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
+                        <span class="text-[9px] text-slate-400 block uppercase">Tijdsvereff.</span>
+                        <span id="telEoT" class="font-bold text-emerald-400">+14m 26s</span>
+                    </div>
+                    <div class="bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
+                        <span class="text-[9px] text-slate-400 block uppercase">Zon Sterrenb.</span>
+                        <span id="telZodiac" class="font-bold text-purple-300 truncate block">Maagd/Weeg.</span>
+                    </div>
+                    <div class="bg-slate-900/90 px-2 py-1 rounded border border-slate-800">
+                        <span class="text-[9px] text-slate-400 block uppercase">Stier (α Tau) h</span>
+                        <span id="telAldebaranAlt" class="font-bold text-[#00f5d4]">+14,8° BOVEN</span>
+                    </div>
+                    <div class="bg-slate-900/90 px-2 py-1 rounded border border-amber-500/30">
+                        <span class="text-[9px] text-amber-300/80 block uppercase">Drift 365,2422</span>
+                        <span id="telDrift" class="font-bold text-amber-300">+0,1921 d</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- HOOFDSCHERM: GEODETISCHE KAART + PLANIMETER & LOEP + INKLAPBARE PANELEN   -->
+    <!-- ========================================================================= -->
+    <main id="mainViewport" class="flex-1 relative overflow-hidden bg-[#04070e]">
+
+        <!-- Interactief Hoofdcanvas (Ondergrondbeeld + Geodesie + Horizon + Planimeter & Loep) -->
+        <canvas id="geodesicCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- Zwevende Snelknoppen Links & Rechts om Panelen altijd te kunnen openen/sluiten -->
+        <div class="absolute bottom-12 left-3 z-30 flex items-center gap-1.5 mono text-xs">
+            <button onclick="toggleLeftPanel()" id="fabLeftPanel" class="vortex-panel px-2.5 py-1.5 rounded text-[#00f5d4] hover:bg-slate-800 font-bold">
+                ◀ Sluit Links
+            </button>
+            <button onclick="toggleRightPanel()" id="fabRightPanel" class="vortex-panel px-2.5 py-1.5 rounded text-[#ffd166] hover:bg-slate-800 font-bold">
+                Sluit Rechts ▶
+            </button>
+        </div>
+
+        <!-- Boven-Midden Modus-Balk & Live Cursor / Loep Coördinaten -->
+        <div class="absolute top-2.5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 pointer-events-auto">
+            <div class="vortex-panel px-2 py-1 rounded-lg flex flex-wrap items-center justify-center gap-1 mono text-[11px] shadow-2xl">
+                <button id="modeHybridBtn" onclick="setViewMode('hybrid')" class="px-2.5 py-1 rounded font-bold bg-[#00f5d4] text-slate-950 transition">
+                    🌐+🐂 HYBRIDE OVERLAY
+                </button>
+                <button id="modeGeoBtn" onclick="setViewMode('geo')" class="px-2.5 py-1 rounded font-medium text-slate-300 hover:bg-slate-800 transition">
+                    🗺️ EUROPA (245,91°)
+                </button>
+                <button id="modeSkyBtn" onclick="setViewMode('sky')" class="px-2.5 py-1 rounded font-medium text-slate-300 hover:bg-slate-800 transition">
+                    ✨ STIER + HORIZON
+                </button>
+                <button id="btnTogglePlanimeterOnMap" onclick="togglePlanimeterInstrument()" class="px-2.5 py-1 rounded font-bold bg-amber-500/20 text-[#ffd166] border border-amber-400/60 hover:bg-amber-500/30 transition">
+                    🔍 OTT 573 + LOEP: AAN
+                </button>
+            </div>
+
+            <!-- Live Coördinaten in Breedte/Lengtegraad + Plaats + Hemelhoogte h -->
+            <div class="vortex-panel px-3 py-1 rounded text-[11px] mono flex flex-wrap items-center gap-3">
+                <span id="cursorCoordReadout" class="text-[#ffd166] font-semibold">φ 47,2500° N, λ 1,8500° E (Bourges / Berry)</span>
+                <span class="text-slate-600">|</span>
+                <span id="cursorSkyReadout" class="text-[#00f5d4]">RA 04h35m, Dec +16°30' (h = +24,5° BOVEN HORIZON)</span>
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- LINKER COCKPIT PANEEL: LOCATIE, BEELD-ONDERGROND & GEOJSON ANALYSE    -->
+        <!-- ===================================================================== -->
+        <aside id="leftCockpitPanel" class="absolute top-2.5 left-3 w-80 md:w-[350px] max-h-[calc(100%-60px)] vortex-panel rounded-lg flex flex-col z-20 overflow-y-auto divide-y divide-slate-800/80">
+            
+            <!-- SECTIE 1: WAARNEMERSLOCATIE (BREEDTEGRAAD φ, LENGTEGRAAD λ & PLAATS) -->
+            <div>
+                <div onclick="toggleSection('secObserver')" class="vortex-header px-3 py-2 flex items-center justify-between">
+                    <span class="mono text-xs font-bold text-[#00f5d4] uppercase">📍 1. WAARNEMERSLOCATIE (φ / λ & PLAATS)</span>
+                    <span id="icon-secObserver" class="mono text-xs text-[#00f5d4]">▼</span>
+                </div>
+                <div id="secObserver" class="p-3 space-y-2.5 text-xs mono">
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase block mb-1">Preset Geodetisch Ankerpunt / Plaats:</label>
+                        <select id="observerPresetSelect" onchange="applyObserverPreset(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white text-xs focus:border-[#00f5d4] outline-none">
+                            <option value="P">🟢 Poolanker NL — Laren / Baarn (52,25°N, 5,22°E)</option>
+                            <option value="ZEELAND">🌊 Scherpenisse / Zeeland (51,55°N, 4,10°E)</option>
+                            <option value="N_PRIME">🟡 N': Dept. 41/18 Bourges / Berry (47,25°N, 1,85°E)</option>
+                            <option value="EXIT">🟣 Uittreedpunt 17/85 La Rochelle (46,25°N, -1,21°W)</option>
+                            <option value="ECLIPSE">🔴 Eclips Landfall Galicië / Oviedo (43,53°N, -6,58°W)</option>
+                            <option value="ALPS">🏔️ 157° Inversie Turijn / Alpen (45,07°N, 7,68°E)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <div class="col-span-3">
+                            <span class="text-[10px] text-slate-400 block">Plaatsnaam Referentie:</span>
+                            <input type="text" id="obsPlaceInput" value="Poolanker NL (Laren / Baarn)" onchange="updateObserverFromInputs()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-emerald-300 text-xs">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Breedte φ (°N):</span>
+                            <input type="number" id="obsLatInput" step="0.01" value="52.25" onchange="updateObserverFromInputs()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[#ffd166] font-bold text-xs">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Lengte λ (°E):</span>
+                            <input type="number" id="obsLonInput" step="0.01" value="5.22" onchange="updateObserverFromInputs()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[#00f5d4] font-bold text-xs">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="flyToObserver()" class="w-full py-1 rounded bg-cyan-950 hover:bg-cyan-800 border border-[#00f5d4] text-[#00f5d4] font-bold text-[11px]">
+                                🎯 Centreer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1 pt-1">
+                        <button onclick="toggleLayer('horizonCurve')" id="btnToggleHorizon" class="flex-1 px-2 py-1.5 rounded bg-emerald-500/20 border border-emerald-400 text-emerald-200 font-bold text-[10px]">
+                            🌅 HORIZONBOOG (h=0°): AAN
+                        </button>
+                        <button onclick="toggleLayer('vortex')" id="btnToggleVortex" class="flex-1 px-2 py-1.5 rounded bg-amber-500/20 border border-amber-400 text-amber-200 font-bold text-[10px]">
+                            ⚡ 245,91° VORTEX: AAN
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTIE 2: UPLOAD AFBEELDING ONDER OVERLAY (VOOR ANALYSE & KALIBRATIE) -->
+            <div>
+                <div onclick="toggleSection('secUnderlay')" class="vortex-header px-3 py-2 flex items-center justify-between">
+                    <span class="mono text-xs font-bold text-[#ffd166] uppercase">🖼️ 2. BEELD ONDER OVERLAY (UPLOAD)</span>
+                    <span id="icon-secUnderlay" class="mono text-xs text-[#ffd166]">▼</span>
+                </div>
+                <div id="secUnderlay" class="p-3 space-y-2.5 text-xs mono">
+                    <div class="flex gap-1.5">
+                        <label class="flex-1 cursor-pointer px-2.5 py-2 rounded bg-indigo-950/90 hover:bg-indigo-800 border border-indigo-400 text-indigo-200 text-center font-bold transition">
+                            📂 Upload Kaart/Foto
+                            <input type="file" id="underlayFileInput" accept="image/*" class="hidden" onchange="handleUnderlayUpload(event)">
+                        </label>
+                        <button onclick="loadBuiltinStarChartUnderlay()" class="px-2.5 py-2 rounded bg-amber-950/80 hover:bg-amber-800 border border-amber-400 text-[#ffd166] font-bold transition" title="Genereer hoge-resolutie Hyaden Sterrenkaart als ondergrond">
+                            🌟 Test-Kaart
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button id="btnShowUnderlay" onclick="toggleUnderlayVisibility()" class="px-2 py-1 rounded bg-emerald-900/60 border border-emerald-400 text-emerald-200 font-bold">
+                            👁️ Beeld: ZICHTBAAR
+                        </button>
+                        <button id="btnDragUnderlayMode" onclick="toggleDragUnderlayMode()" class="px-2 py-1 rounded bg-slate-800 border border-slate-600 text-slate-300">
+                            ✋ Sleep Beeld: UIT
+                        </button>
+                    </div>
+
+                    <div class="space-y-1.5 bg-slate-950/80 p-2 rounded border border-slate-800 text-[11px]">
+                        <div class="flex justify-between">
+                            <span>Transparantie (Opacity):</span>
+                            <span id="underlayAlphaVal" class="text-[#00f5d4]">75%</span>
+                        </div>
+                        <input type="range" id="underlayAlphaSlider" min="0" max="100" value="75" oninput="updateUnderlayParams()" class="w-full accent-[#00f5d4] h-1.5 bg-slate-800 rounded">
+
+                        <div class="flex justify-between">
+                            <span>Beeldschaal (Graden breedte):</span>
+                            <span id="underlayScaleVal" class="text-[#ffd166]">18,0°</span>
+                        </div>
+                        <input type="range" id="underlayScaleSlider" min="2" max="45" step="0.2" value="18" oninput="updateUnderlayParams()" class="w-full accent-[#ffd166] h-1.5 bg-slate-800 rounded">
+
+                        <div class="flex justify-between">
+                            <span>Beeldrotatie (°):</span>
+                            <span id="underlayRotVal" class="text-purple-300">0,0°</span>
+                        </div>
+                        <input type="range" id="underlayRotSlider" min="-180" max="180" step="0.5" value="0" oninput="updateUnderlayParams()" class="w-full accent-purple-400 h-1.5 bg-slate-800 rounded">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTIE 3: DIGITIZER & GEOJSON EXPORT / IMPORT VOOR ONDERZOEK -->
+            <div>
+                <div onclick="toggleSection('secGeoJson')" class="vortex-header px-3 py-2 flex items-center justify-between">
+                    <span class="mono text-xs font-bold text-emerald-300 uppercase">📐 3. ANALYSE DIGITIZER & GEOJSON EXPORT</span>
+                    <span id="icon-secGeoJson" class="mono text-xs text-emerald-300">▼</span>
+                </div>
+                <div id="secGeoJson" class="p-3 space-y-2.5 text-xs mono">
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button id="btnDigitizeMode" onclick="toggleDigitizeMode()" class="px-2 py-1.5 rounded bg-slate-800 border border-slate-600 text-slate-200 font-bold hover:border-[#00f5d4]">
+                            📍 Klik-Analyse: UIT
+                        </button>
+                        <button onclick="clearDigitizedNodes()" class="px-2 py-1.5 rounded bg-rose-950/70 border border-rose-500/50 text-rose-200 hover:bg-rose-900">
+                            🗑️ Reset Polygoon
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-950/90 p-2 rounded border border-slate-800 text-[11px] space-y-0.5">
+                        <div class="flex justify-between"><span>Geklikte Analyse-Punten:</span><strong id="digCountTxt" class="text-white">6 (Stier-V)</strong></div>
+                        <div class="flex justify-between"><span>Geodetische Omtrek:</span><strong id="digPerimTxt" class="text-[#00f5d4]">1484,81 km</strong></div>
+                        <div class="flex justify-between"><span>Planimetrisch Oppervlak:</span><strong id="digAreaTxt" class="text-[#ffd166]">17.381,33 km²</strong></div>
+                    </div>
+
+                    <div class="flex gap-1.5">
+                        <button onclick="exportGeoJSONFile()" class="flex-1 py-1.5 px-2 rounded bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold transition">
+                            💾 Download .GeoJSON
+                        </button>
+                        <button onclick="toggleGeoJsonModal()" class="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300 font-semibold">
+                            🔍 JSON Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ===================================================================== -->
+        <!-- RECHTER COCKPIT PANEEL: OPKOMST/ONDERGANG HORIZON + OTT 573 & LOEP    -->
+        <!-- ===================================================================== -->
+        <aside id="rightCockpitPanel" class="absolute top-2.5 right-3 w-96 md:w-[430px] max-h-[calc(100%-60px)] vortex-panel rounded-lg flex flex-col z-20 overflow-y-auto divide-y divide-slate-800/80">
+            
+            <!-- SECTIE A: EXACTE OPKOMST-, DOORGANG- & ONDERGANGSTIJDEN + HORIZON STATUS -->
+            <div>
+                <div onclick="toggleSection('secHorizonTable')" class="vortex-header px-3.5 py-2 flex items-center justify-between">
+                    <span class="mono text-xs font-bold text-[#00f5d4] uppercase">
+                        🌅 A. OPKOMST / ONDERGANG & BOVEN/ONDER HORIZON
+                    </span>
+                    <span id="icon-secHorizonTable" class="mono text-xs text-[#00f5d4]">▼</span>
+                </div>
+                <div id="secHorizonTable" class="p-3 space-y-2.5 mono text-xs">
+                    <div class="bg-slate-950/90 p-2 rounded border border-slate-800 flex flex-wrap justify-between items-center text-[11px]">
+                        <div>
+                            <span class="text-slate-400">Waarnemer:</span>
+                            <strong id="activeObsLabel" class="text-emerald-300">52,25°N, 5,22°E (Laren NL)</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Zon Op/Onder:</span>
+                            <strong id="sunRiseSetLabel" class="text-[#ffd166]">07:58 / 18:31</strong>
+                        </div>
+                    </div>
+
+                    <!-- Tabel met Exacte Opkomst, Culminatie, Ondergang en Actuele Hoogte h boven/onder horizon -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-[10px]">
+                            <thead>
+                                <tr class="border-b border-slate-700 text-slate-400 uppercase">
+                                    <th class="py-1">STERRENBEELD / KERN</th>
+                                    <th class="py-1">OPKOMST</th>
+                                    <th class="py-1">DOORGANG</th>
+                                    <th class="py-1">ONDERG.</th>
+                                    <th class="py-1">AZIMUT</th>
+                                    <th class="py-1 text-right">HOOGTE & HORIZON</th>
+                                </tr>
+                            </thead>
+                            <tbody id="constellationHorizonBody" class="divide-y divide-slate-800/80">
+                                <!-- Wordt live berekend voor elk tijdstip en elke plaats -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTIE B: A. OTT NR. 573 PLANIMETER MET KANTEL, ZOOM, DRAAIEN, SPIEGELEN & LOEP -->
+            <div>
+                <div onclick="toggleSection('secPlanimeterLoupe')" class="vortex-header px-3.5 py-2 flex items-center justify-between">
+                    <span class="mono text-xs font-bold text-[#ffd166] uppercase">
+                        🔍 B. A. OTT 573 PLANIMETER & GEKOPPELDE LOEP (LUPE)
+                    </span>
+                    <span id="icon-secPlanimeterLoupe" class="mono text-xs text-[#ffd166]">▼</span>
+                </div>
+                <div id="secPlanimeterLoupe" class="p-3 space-y-3 mono text-xs">
+                    
+                    <!-- LIVE GEKOPPELDE OPTISCHE LOEP WEERGAVE (LOUPE INSPECTOR CANVAS) -->
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/50 shadow-inner">
+                        <div class="flex items-center justify-between text-[10px] mb-1.5">
+                            <span class="text-[#ffd166] font-bold uppercase flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                OPTISCHE VOLGLOEP (LUPE RIJARM-PUNT)
+                            </span>
+                            <span id="loupeZoomBadge" class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                                Lens 4,0× | Fraunhofer 589nm
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-12 gap-2.5 items-center">
+                            <!-- Rond Optisch Loep-Venster met Kruisdraad & Nonius-Ring -->
+                            <div class="col-span-5 flex flex-col items-center">
+                                <div class="relative w-32 h-32 rounded-full p-1 bg-gradient-to-br from-amber-600 via-yellow-300 to-amber-900 shadow-[0_0_20px_rgba(255,209,102,0.35)]">
+                                    <canvas id="loupeInspectorCanvas" width="128" height="128" class="w-full h-full rounded-full block bg-[#04070e]"></canvas>
+                                </div>
+                                <span class="text-[9px] text-slate-400 mt-1">Sleep de loep op de kaart!</span>
+                            </div>
+
+                            <!-- Exacte Uitlezing in de Loep + Telwieltjes -->
+                            <div class="col-span-7 space-y-1.5 text-[10px]">
+                                <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                    <div class="text-slate-400 text-[9px] uppercase">Loep Kruisdraad Positie (φ, λ):</div>
+                                    <div id="loupeGeoReadout" class="text-white font-bold text-[11px]">46,8500° N, 2,3500° E</div>
+                                    <div id="loupePlaceReadout" class="text-emerald-300 text-[10px]">Midden-Frankrijk (Stier-Kern)</div>
+                                </div>
+                                <div class="bg-slate-900/90 p-1.5 rounded border border-slate-800">
+                                    <div class="text-slate-400 text-[9px] uppercase">Loep Hemelprojectie (RA, Dec & h):</div>
+                                    <div id="loupeSkyReadout" class="text-[#00f5d4] font-bold">RA 68,98° | Dec +16,51°</div>
+                                    <div id="loupeHorizonStatus" class="text-[#ffd166] text-[10px]">Aldebaran (α Tau) — BOVEN HORIZON</div>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button id="btnAutoTrace" onclick="togglePlanimeterAutoTrace()" class="flex-1 py-1 px-2 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400 text-[#ffd166] font-bold text-[10px]">
+                                        🔄 Auto- Contour Volgen
+                                    </button>
+                                    <button onclick="centerLoupeOnAldebaran()" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-[10px]" title="Zet loep op Aldebaran">
+                                        🎯 α Tau
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GEOMETRISCHE PLANIMETER CONTROLS: KANTELEN, ZOOMEN, DRAAIEN & SPIEGELEN -->
+                    <div class="bg-slate-900/90 p-2.5 rounded border border-cyan-500/30 space-y-2 text-[11px]">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                            <span class="font-bold text-[#00f5d4] uppercase text-[10px]">⚙️ PLANIMETER & LOEP TRANSFORMATIE</span>
+                            <button onclick="resetPlanimeterTransform()" class="text-[10px] text-slate-400 hover:text-white underline">Reset Stand</button>
+                        </div>
+
+                        <!-- 1. Kantelen (3D Tilt) & 2. Zoomen -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <div class="flex justify-between text-[10px]">
+                                    <span>1. Kantelen (Tilt):</span>
+                                    <strong id="planTiltVal" class="text-[#00f5d4]">22°</strong>
+                                </div>
+                                <input type="range" id="planTiltSlider" min="0" max="72" step="1" value="22" oninput="updatePlanimeterTransform()" class="w-full accent-[#00f5d4] h-1.5 bg-slate-800 rounded">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10px]">
+                                    <span>2. Planimeter Zoom:</span>
+                                    <strong id="planZoomVal" class="text-[#ffd166]">1,00×</strong>
+                                </div>
+                                <input type="range" id="planZoomSlider" min="0.4" max="2.5" step="0.05" value="1.0" oninput="updatePlanimeterTransform()" class="w-full accent-[#ffd166] h-1.5 bg-slate-800 rounded">
+                            </div>
+                        </div>
+
+                        <!-- 3. Draaien (Poolanker Rotatie) & 4. Loep Vergroting -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <div class="flex justify-between text-[10px]">
+                                    <span>3. Draaien (Azimut):</span>
+                                    <strong id="planRotVal" class="text-purple-300">0°</strong>
+                                </div>
+                                <input type="range" id="planRotSlider" min="-180" max="180" step="1" value="0" oninput="updatePlanimeterTransform()" class="w-full accent-purple-400 h-1.5 bg-slate-800 rounded">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10px]">
+                                    <span>4. Loep Vergroting:</span>
+                                    <strong id="loupeMagVal" class="text-rose-300">4,0×</strong>
+                                </div>
+                                <input type="range" id="loupeMagSlider" min="1.5" max="8.0" step="0.5" value="4.0" oninput="updatePlanimeterTransform()" class="w-full accent-rose-400 h-1.5 bg-slate-800 rounded">
+                            </div>
+                        </div>
+
+                        <!-- 5. Spiegelen (Mirror X / Pool Links-Rechts & Mirror Y) -->
+                        <div class="grid grid-cols-2 gap-1.5 pt-1">
+                            <button id="btnMirrorX" onclick="togglePlanimeterMirror('x')" class="py-1.5 px-2 rounded bg-slate-950 hover:bg-slate-800 border border-cyan-500/40 text-cyan-200 font-semibold text-[10px]">
+                                ↔️ Spiegelen X (Pool R/L): NORMAAL
+                            </button>
+                            <button id="btnMirrorY" onclick="togglePlanimeterMirror('y')" class="py-1.5 px-2 rounded bg-slate-950 hover:bg-slate-800 border border-purple-500/40 text-purple-200 font-semibold text-[10px]">
+                                ↕️ Spiegelen Y (Inversie): NORMAAL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Drie Nonius Telwieltjes & Mechanische Armhoeken -->
+                    <div class="grid grid-cols-3 gap-1.5 text-center bg-slate-950/90 p-2 rounded border border-slate-800">
+                        <div onclick="stepPlanimeter(10)" class="cursor-pointer p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-cyan-500/40">
+                            <div class="text-[9px] text-cyan-300 uppercase">POOLARM HOEK α</div>
+                            <div id="wheel1Val" class="text-sm font-bold text-white">71,8°</div>
+                            <div class="text-[9px] text-slate-400">R = 15,00 cm</div>
+                        </div>
+                        <div onclick="stepPlanimeter(1)" class="cursor-pointer p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-rose-500/40">
+                            <div class="text-[9px] text-rose-300 uppercase">RIJARM HOEK β</div>
+                            <div id="wheel2Val" class="text-sm font-bold text-white">207,4°</div>
+                            <div class="text-[9px] text-slate-400">L = 16,67 cm</div>
+                        </div>
+                        <div onclick="stepPlanimeter(0.1)" class="cursor-pointer p-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-amber-500/40">
+                            <div class="text-[9px] text-amber-300 uppercase">TELWERK NONIUS</div>
+                            <div id="wheel3Val" class="text-sm font-bold text-[#ffd166]">4,082</div>
+                            <div id="haReadout" class="text-[9px] text-[#00f5d4]">17.381,3 ha</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- GEOJSON CODE MODAL -->
+        <div id="geoJsonModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div class="vortex-panel w-full max-w-2xl rounded-xl overflow-hidden flex flex-col max-h-[85vh]">
+                <div class="vortex-header px-4 py-2.5 flex justify-between items-center">
+                    <span class="mono text-xs font-bold text-[#00f5d4]">GEOJSON EXPORT & ANALYSE INSPECTIE</span>
+                    <button onclick="toggleGeoJsonModal()" class="text-slate-400 hover:text-white font-bold">✕ Sluiten</button>
+                </div>
+                <div class="p-4 flex-1 overflow-y-auto">
+                    <textarea id="geoJsonTextarea" readonly class="w-full h-72 bg-slate-950 text-emerald-300 mono text-xs p-3 rounded border border-slate-800 outline-none"></textarea>
+                </div>
+                <div class="px-4 py-2.5 bg-slate-950 border-t border-slate-800 flex justify-end gap-2 mono text-xs">
+                    <button onclick="copyGeoJsonText()" id="btnCopyGeoJson" class="px-3 py-1.5 rounded bg-cyan-900 hover:bg-cyan-700 text-white font-bold">
+                        📋 Kopieer naar Klembord
+                    </button>
+                    <button onclick="exportGeoJSONFile()" class="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold">
+                        💾 Download .geojson
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartografische Signatuur & Statusbalk Onder -->
+        <div class="absolute bottom-2.5 left-4 z-10 pointer-events-none flex flex-wrap items-center gap-3">
+            <span class="italic text-slate-400/80 text-xs font-serif">
+                "Ceci n'est pas une carte."
+            </span>
+            <span id="selectedObjectBanner" class="mono text-[11px] px-2.5 py-0.5 rounded bg-slate-950/90 border border-cyan-500/40 text-cyan-300">
+                Sleep de Gouden Loep (Lupe) op het canvas om sterren, kaarten en geodetische vectoren te inspecteren.
+            </span>
+        </div>
+
+    </main>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. TROPISCH ZONNEJAAR (365,2422 DAGEN) & 12 MAANDEN DEFINITIE
+         * ============================================================================
+         */
+        const TROPICAL_YEAR_DAYS = 365.242190;
+        const DAILY_SOLAR_RATE = 360.0 / TROPICAL_YEAR_DAYS;
+
+        const SOLAR_MONTHS = [
+            { nr: 1,  code: "JAN", name: "Januari",   days: 31,      startDoy: 0,   endDoy: 31,       season: "Winter" },
+            { nr: 2,  code: "FEB", name: "Februari",  days: 28,      startDoy: 31,  endDoy: 59,       season: "Winter" },
+            { nr: 3,  code: "MRT", name: "Maart",     days: 31,      startDoy: 59,  endDoy: 90,       season: "Lente Eq." },
+            { nr: 4,  code: "APR", name: "April",     days: 30,      startDoy: 90,  endDoy: 120,      season: "Lente" },
+            { nr: 5,  code: "MEI", name: "Mei",       days: 31,      startDoy: 120, endDoy: 151,      season: "Stier Conj." },
+            { nr: 6,  code: "JUN", name: "Juni",      days: 30,      startDoy: 151, endDoy: 181,      season: "Zomer Sol." },
+            { nr: 7,  code: "JUL", name: "Juli",      days: 31,      startDoy: 181, endDoy: 212,      season: "Aphelium" },
+            { nr: 8,  code: "AUG", name: "Augustus",  days: 31,      startDoy: 212, endDoy: 243,      season: "Eclips 12/8" },
+            { nr: 9,  code: "SEP", name: "September", days: 30,      startDoy: 243, endDoy: 273,      season: "Herfst Eq." },
+            { nr: 10, code: "OKT", name: "Oktober",   days: 31,      startDoy: 273, endDoy: 304,      season: "Lock 16/10" },
+            { nr: 11, code: "NOV", name: "November",  days: 30,      startDoy: 304, endDoy: 334,      season: "Hyaden Opp." },
+            { nr: 12, code: "DEC", name: "December",  days: 31.2422, startDoy: 334, endDoy: 365.2422, season: "Winter Sol." }
+        ];
+
+        /**
+         * ============================================================================
+         * 2. STERRENBEELDEN & KERNSTERREN VOOR OPKOMST, ONDERGANG & HORIZON-ANALYSE
+         * ============================================================================
+         */
+        const CONSTELLATION_TARGETS = [
+            { id: "taurus_ald", name: "🐂 Stier (α Tau Aldebaran)", raHours: 4.5987,  decDeg: 16.5093, mag: 0.85, color: "#ff9f1c" },
+            { id: "hyades_gam", name: "✨ Hyaden Kern (γ Tauri)",   raHours: 4.3301,  decDeg: 15.6276, mag: 3.65, color: "#ffd166" },
+            { id: "pleiades",   name: "🌌 Plejaden (M45 Alcyone)",  raHours: 3.7914,  decDeg: 24.1051, mag: 2.87, color: "#38bdf8" },
+            { id: "crab_m1",    name: "🦀 Krabnevel (M1 Pulsar)",   raHours: 5.5755,  decDeg: 22.0145, mag: 8.40, color: "#ff5c77" },
+            { id: "auriga",     name: "🐐 Voerman (α Aur Capella)", raHours: 5.2781,  decDeg: 45.9980, mag: 0.08, color: "#fef08a" },
+            { id: "orion",      name: "🏹 Orion (α Ori Betelgeuze)",raHours: 5.9195,  decDeg: 7.4071,  mag: 0.50, color: "#fb7185" },
+            { id: "gemini",     name: "♊ Tweelingen (β Gem Pollux)",raHours: 7.7553, decDeg: 28.0262, mag: 1.14, color: "#c084fc" },
+            { id: "libra_merc", name: "⚖️ Weegschaal (245,91° Lock)",raHours: 15.1900,decDeg: -16.000, mag: 2.60, color: "#00f5d4" },
+            { id: "aquarius",   name: "🏺 Waterman (α Aqr Sadalmelik)",raHours: 22.096,decDeg: -0.3198, mag: 2.95, color: "#60a5fa" }
+        ];
+
+        const VORTEX_NODES = {
+            P:       { id: "P",       name: "Poolanker NL (Laren / Baarn)",   lat: 52.25, lon: 5.22,  color: "#10b981" },
+            ZEELAND: { id: "ZEELAND", name: "Scherpenisse / Zeeland",         lat: 51.55, lon: 4.10,  color: "#06b6d4" },
+            N_PRIME: { id: "N_PRIME", name: "N': Dept. 41/18 Bourges (Berry)",lat: 47.25, lon: 1.85,  color: "#ffd166" },
+            EXIT:    { id: "EXIT",    name: "Uittreedpunt 17/85 La Rochelle", lat: 46.25, lon: -1.21, color: "#b388ff" },
+            ECLIPSE: { id: "ECLIPSE", name: "Eclips Landfall Galicië/Asturië",lat: 43.53, lon: -6.58, color: "#ff5c77" },
+            ALPS:    { id: "ALPS",    name: "157° Inversie Turijn / Alpen",   lat: 45.07, lon: 7.68,  color: "#f472b6" }
+        };
+
+        const TAURUS_GEOJSON_NODES = [
+            { name: "α Tau (Aldebaran)", lat: 46.85, lon: 2.35, ra: 68.9802, dec: 16.5093, mag: 0.85, pmRa: 63.4,  pmDec: -188.9, isForeground: true,  color: "#ff9f1c" },
+            { name: "γ Tau (Hyadum I)",  lat: 44.15, lon: 0.12, ra: 64.9512, dec: 15.6276, mag: 3.65, pmRa: 115.7, pmDec: -23.4,  isForeground: false, color: "#ffd166" },
+            { name: "δ¹ Tau (Hyadum II)",lat: 45.45, lon: 0.55, ra: 65.7335, dec: 17.5425, mag: 3.76, pmRa: 107.2, pmDec: -28.5,  isForeground: false, color: "#ffd166" },
+            { name: "ε Tau (Ain)",       lat: 47.05, lon: 1.45, ra: 67.1542, dec: 19.1804, mag: 3.53, pmRa: 106.8, pmDec: -37.8,  isForeground: false, color: "#ffd166" },
+            { name: "θ¹ Tau (77 Tau)",   lat: 45.10, lon: 1.48, ra: 67.1654, dec: 15.9619, mag: 3.84, pmRa: 105.1, pmDec: -14.6,  isForeground: false, color: "#ffd166" },
+            { name: "θ² Tau (78 Tau)",   lat: 44.95, lon: 1.58, ra: 67.2217, dec: 15.9222, mag: 3.40, pmRa: 104.3, pmDec: -18.7,  isForeground: false, color: "#ffffff" },
+            { name: "η Tau (Alcyone M45)",lat:47.65, lon: -2.75,ra: 56.8711, dec: 24.1051, mag: 2.87, pmRa: 19.3,  pmDec: -43.7,  isForeground: false, color: "#38bdf8" },
+            { name: "27 Tau (Atlas M45)",lat: 47.55, lon: -2.45,ra: 57.2905, dec: 24.0534, mag: 3.62, pmRa: 19.8,  pmDec: -44.2,  isForeground: false, color: "#7dd3fc" },
+            { name: "β Tau (Elnath)",    lat: 49.45, lon: 6.15, ra: 81.5730, dec: 28.6075, mag: 1.65, pmRa: 9.1,   pmDec: -173.6, isForeground: false, color: "#e2e8f0" },
+            { name: "ζ Tau (Tianguan)",  lat: 45.95, lon: 6.85, ra: 84.4111, dec: 21.1426, mag: 3.01, pmRa: 2.1,   pmDec: -17.5,  isForeground: false, color: "#93c5fd" },
+            { name: "M1 (Krabnevel)",    lat: 46.45, lon: 6.35, ra: 83.6332, dec: 22.0145, mag: 8.40, pmRa: -14.7, pmDec: 2.4,    isForeground: false, color: "#ff5c77" }
+        ];
+
+        const EUROPE_COASTLINES = [
+            [[57.5, 10.5], [55.0, 8.4], [53.4, 6.9], [52.9, 4.7], [51.9, 4.0], [51.3, 3.2], [51.0, 1.8], [49.9, 1.2], [49.4, 0.1], [49.6, -1.9], [48.6, -2.0], [48.4, -4.7], [47.8, -4.1], [47.2, -2.2], [46.2, -1.2], [44.6, -1.2], [43.4, -1.7], [43.3, -3.0], [43.5, -6.6], [43.0, -9.2], [41.1, -8.7], [38.7, -9.4], [37.0, -8.9], [36.1, -5.6], [36.7, -2.2], [38.7, 0.2], [40.7, 0.8], [42.4, 3.2], [43.3, 3.5], [43.3, 5.4], [43.7, 7.4], [44.4, 8.9], [42.0, 11.8], [40.6, 14.3], [38.2, 15.6], [40.4, 18.2], [42.5, 14.2], [44.5, 12.3], [45.6, 13.7], [45.1, 14.8]],
+            [[50.1, -5.2], [50.7, -1.0], [51.4, 1.4], [52.7, 1.7], [53.6, 0.1], [55.8, -2.1], [57.6, -1.8], [58.6, -3.1], [58.5, -5.0], [56.5, -5.6], [54.9, -5.0], [53.4, -3.0], [52.8, -4.7], [51.6, -5.1], [51.4, -3.2], [50.1, -5.2]],
+            [[51.5, -9.8], [52.2, -6.4], [54.6, -5.5], [55.3, -7.4], [54.2, -10.0], [52.6, -9.9], [51.5, -9.8]],
+            [[35.8, -5.8], [35.2, -3.0], [35.7, -0.6], [36.8, 3.0], [37.0, 6.5], [37.3, 9.8], [35.8, 10.6]]
+        ];
+
+        /**
+         * ============================================================================
+         * 3. GLOBALE APPLICATIE STATE
+         * ============================================================================
+         */
+        let currentSolarDay = 289.85;
+        let currentObsHourCET = 20.566; // 20:34 CET
+        let observer = {
+            name: "Poolanker NL (Laren / Baarn)",
+            lat: 52.25,
+            lon: 5.22
+        };
+
+        let viewMode = 'hybrid'; // 'hybrid' | 'geo' | 'sky'
+        let camCenterLat = 47.2;
+        let camCenterLon = 1.8;
+        let camZoom = 34;
+
+        let layers = {
+            vortex: true,
+            rings: true,
+            taurusGeo: true,
+            horizonCurve: true,
+            solarTrack: true,
+            planimeterOnMap: true
+        };
+
+        // Ondergrondafbeelding (Underlay onder de vector-overlay)
+        let underlay = {
+            img: null,
+            visible: true,
+            dragMode: false,
+            lat: 46.2,
+            lon: 1.5,
+            scaleDeg: 18.0,
+            rotationDeg: 0.0,
+            opacity: 0.75
+        };
+
+        // A. Ott Nr. 573 Polairplanimeter & Gekoppelde Volgloep (Lupe) State
+        let planimeter = {
+            // De Loep (Tracer / Lupe) positie in geografische coördinaten
+            loupeLat: 46.85,
+            loupeLon: 2.35,
+            // Het Poolgewicht (Pole Anchor) standaard ten noordwesten
+            poleLat: 49.60,
+            poleLon: -2.20,
+            // Transformatie-instellingen (Kantelen, Zoomen, Draaien, Spiegelen)
+            tiltDeg: 22,
+            zoomScale: 1.0,
+            rotationDeg: 0,
+            mirrorX: 1, // 1 of -1
+            mirrorY: 1, // 1 of -1
+            loupeMagnification: 4.0,
+            // Telwerk & Auto-trace
+            wheelCount: 4.082,
+            autoTracing: false,
+            traceAngle: 0
+        };
+
+        // Digitizer Punten (Standaard voorgevuld met de 6 kernpunten van de Franse Stier-regio)
+        let digitizedMode = false;
+        let digitizedPoints = [
+            { name: "Ain (ε Tau) Noordpoot", lat: 47.05, lon: 1.45 },
+            { name: "Hyadum II (δ¹ Tau)",    lat: 45.45, lon: 0.55 },
+            { name: "Hyadum I (γ Tau) Punt", lat: 44.15, lon: 0.12 },
+            { name: "θ¹ Tauri Zuidpoot",     lat: 45.10, lon: 1.48 },
+            { name: "θ² Tauri Kern",         lat: 44.95, lon: 1.58 },
+            { name: "Aldebaran (α Tau) Oog", lat: 46.85, lon: 2.35 }
+        ];
+
+        /**
+         * ============================================================================
+         * 4. SFERISCHE ASTRONOMIE: EXACTE OPKOMST, ONDERGANG, STERRENTIJD & HORIZON
+         * ============================================================================
+         */
+        function computeSolarGeodesy(doy) {
+            let lambdaDeg = ((doy - 79.25) * DAILY_SOLAR_RATE) % 360;
+            if (lambdaDeg < 0) lambdaDeg += 360;
+            const lambdaRad = lambdaDeg * Math.PI / 180;
+            const epsRad = 23.43929 * Math.PI / 180;
+
+            const decRad = Math.asin(Math.sin(epsRad) * Math.sin(lambdaRad));
+            const decDeg = decRad * 180 / Math.PI;
+
+            let raRad = Math.atan2(Math.cos(epsRad) * Math.sin(lambdaRad), Math.cos(lambdaRad));
+            if (raRad < 0) raRad += 2 * Math.PI;
+            const raDeg = raRad * 180 / Math.PI;
+
+            const B = (360 / TROPICAL_YEAR_DAYS) * (doy - 81) * Math.PI / 180;
+            const eotMin = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+
+            const latRad = observer.lat * Math.PI / 180;
+            const cosHA = Math.max(-1, Math.min(1, -Math.tan(latRad) * Math.tan(decRad)));
+            const dayLengthHours = (Math.acos(cosHA) * 180 / Math.PI / 15) * 2;
+
+            let constellation = "Vissen";
+            if (lambdaDeg >= 29 && lambdaDeg < 53) constellation = "Ram (Aries)";
+            else if (lambdaDeg >= 53 && lambdaDeg < 90) constellation = "Stier (Taurus)";
+            else if (lambdaDeg >= 90 && lambdaDeg < 118) constellation = "Tweelingen";
+            else if (lambdaDeg >= 118 && lambdaDeg < 138) constellation = "Kreeft";
+            else if (lambdaDeg >= 138 && lambdaDeg < 174) constellation = "Leeuw";
+            else if (lambdaDeg >= 174 && lambdaDeg < 218) constellation = "Maagd";
+            else if (lambdaDeg >= 218 && lambdaDeg < 241) constellation = "Weegschaal";
+            else if (lambdaDeg >= 241 && lambdaDeg < 266) constellation = "Schorpioen";
+            else if (lambdaDeg >= 266 && lambdaDeg < 299) constellation = "Boogschutter";
+            else if (lambdaDeg >= 299 && lambdaDeg < 327) constellation = "Steenbok";
+            else if (lambdaDeg >= 327 && lambdaDeg < 351) constellation = "Waterman";
+
+            const driftDays = (doy / TROPICAL_YEAR_DAYS) * 0.242190;
+            return { doy, lambdaDeg, raDeg, decDeg, eotMin, dayLengthHours, constellation, driftDays };
+        }
+
+        /**
+         * Bereken Local Sidereal Time (LST in uren 0..24) voor DOY, uur CET en Lengtegraad λ
+         */
+        function computeLSTHours(doy, hourCET, lonDeg) {
+            const utHours = hourCET - 1.0; // CET = UTC + 1
+            // GMST op 1 Jan 00:00 UT is ~6.697375 uren; elke zonnedag voegt 24/365.2422 * 24s sterrentijd toe
+            const gmst0 = 6.697375 + 0.0657098244 * doy;
+            const gmst = gmst0 + 1.00273790935 * utHours;
+            let lst = (gmst + lonDeg / 15.0) % 24.0;
+            if (lst < 0) lst += 24.0;
+            return lst;
+        }
+
+        /**
+         * Bereken voor een hemellichaam (raHours, decDeg) op locatie (latDeg, lonDeg) en datum DOY:
+         * - Actuele Hoogte h (Altitude in °) & Azimut Az (in °)
+         * - Exacte tijd van Opkomst (Rise CET), Culminatie (Transit CET) en Ondergang (Set CET)
+         */
+        function computeCelestialHorizonData(raHours, decDeg, doy, hourCET, latDeg, lonDeg) {
+            const lstHours = computeLSTHours(doy, hourCET, lonDeg);
+            let haHours = lstHours - raHours;
+            if (haHours < -12) haHours += 24;
+            if (haHours > 12) haHours -= 24;
+
+            const haRad = (haHours * 15.0) * Math.PI / 180;
+            const latRad = latDeg * Math.PI / 180;
+            const decRad = decDeg * Math.PI / 180;
+
+            // Sferische hoogte boven/onder de horizon: sin(h) = sin(φ)sin(δ) + cos(φ)cos(δ)cos(H)
+            const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad);
+            const altRad = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+            const altDeg = altRad * 180 / Math.PI;
+
+            // Azimut (Noord = 0°, Oost = 90°, Zuid = 180°, West = 270°)
+            const yAz = -Math.sin(haRad) * Math.cos(decRad);
+            const xAz = Math.sin(decRad) - Math.sin(latRad) * sinAlt;
+            let azDeg = (Math.atan2(yAz, xAz) * 180 / Math.PI + 360) % 360;
+
+            // Bereken Opkomst-, Culminatie- en Ondergangstijden (met atmosferische refractie h0 = -0.5667°)
+            const h0Rad = -0.5667 * Math.PI / 180;
+            const cosH0 = (Math.sin(h0Rad) - Math.sin(latRad) * Math.sin(decRad)) / (Math.cos(latRad) * Math.cos(decRad));
+
+            // Culminatietijd (wanneer LST == raHours)
+            const gmst0 = (6.697375 + 0.0657098244 * doy) % 24;
+            let utTransit = (raHours - lonDeg / 15.0 - gmst0) % 24;
+            if (utTransit < 0) utTransit += 24;
+            utTransit = utTransit / 1.00273790935;
+            const cetTransit = (utTransit + 1.0 + 24) % 24;
+
+            let riseStr = "Circumpolair";
+            let setStr = "Altijd Boven";
+            let transitStr = formatHoursHM(cetTransit);
+
+            if (cosH0 >= 1.0) {
+                riseStr = "Onder Horiz.";
+                setStr = "Nooit Boven";
+            } else if (cosH0 > -1.0) {
+                const semiDiurnalHours = (Math.acos(cosH0) * 180 / Math.PI) / 15.0 / 1.00273790935;
+                const cetRise = (cetTransit - semiDiurnalHours + 24) % 24;
+                const cetSet = (cetTransit + semiDiurnalHours + 24) % 24;
+                riseStr = formatHoursHM(cetRise);
+                setStr = formatHoursHM(cetSet);
+            }
+
+            return {
+                altDeg,
+                azDeg,
+                isAboveHorizon: altDeg >= 0,
+                riseStr,
+                transitStr,
+                setStr
+            };
+        }
+
+        function formatHoursHM(hDec) {
+            const norm = ((hDec % 24) + 24) % 24;
+            const h = Math.floor(norm);
+            const m = Math.floor((norm - h) * 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        /**
+         * ============================================================================
+         * 5. UI PANELEN & 12-MAANDEN BALK OPBOUW
+         * ============================================================================
+         */
+        function buildMonthsBar() {
+            const grid = document.getElementById('monthsGrid');
+            grid.innerHTML = '';
+            SOLAR_MONTHS.forEach(m => {
+                const startLambda = (((m.startDoy - 79.25) * DAILY_SOLAR_RATE) % 360 + 360) % 360;
+                const endLambda = (((m.endDoy - 79.25) * DAILY_SOLAR_RATE) % 360 + 360) % 360;
+                const card = document.createElement('div');
+                card.id = `month-card-${m.nr}`;
+                card.className = 'month-card rounded px-2 py-1 cursor-pointer flex flex-col justify-between';
+                card.onclick = () => setSolarDay(m.startDoy + m.days / 2);
+
+                const daysLabel = m.nr === 12 ? '31,2422d' : `${m.days}d`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-700/80 pb-0.5">
+                        <span class="mono text-[11px] font-bold text-white">${m.nr}. ${m.code}</span>
+                        <span class="mono text-[9px] font-semibold px-1 rounded bg-slate-800 text-[#00f5d4]">${daysLabel}</span>
+                    </div>
+                    <div class="mono text-[9px] text-slate-300 leading-tight mt-0.5">
+                        <div>DOY: <span class="text-white">${m.startDoy}–${m.nr === 12 ? '365,24' : m.endDoy}</span></div>
+                        <div>λ☉: <span class="text-[#ffd166]">${Math.round(startLambda)}°→${Math.round(endLambda)}°</span></div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateAllCalculationsAndUI() {
+            // Zoek actieve maand
+            let activeMonth = SOLAR_MONTHS[0];
+            for (const m of SOLAR_MONTHS) {
+                if (currentSolarDay >= m.startDoy && currentSolarDay <= m.endDoy + 0.001) {
+                    activeMonth = m;
+                    break;
+                }
+            }
+
+            SOLAR_MONTHS.forEach(m => {
+                const el = document.getElementById(`month-card-${m.nr}`);
+                if (el) {
+                    if (m.nr === activeMonth.nr) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+
+            const dayOfMonth = Math.max(1, Math.floor(currentSolarDay - activeMonth.startDoy + 1));
+            document.getElementById('activeDateString').textContent = `${dayOfMonth} ${activeMonth.name}`;
+            document.getElementById('doyReadout').textContent = currentSolarDay.toFixed(2).replace('.', ',');
+            document.getElementById('obsTimeReadout').textContent = formatHoursHM(currentObsHourCET);
+
+            const lstH = computeLSTHours(currentSolarDay, currentObsHourCET, observer.lon);
+            const lstHr = Math.floor(lstH);
+            const lstMn = Math.floor((lstH - lstHr) * 60);
+            document.getElementById('lstReadout').textContent = `${String(lstHr).padStart(2, '0')}h ${String(lstMn).padStart(2, '0')}m`;
+
+            // Zonne-telemetrie
+            const sol = computeSolarGeodesy(currentSolarDay);
+            document.getElementById('telLambdaDec').textContent = `${sol.lambdaDeg.toFixed(1).replace('.', ',')}° / ${sol.decDeg >= 0 ? '+' : ''}${sol.decDeg.toFixed(1).replace('.', ',')}°`;
+
+            const eotSign = sol.eotMin >= 0 ? '+' : '-';
+            const eotAbs = Math.abs(sol.eotMin);
+            document.getElementById('telEoT').textContent = `${eotSign}${Math.floor(eotAbs)}m ${String(Math.round((eotAbs % 1) * 60)).padStart(2, '0')}s`;
+            document.getElementById('telZodiac').textContent = sol.constellation;
+            document.getElementById('telDrift').textContent = `+${sol.driftDays.toFixed(4).replace('.', ',')} d`;
+
+            // Zonsopkomst & Ondergang op actieve waarnemerslocatie
+            const riseH = 12 - sol.dayLengthHours / 2 - sol.eotMin / 60 - (observer.lon - 15) / 15;
+            const setH = 12 + sol.dayLengthHours / 2 - sol.eotMin / 60 - (observer.lon - 15) / 15;
+            document.getElementById('sunRiseSetLabel').textContent = `${formatHoursHM(riseH)} / ${formatHoursHM(setH)}`;
+            document.getElementById('activeObsLabel').textContent = `${observer.lat.toFixed(2)}°N, ${observer.lon.toFixed(2)}°E (${observer.name.split(' ')[0]})`;
+
+            // Update Sterrenbeelden Opkomst / Culminatie / Ondergang & Horizon-Tabel
+            const tbody = document.getElementById('constellationHorizonBody');
+            tbody.innerHTML = CONSTELLATION_TARGETS.map(c => {
+                const hData = computeCelestialHorizonData(c.raHours, c.decDeg, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
+                if (c.id === 'taurus_ald') {
+                    const elAld = document.getElementById('telAldebaranAlt');
+                    elAld.textContent = `${hData.altDeg >= 0 ? '+' : ''}${hData.altDeg.toFixed(1).replace('.', ',')}° ${hData.isAboveHorizon ? 'BOVEN' : 'ONDER'}`;
+                    elAld.className = hData.isAboveHorizon ? 'font-bold text-[#00f5d4]' : 'font-bold text-rose-400';
+                }
+
+                const statusBadge = hData.isAboveHorizon
+                    ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[#00f5d4] border border-emerald-500/40 font-bold">+${hData.altDeg.toFixed(1)}° BOVEN</span>`
+                    : `<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold">${hData.altDeg.toFixed(1)}° ONDER</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-800/60 transition">
+                        <td class="py-1 font-semibold" style="color:${c.color}">${c.name}</td>
+                        <td class="py-1 text-emerald-300">${hData.riseStr}</td>
+                        <td class="py-1 text-amber-200">${hData.transitStr}</td>
+                        <td class="py-1 text-rose-300">${hData.setStr}</td>
+                        <td class="py-1 text-slate-300">${hData.azDeg.toFixed(1)}°</td>
+                        <td class="py-1 text-right">${statusBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateDigitizerMetrics();
+            renderCanvas();
+        }
+
+        function setSolarDay(doy) {
+            currentSolarDay = Math.max(0, Math.min(TROPICAL_YEAR_DAYS, parseFloat(doy)));
+            document.getElementById('solarDaySlider').value = currentSolarDay;
+            updateAllCalculationsAndUI();
+        }
+
+        function setObsHour(hr) {
+            currentObsHourCET = Math.max(0, Math.min(24, parseFloat(hr)));
+            document.getElementById('obsHourSlider').value = currentObsHourCET;
+            updateAllCalculationsAndUI();
+        }
+
+        /**
+         * ============================================================================
+         * 6. WAARNEMERSLOCATIE (φ / λ & PLAATS) FUNCTIES
+         * ============================================================================
+         */
+        function applyObserverPreset(key) {
+            const preset = VORTEX_NODES[key];
+            if (!preset) return;
+            observer.name = preset.name;
+            observer.lat = preset.lat;
+            observer.lon = preset.lon;
+            document.getElementById('obsPlaceInput').value = observer.name;
+            document.getElementById('obsLatInput').value = observer.lat;
+            document.getElementById('obsLonInput').value = observer.lon;
+            updateAllCalculationsAndUI();
+        }
+
+        function updateObserverFromInputs() {
+            observer.name = document.getElementById('obsPlaceInput').value || "Eigen Waarneming";
+            observer.lat = parseFloat(document.getElementById('obsLatInput').value) || 52.25;
+            observer.lon = parseFloat(document.getElementById('obsLonInput').value) || 5.22;
+            updateAllCalculationsAndUI();
+        }
+
+        function flyToObserver() {
+            camCenterLat = observer.lat;
+            camCenterLon = observer.lon;
+            renderCanvas();
+        }
+
+        /**
+         * ============================================================================
+         * 7. ONDERGRONDAFBEELDING (BEELD ONDER OVERLAY) UPLOAD & TEST-GENERATOR
+         * ============================================================================
+         */
+        function handleUnderlayUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    underlay.img = img;
+                    underlay.visible = true;
+                    underlay.lat = camCenterLat;
+                    underlay.lon = camCenterLon;
+                    renderCanvas();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadBuiltinStarChartUnderlay() {
+            // Genereer een hoog-contrast astronomische kalibratieplaat van het Hyaden-veld
+            const off = document.createElement('canvas');
+            off.width = 900;
+            off.height = 650;
+            const octx = off.getContext('2d');
+
+            octx.fillStyle = '#070c18';
+            octx.fillRect(0, 0, off.width, off.height);
+
+            // Graadnet op de kalibratiekaart
+            octx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+            octx.lineWidth = 1;
+            for (let x = 50; x < off.width; x += 80) {
+                octx.beginPath(); octx.moveTo(x, 0); octx.lineTo(x, off.height); octx.stroke();
+            }
+            for (let y = 50; y < off.height; y += 80) {
+                octx.beginPath(); octx.moveTo(0, y); octx.lineTo(off.width, y); octx.stroke();
+            }
+
+            // Titel & Kadastraal kader
+            octx.strokeStyle = '#ffd166';
+            octx.lineWidth = 3;
+            octx.strokeRect(16, 16, off.width - 32, off.height - 32);
+            octx.fillStyle = '#ffd166';
+            octx.font = 'bold 20px "Fira Code", monospace';
+            octx.fillText('KALIBRATIE-ONDERGROND: HYADEN (CALDWELL 41) & STIER REGIO', 40, 52);
+            octx.fillStyle = '#00f5d4';
+            octx.font = '14px "Fira Code", monospace';
+            octx.fillText('Geodetische Projectie onder Vector-Overlay | Epoch J2000 / Gaia DR3', 40, 76);
+
+            // Teken V-vorm en sterren op de test-ondergrond
+            const pts = [
+                { x: 480, y: 190, r: 9, col: '#ff9f1c', lbl: 'Aldebaran (α Tau)' },
+                { x: 560, y: 120, r: 6, col: '#ffd166', lbl: 'Ain (ε Tau)' },
+                { x: 640, y: 240, r: 6, col: '#ffd166', lbl: 'δ¹ Tau' },
+                { x: 730, y: 360, r: 7, col: '#ffd166', lbl: 'Primus Hyadum (γ Tau)' },
+                { x: 585, y: 315, r: 6, col: '#ffffff', lbl: 'θ¹/θ² Tau' }
+            ];
+            octx.strokeStyle = 'rgba(255, 209, 102, 0.6)';
+            octx.lineWidth = 2.5;
+            octx.setLineDash([8, 6]);
+            octx.beginPath();
+            octx.moveTo(560, 120); octx.lineTo(640, 240); octx.lineTo(730, 360); octx.lineTo(585, 315); octx.lineTo(480, 190);
+            octx.stroke();
+            octx.setLineDash([]);
+
+            pts.forEach(p => {
+                octx.fillStyle = p.col;
+                octx.beginPath(); octx.arc(p.x, p.y, p.r, 0, Math.PI * 2); octx.fill();
+                octx.fillStyle = '#ffffff';
+                octx.font = 'bold 13px "Fira Code", monospace';
+                octx.fillText(p.lbl, p.x + 14, p.y + 4);
+            });
+
+            const img = new Image();
+            img.onload = function() {
+                underlay.img = img;
+                underlay.visible = true;
+                underlay.lat = 46.2;
+                underlay.lon = 1.5;
+                renderCanvas();
+            };
+            img.src = off.toDataURL();
+        }
+
+        function updateUnderlayParams() {
+            underlay.opacity = parseInt(document.getElementById('underlayAlphaSlider').value) / 100;
+            underlay.scaleDeg = parseFloat(document.getElementById('underlayScaleSlider').value);
+            underlay.rotationDeg = parseFloat(document.getElementById('underlayRotSlider').value);
+
+            document.getElementById('underlayAlphaVal').textContent = `${Math.round(underlay.opacity * 100)}%`;
+            document.getElementById('underlayScaleVal').textContent = `${underlay.scaleDeg.toFixed(1).replace('.', ',')}°`;
+            document.getElementById('underlayRotVal').textContent = `${underlay.rotationDeg.toFixed(1).replace('.', ',')}°`;
+            renderCanvas();
+        }
+
+        function toggleUnderlayVisibility() {
+            underlay.visible = !underlay.visible;
+            const btn = document.getElementById('btnShowUnderlay');
+            btn.textContent = underlay.visible ? '👁️ Beeld: ZICHTBAAR' : '🚫 Beeld: VERBORGEN';
+            btn.className = underlay.visible
+                ? 'px-2 py-1 rounded bg-emerald-900/60 border border-emerald-400 text-emerald-200 font-bold'
+                : 'px-2 py-1 rounded bg-slate-800 border border-slate-600 text-slate-400';
+            renderCanvas();
+        }
+
+        function toggleDragUnderlayMode() {
+            underlay.dragMode = !underlay.dragMode;
+            const btn = document.getElementById('btnDragUnderlayMode');
+            btn.textContent = underlay.dragMode ? '✋ Sleep Beeld: AAN' : '✋ Sleep Beeld: UIT';
+            btn.className = underlay.dragMode
+                ? 'px-2 py-1 rounded bg-amber-500 text-slate-950 font-bold'
+                : 'px-2 py-1 rounded bg-slate-800 border border-slate-600 text-slate-300';
+        }
+
+        /**
+         * ============================================================================
+         * 8. HOOFDCANVAS + A. OTT NR. 573 PLANIMETER & OPTISCHE LOEP RENDERING
+         * ============================================================================
+         */
+        const canvas = document.getElementById('geodesicCanvas');
+        const ctx = canvas.getContext('2d');
+        const loupeCanvas = document.getElementById('loupeInspectorCanvas');
+        const lctx = loupeCanvas.getContext('2d');
+        let cWidth = 0;
+        let cHeight = 0;
+
+        function resizeCanvas() {
+            cWidth = canvas.parentElement.clientWidth;
+            cHeight = canvas.parentElement.clientHeight;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = cWidth * dpr;
+            canvas.height = cHeight * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            renderCanvas();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function geoToScreen(lat, lon) {
+            const cosLat = Math.cos(camCenterLat * Math.PI / 180);
+            const x = (cWidth / 2) + (lon - camCenterLon) * camZoom * cosLat;
+            const y = (cHeight / 2) - (lat - camCenterLat) * camZoom;
+            return { x, y };
+        }
+
+        function screenToGeo(x, y) {
+            const cosLat = Math.cos(camCenterLat * Math.PI / 180);
+            const lon = camCenterLon + (x - cWidth / 2) / (camZoom * cosLat);
+            const lat = camCenterLat - (y - cHeight / 2) / camZoom;
+            return { lat, lon };
+        }
+
+        // Koppeling tussen Geografische projectie en Hemelcoördinaten (RA, Dec)
+        function skyToScreen(raDeg, decDeg) {
+            if (viewMode === 'sky') {
+                const centerRa = 68.0;
+                const centerDec = 19.5;
+                const skyScale = camZoom * 0.72;
+                const x = (cWidth / 2) - (raDeg - centerRa) * skyScale * Math.cos(centerDec * Math.PI / 180);
+                const y = (cHeight / 2) - (decDeg - centerDec) * skyScale;
+                return { x, y };
+            } else {
+                const mappedLat = 45.8 + (decDeg - 17.5) * 0.42;
+                const mappedLon = 1.65 - (raDeg - 67.2) * 0.34;
+                return geoToScreen(mappedLat, mappedLon);
+            }
+        }
+
+        function geoToSkyEquivalent(lat, lon) {
+            const decDeg = 17.5 + (lat - 45.8) / 0.42;
+            const raDeg = 67.2 - (lon - 1.65) / 0.34;
+            return { raDeg, decDeg };
+        }
+
+        /**
+         * Teken de scène naar een opgegeven 2D context (wordt zowel voor hoofdcanvas als voor de Loep-lens gebruikt!)
+         */
+        function renderSceneLayers(targetCtx, includeInstrument) {
+            // 1. Achtergrond
+            const bgGrad = targetCtx.createRadialGradient(cWidth / 2, cHeight / 2, 50, cWidth / 2, cHeight / 2, Math.max(cWidth, cHeight) * 0.85);
+            bgGrad.addColorStop(0, viewMode === 'sky' ? '#090f20' : '#0a192f');
+            bgGrad.addColorStop(1, '#04070e');
+            targetCtx.fillStyle = bgGrad;
+            targetCtx.fillRect(0, 0, cWidth, cHeight);
+
+            // 2. Geüploade Afbeelding ONDER de Vector-Overlay
+            if (underlay.img && underlay.visible) {
+                targetCtx.save();
+                const centerPt = geoToScreen(underlay.lat, underlay.lon);
+                const imgW = underlay.scaleDeg * camZoom;
+                const imgH = imgW * (underlay.img.height / underlay.img.width);
+                targetCtx.translate(centerPt.x, centerPt.y);
+                targetCtx.rotate(underlay.rotationDeg * Math.PI / 180);
+                targetCtx.globalAlpha = underlay.opacity;
+                targetCtx.drawImage(underlay.img, -imgW / 2, -imgH / 2, imgW, imgH);
+                targetCtx.strokeStyle = 'rgba(255, 209, 102, 0.5)';
+                targetCtx.lineWidth = 1.5;
+                targetCtx.strokeRect(-imgW / 2, -imgH / 2, imgW, imgH);
+                targetCtx.restore();
+            }
+
+            // 3. Geodetisch / Astronomisch Graadnet
+            drawGeodesicGrid(targetCtx);
+
+            // 4. Europese Kustlijnen
+            if (viewMode !== 'sky') {
+                drawEuropeMap(targetCtx);
+            }
+
+            // 5. Horizon-ringen & Planimeter-kader
+            if (layers.rings && viewMode !== 'sky') {
+                drawHorizonRings(targetCtx);
+            }
+
+            // 6. Lokale Astronomische Horizonlijn (h = 0°) voor de Waarnemer
+            if (layers.horizonCurve) {
+                drawAstronomicalHorizonCurve(targetCtx);
+            }
+
+            // 7. 245,91° VORTEX As & Eclips-lijn
+            if (layers.vortex && viewMode !== 'sky') {
+                drawVortexVectors(targetCtx);
+            }
+
+            // 8. Tropisch Zonnejaar (365,2422d) Ecliptica-baan
+            if (layers.solarTrack) {
+                drawSolarYearTrack(targetCtx);
+            }
+
+            // 9. Stier (Taurus) Sterren & Boven/Onder Horizon status
+            if (layers.taurusGeo || viewMode === 'sky') {
+                drawTaurusAstrometryNodes(targetCtx);
+            }
+
+            // 10. Digitizer Polygoon
+            drawDigitizerPolygon(targetCtx);
+
+            // 11. Hoofd-knooppunt Pinnen + Actieve Waarnemer
+            if (viewMode !== 'sky') {
+                drawMainGeodesicPins(targetCtx);
+            }
+
+            // 12. Fysieke A. Ott Kempten Nr. 573 Polairplanimeter + Gekoppelde Volgloep (Lupe)
+            if (includeInstrument && layers.planimeterOnMap) {
+                drawPhysicalOttPlanimeterAndLoupe(targetCtx);
+            }
+        }
+
+        function renderCanvas() {
+            if (!cWidth || !cHeight) return;
+            renderSceneLayers(ctx, true);
+            renderCoupledLoupeInspector();
+        }
+
+        function drawGeodesicGrid(tCtx) {
+            tCtx.save();
+            tCtx.strokeStyle = 'rgba(0, 245, 212, 0.11)';
+            tCtx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+            tCtx.font = '10px "Fira Code", monospace';
+            tCtx.lineWidth = 1;
+
+            for (let lat = 35; lat <= 60; lat += 2.5) {
+                const p1 = geoToScreen(lat, -15);
+                const p2 = geoToScreen(lat, 20);
+                tCtx.beginPath(); tCtx.moveTo(p1.x, p1.y); tCtx.lineTo(p2.x, p2.y); tCtx.stroke();
+                if (lat % 5 === 0) tCtx.fillText(`φ ${lat}°N`, 12, p1.y - 4);
+            }
+            for (let lon = -15; lon <= 20; lon += 2.5) {
+                const p1 = geoToScreen(35, lon);
+                const p2 = geoToScreen(60, lon);
+                tCtx.beginPath(); tCtx.moveTo(p1.x, p1.y); tCtx.lineTo(p2.x, p2.y); tCtx.stroke();
+                if (lon % 5 === 0) {
+                    const lbl = lon === 0 ? 'λ 0°' : (lon > 0 ? `λ ${lon}°E` : `λ ${Math.abs(lon)}°W`);
+                    tCtx.fillText(lbl, p1.x + 4, cHeight - 10);
+                }
+            }
+            tCtx.restore();
+        }
+
+        function drawEuropeMap(tCtx) {
+            tCtx.save();
+            EUROPE_COASTLINES.forEach((poly, idx) => {
+                tCtx.beginPath();
+                poly.forEach(([lat, lon], i) => {
+                    const pt = geoToScreen(lat, lon);
+                    if (i === 0) tCtx.moveTo(pt.x, pt.y);
+                    else tCtx.lineTo(pt.x, pt.y);
+                });
+                tCtx.fillStyle = idx === 3 ? 'rgba(180, 130, 70, 0.20)' : 'rgba(30, 58, 47, 0.38)';
+                tCtx.fill();
+                tCtx.strokeStyle = 'rgba(0, 245, 212, 0.32)';
+                tCtx.lineWidth = 1.2;
+                tCtx.stroke();
+            });
+            tCtx.restore();
+        }
+
+        function drawHorizonRings(tCtx) {
+            tCtx.save();
+            const nPrime = geoToScreen(VORTEX_NODES.N_PRIME.lat, VORTEX_NODES.N_PRIME.lon);
+            tCtx.strokeStyle = 'rgba(236, 72, 153, 0.5)';
+            tCtx.lineWidth = 1.5;
+            tCtx.beginPath();
+            tCtx.arc(nPrime.x, nPrime.y, camZoom * 6.2, 0, Math.PI * 2);
+            tCtx.stroke();
+            tCtx.restore();
+        }
+
+        /**
+         * Teken de exacte astronomische Horizonlijn (h = 0°) op het huidige tijdstip en de gekozen waarnemerslocatie
+         */
+        function drawAstronomicalHorizonCurve(tCtx) {
+            tCtx.save();
+            const lstHours = computeLSTHours(currentSolarDay, currentObsHourCET, observer.lon);
+            const latRad = observer.lat * Math.PI / 180;
+
+            tCtx.beginPath();
+            let first = true;
+            for (let raDeg = 35; raDeg <= 105; raDeg += 1.0) {
+                const haRad = ((lstHours * 15.0) - raDeg) * Math.PI / 180;
+                // Voor h = 0° geldt: tan(δ) = -cos(H) / tan(φ)
+                const tanDec = -Math.cos(haRad) / Math.tan(latRad);
+                const decHorizonDeg = Math.atan(tanDec) * 180 / Math.PI;
+                const pt = skyToScreen(raDeg, decHorizonDeg);
+                if (first) { tCtx.moveTo(pt.x, pt.y); first = false; }
+                else tCtx.lineTo(pt.x, pt.y);
+            }
+            tCtx.strokeStyle = '#10b981';
+            tCtx.lineWidth = 2.2;
+            tCtx.setLineDash([8, 4]);
+            tCtx.stroke();
+            tCtx.setLineDash([]);
+
+            const lblPt = skyToScreen(68.0, Math.atan(-Math.cos(((lstHours * 15) - 68) * Math.PI / 180) / Math.tan(latRad)) * 180 / Math.PI);
+            tCtx.fillStyle = '#10b981';
+            tCtx.font = 'bold 10px "Fira Code", monospace';
+            tCtx.fillText(`🌅 LOKALE HORIZON (h = 0° voor ${observer.name.split(' ')[0]}) — BOVEN = ZICHTBAAR / ONDER = ONZICHTBAAR`, lblPt.x - 140, lblPt.y - 8);
+            tCtx.restore();
+        }
+
+        function drawVortexVectors(tCtx) {
+            tCtx.save();
+            const pNL = geoToScreen(VORTEX_NODES.P.lat, VORTEX_NODES.P.lon);
+            const pNPrime = geoToScreen(VORTEX_NODES.N_PRIME.lat, VORTEX_NODES.N_PRIME.lon);
+            const pExit = geoToScreen(VORTEX_NODES.EXIT.lat, VORTEX_NODES.EXIT.lon);
+            const pEclipse = geoToScreen(VORTEX_NODES.ECLIPSE.lat, VORTEX_NODES.ECLIPSE.lon);
+            const pAtl = geoToScreen(41.2, -13.5);
+
+            tCtx.strokeStyle = '#ffd166';
+            tCtx.lineWidth = 2.2;
+            tCtx.beginPath();
+            tCtx.moveTo(pNL.x, pNL.y);
+            tCtx.lineTo(pAtl.x, pAtl.y);
+            tCtx.stroke();
+
+            tCtx.strokeStyle = '#00f5d4';
+            tCtx.lineWidth = 1.8;
+            tCtx.beginPath();
+            tCtx.moveTo(pNL.x, pNL.y);
+            tCtx.lineTo(pNPrime.x, pNPrime.y);
+            tCtx.lineTo(pExit.x, pExit.y);
+            tCtx.lineTo(pEclipse.x, pEclipse.y);
+            tCtx.stroke();
+
+            // Eclips 12 Aug 2026 pad
+            const eclStart = geoToScreen(45.8, -10.5);
+            const eclEnd = geoToScreen(39.5, 2.5);
+            tCtx.strokeStyle = '#ff5c77';
+            tCtx.lineWidth = 2.5;
+            tCtx.beginPath();
+            tCtx.moveTo(eclStart.x, eclStart.y);
+            tCtx.lineTo(eclEnd.x, eclEnd.y);
+            tCtx.stroke();
+            tCtx.restore();
+        }
+
+        function drawSolarYearTrack(tCtx) {
+            tCtx.save();
+            const sol = computeSolarGeodesy(currentSolarDay);
+            tCtx.beginPath();
+            tCtx.strokeStyle = 'rgba(255, 209, 102, 0.4)';
+            tCtx.lineWidth = 1.8;
+            tCtx.setLineDash([4, 4]);
+
+            for (let d = 0; d <= 365; d += 5) {
+                const s = computeSolarGeodesy(d);
+                const lonWave = -8.0 + (d / TROPICAL_YEAR_DAYS) * 22.0;
+                const latWave = 46.5 + s.decDeg * 0.25;
+                const pt = viewMode === 'sky' ? skyToScreen(s.raDeg, s.decDeg) : geoToScreen(latWave, lonWave);
+                if (d === 0) tCtx.moveTo(pt.x, pt.y);
+                else tCtx.lineTo(pt.x, pt.y);
+            }
+            tCtx.stroke();
+            tCtx.setLineDash([]);
+
+            const lonWave = -8.0 + (currentSolarDay / TROPICAL_YEAR_DAYS) * 22.0;
+            const latWave = 46.5 + sol.decDeg * 0.25;
+            const sunPt = viewMode === 'sky' ? skyToScreen(sol.raDeg, sol.decDeg) : geoToScreen(latWave, lonWave);
+
+            tCtx.fillStyle = '#ffd166';
+            tCtx.beginPath(); tCtx.arc(sunPt.x, sunPt.y, 6, 0, Math.PI * 2); tCtx.fill();
+            tCtx.fillStyle = '#ffffff';
+            tCtx.font = 'bold 10px "Fira Code", monospace';
+            tCtx.fillText(`☉ ZON (DOY ${currentSolarDay.toFixed(1)})`, sunPt.x + 10, sunPt.y + 3);
+            tCtx.restore();
+        }
+
+        function drawTaurusAstrometryNodes(tCtx) {
+            tCtx.save();
+            const nodes = TAURUS_GEOJSON_NODES.map(n => {
+                const pt = skyToScreen(n.ra, n.dec);
+                const hInfo = computeCelestialHorizonData(n.ra / 15.0, n.dec, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
+                return { ...n, pt, hInfo };
+            });
+
+            // Hyaden V-vorm verbinden
+            const findN = (pref) => nodes.find(n => n.name.startsWith(pref));
+            const eps = findN("ε Tau"), del = findN("δ¹ Tau"), gam = findN("γ Tau"), th1 = findN("θ¹ Tau"), th2 = findN("θ² Tau"), ald = findN("α Tau");
+
+            if (eps && del && gam && th1 && th2 && ald) {
+                tCtx.strokeStyle = 'rgba(255, 209, 102, 0.85)';
+                tCtx.lineWidth = 2;
+                tCtx.beginPath();
+                tCtx.moveTo(eps.pt.x, eps.pt.y);
+                tCtx.lineTo(del.pt.x, del.pt.y);
+                tCtx.lineTo(gam.pt.x, gam.pt.y);
+                tCtx.lineTo(th1.pt.x, th1.pt.y);
+                tCtx.lineTo(th2.pt.x, th2.pt.y);
+                tCtx.lineTo(ald.pt.x, ald.pt.y);
+                tCtx.stroke();
+            }
+
+            nodes.forEach(n => {
+                const radius = n.isForeground ? 6.5 : Math.max(4, 8 - n.mag);
+                tCtx.fillStyle = n.hInfo.isAboveHorizon ? n.color : '#64748b';
+                tCtx.beginPath();
+                tCtx.arc(n.pt.x, n.pt.y, radius, 0, Math.PI * 2);
+                tCtx.fill();
+                tCtx.strokeStyle = n.hInfo.isAboveHorizon ? '#ffffff' : '#ef4444';
+                tCtx.lineWidth = 1.3;
+                tCtx.stroke();
+
+                tCtx.font = '10px "Fira Code", monospace';
+                tCtx.fillStyle = n.hInfo.isAboveHorizon ? '#f8fafc' : '#fca5a5';
+                const altTxt = `${n.hInfo.altDeg >= 0 ? '+' : ''}${n.hInfo.altDeg.toFixed(1)}°`;
+                tCtx.fillText(`${n.name} [${altTxt}]`, n.pt.x + radius + 5, n.pt.y + 3);
+            });
+            tCtx.restore();
+        }
+
+        function drawDigitizerPolygon(tCtx) {
+            if (digitizedPoints.length === 0) return;
+            tCtx.save();
+            tCtx.beginPath();
+            digitizedPoints.forEach((p, i) => {
+                const pt = geoToScreen(p.lat, p.lon);
+                if (i === 0) tCtx.moveTo(pt.x, pt.y);
+                else tCtx.lineTo(pt.x, pt.y);
+            });
+            if (digitizedPoints.length > 2) {
+                tCtx.closePath();
+                tCtx.fillStyle = 'rgba(0, 245, 212, 0.09)';
+                tCtx.fill();
+            }
+            tCtx.strokeStyle = '#00f5d4';
+            tCtx.lineWidth = 1.6;
+            tCtx.setLineDash([5, 3]);
+            tCtx.stroke();
+            tCtx.setLineDash([]);
+
+            digitizedPoints.forEach((p, idx) => {
+                const pt = geoToScreen(p.lat, p.lon);
+                tCtx.fillStyle = '#ec4899';
+                tCtx.beginPath(); tCtx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2); tCtx.fill();
+                tCtx.strokeStyle = '#ffffff'; tCtx.lineWidth = 1; tCtx.stroke();
+            });
+            tCtx.restore();
+        }
+
+        function drawMainGeodesicPins(tCtx) {
+            tCtx.save();
+            Object.values(VORTEX_NODES).forEach(node => {
+                const pt = geoToScreen(node.lat, node.lon);
+                tCtx.fillStyle = node.color;
+                tCtx.beginPath(); tCtx.arc(pt.x, pt.y, 6, 0, Math.PI * 2); tCtx.fill();
+                tCtx.strokeStyle = '#ffffff'; tCtx.lineWidth = 1.5; tCtx.stroke();
+            });
+
+            // Markeer Actieve Waarnemer extra duidelijk
+            const obsPt = geoToScreen(observer.lat, observer.lon);
+            tCtx.strokeStyle = '#00f5d4';
+            tCtx.lineWidth = 2;
+            tCtx.beginPath(); tCtx.arc(obsPt.x, obsPt.y, 12, 0, Math.PI * 2); tCtx.stroke();
+            tCtx.restore();
+        }
+
+        /**
+         * ============================================================================
+         * 9. FYSIEKE A. OTT NR. 573 COMPENSATIE-POLAIRPLANIMETER & GEKOPPELDE LOEP
+         * ============================================================================
+         */
+        function drawPhysicalOttPlanimeterAndLoupe(tCtx) {
+            tCtx.save();
+
+            // Schermpositie van de Volgloep (Tracer / Lupe) en het Poolanker (Pole Weight)
+            const loupeScreen = geoToScreen(planimeter.loupeLat, planimeter.loupeLon);
+            const poleBaseScreen = geoToScreen(planimeter.poleLat, planimeter.poleLon);
+
+            // Pas Kantel (Tilt), Zoom, Rotatie en Spiegeling toe rond de Volgloep of het Poolanker
+            const scale = planimeter.zoomScale;
+            const tiltFactorY = Math.cos(planimeter.tiltDeg * Math.PI / 180);
+            const rotRad = planimeter.rotationDeg * Math.PI / 180;
+
+            // Lengtes van Poolarm R (15,00 cm) en Rijarm L (16,67 cm) op het scherm
+            const R_px = 165 * scale;
+            const L_px = 185 * scale;
+
+            // Bereken vector van Loep naar Poolanker met rotatie & spiegeling
+            let dx = (poleBaseScreen.x - loupeScreen.x) * planimeter.mirrorX;
+            let dy = (poleBaseScreen.y - loupeScreen.y) * planimeter.mirrorY * tiltFactorY;
+
+            // Roteer poolpositie met de ingestelde Draaihoek (Azimut rotatie)
+            const rDx = dx * Math.cos(rotRad) - dy * Math.sin(rotRad);
+            const rDy = dx * Math.sin(rotRad) + dy * Math.cos(rotRad);
+
+            let dist = Math.hypot(rDx, rDy);
+            const maxReach = R_px + L_px - 12;
+            const minReach = Math.abs(R_px - L_px) + 12;
+            if (dist > maxReach) dist = maxReach;
+            if (dist < minReach) dist = minReach;
+
+            const angleToPole = Math.atan2(rDy, rDx);
+            const effPoleX = loupeScreen.x + Math.cos(angleToPole) * dist;
+            const effPoleY = loupeScreen.y + Math.sin(angleToPole) * dist;
+
+            // 2-Link Inverse Kinematica voor het Scharniergewricht (Knee / Carriage Joint)
+            const cosKnee = Math.max(-1, Math.min(1, (L_px * L_px + dist * dist - R_px * R_px) / (2 * L_px * dist)));
+            const kneeOffsetAngle = Math.acos(cosKnee) * planimeter.mirrorX * planimeter.mirrorY;
+            const jointAngle = angleToPole + kneeOffsetAngle;
+
+            const jointX = loupeScreen.x + Math.cos(jointAngle) * L_px;
+            const jointY = loupeScreen.y + Math.sin(jointAngle) * L_px;
+
+            // Update hoek-uitlezingen in het rechterpaneel
+            const alphaDeg = ((Math.atan2(jointY - effPoleY, jointX - effPoleX) * 180 / Math.PI) + 360) % 360;
+            const betaDeg = ((Math.atan2(loupeScreen.y - jointY, loupeScreen.x - jointX) * 180 / Math.PI) + 360) % 360;
+            document.getElementById('wheel1Val').textContent = `${alphaDeg.toFixed(1).replace('.', ',')}°`;
+            document.getElementById('wheel2Val').textContent = `${betaDeg.toFixed(1).replace('.', ',')}°`;
+
+            // 1. Teken Zwaar Messing Poolgewicht (Pole Weight)
+            tCtx.save();
+            tCtx.translate(effPoleX, effPoleY);
+            tCtx.scale(1, tiltFactorY);
+            tCtx.fillStyle = '#0f172a';
+            tCtx.beginPath(); tCtx.arc(0, 0, 22 * scale, 0, Math.PI * 2); tCtx.fill();
+            tCtx.strokeStyle = '#ffd166';
+            tCtx.lineWidth = 3 * scale;
+            tCtx.stroke();
+            tCtx.fillStyle = '#ffd166';
+            tCtx.beginPath(); tCtx.arc(0, 0, 6 * scale, 0, Math.PI * 2); tCtx.fill();
+            tCtx.restore();
+            tCtx.fillStyle = '#ffd166';
+            tCtx.font = 'bold 10px "Fira Code", monospace';
+            tCtx.fillText('POOLANKER (R=15,00cm)', effPoleX - 55, effPoleY - 24 * scale);
+
+            // 2. Teken Poolarm (R = 15,00 cm) van Poolgewicht naar Scharniergewricht
+            tCtx.strokeStyle = '#94a3b8';
+            tCtx.lineWidth = 6 * scale;
+            tCtx.lineCap = 'round';
+            tCtx.beginPath();
+            tCtx.moveTo(effPoleX, effPoleY);
+            tCtx.lineTo(jointX, jointY);
+            tCtx.stroke();
+            tCtx.strokeStyle = '#e2e8f0';
+            tCtx.lineWidth = 2 * scale;
+            tCtx.stroke();
+
+            // 3. Teken Rijarm (Tracer Arm L = 16,67 cm) van Scharniergewricht naar de Volgloep
+            tCtx.strokeStyle = '#cbd5e1';
+            tCtx.lineWidth = 7 * scale;
+            tCtx.beginPath();
+            tCtx.moveTo(jointX, jointY);
+            tCtx.lineTo(loupeScreen.x, loupeScreen.y);
+            tCtx.stroke();
+
+            // 4. Teken de A. Ott Nr. 573 Meetwagen & Integratietrommel bij het scharnier
+            const midCarriageX = jointX + (loupeScreen.x - jointX) * 0.28;
+            const midCarriageY = jointY + (loupeScreen.y - jointY) * 0.28;
+            const armAngle = Math.atan2(loupeScreen.y - jointY, loupeScreen.x - jointX);
+
+            tCtx.save();
+            tCtx.translate(midCarriageX, midCarriageY);
+            tCtx.rotate(armAngle);
+            tCtx.fillStyle = '#0f172a';
+            tCtx.strokeStyle = '#00f5d4';
+            tCtx.lineWidth = 2;
+            tCtx.fillRect(-26 * scale, -18 * scale * tiltFactorY, 52 * scale, 36 * scale * tiltFactorY);
+            tCtx.strokeRect(-26 * scale, -18 * scale * tiltFactorY, 52 * scale, 36 * scale * tiltFactorY);
+
+            // Witte Nonius-meetrol streepjes
+            tCtx.fillStyle = '#f8fafc';
+            tCtx.fillRect(-14 * scale, -14 * scale * tiltFactorY, 28 * scale, 10 * scale * tiltFactorY);
+            tCtx.fillStyle = '#ffd166';
+            tCtx.font = `bold ${Math.max(8, Math.round(9 * scale))}px "Fira Code", monospace`;
+            tCtx.fillText(`OTT 573`, -20 * scale, 12 * scale * tiltFactorY);
+            tCtx.restore();
+
+            // Scharnierknoop (Kogelgewricht)
+            tCtx.fillStyle = '#ffd166';
+            tCtx.beginPath();
+            tCtx.arc(jointX, jointY, 7 * scale, 0, Math.PI * 2);
+            tCtx.fill();
+            tCtx.strokeStyle = '#060911';
+            tCtx.lineWidth = 2;
+            tCtx.stroke();
+
+            // 5. DE GEKOPPELDE OPTISCHE VOLGLOEP (LUPE / TRACING MAGNIFIER) AAN HET UITEINDE VAN DE RIJARM
+            const loupeRadius = 36 * scale;
+            tCtx.save();
+            tCtx.translate(loupeScreen.x, loupeScreen.y);
+            tCtx.scale(1, tiltFactorY);
+
+            // Loep Glas-gloed
+            const lensGrad = tCtx.createRadialGradient(0, 0, 2, 0, 0, loupeRadius);
+            lensGrad.addColorStop(0, 'rgba(0, 245, 212, 0.08)');
+            lensGrad.addColorStop(0.75, 'rgba(0, 245, 212, 0.18)');
+            lensGrad.addColorStop(1, 'rgba(255, 209, 102, 0.45)');
+            tCtx.fillStyle = lensGrad;
+            tCtx.beginPath();
+            tCtx.arc(0, 0, loupeRadius, 0, Math.PI * 2);
+            tCtx.fill();
+
+            // Buitenste Gouden/Messing Loep-vatting
+            tCtx.strokeStyle = '#ffd166';
+            tCtx.lineWidth = 3.5 * scale;
+            tCtx.beginPath();
+            tCtx.arc(0, 0, loupeRadius, 0, Math.PI * 2);
+            tCtx.stroke();
+
+            // Graadverdeling op de Loep-ring
+            tCtx.strokeStyle = 'rgba(0, 245, 212, 0.7)';
+            tCtx.lineWidth = 1;
+            for (let a = 0; a < 360; a += 15) {
+                const rad = a * Math.PI / 180;
+                const rIn = (a % 45 === 0) ? loupeRadius * 0.78 : loupeRadius * 0.88;
+                tCtx.beginPath();
+                tCtx.moveTo(Math.cos(rad) * rIn, Math.sin(rad) * rIn);
+                tCtx.lineTo(Math.cos(rad) * loupeRadius, Math.sin(rad) * loupeRadius);
+                tCtx.stroke();
+            }
+
+            // Precisie Dradenkruis (Crosshair) + Rode Robijn-Kalibratiecirkel
+            tCtx.strokeStyle = 'rgba(0, 245, 212, 0.85)';
+            tCtx.lineWidth = 1.2;
+            tCtx.beginPath();
+            tCtx.moveTo(-loupeRadius * 0.8, 0); tCtx.lineTo(loupeRadius * 0.8, 0);
+            tCtx.moveTo(0, -loupeRadius * 0.8); tCtx.lineTo(0, loupeRadius * 0.8);
+            tCtx.stroke();
+
+            tCtx.strokeStyle = '#ff5c77';
+            tCtx.lineWidth = 1.8;
+            tCtx.beginPath();
+            tCtx.arc(0, 0, 6 * scale, 0, Math.PI * 2);
+            tCtx.stroke();
+
+            tCtx.restore();
+
+            // Label bij de Loep op de kaart
+            tCtx.fillStyle = '#ffd166';
+            tCtx.font = 'bold 10px "Fira Code", monospace';
+            tCtx.fillText(`🔍 VOLGLOEP (${planimeter.loupeMagnification.toFixed(1)}×) — SLEEP HIER`, loupeScreen.x - 65, loupeScreen.y + loupeRadius * tiltFactorY + 14);
+
+            tCtx.restore();
+        }
+
+        /**
+         * Teken de Gekoppelde Optische Loep-Inspector (128x128 HUD in het rechterpaneel)
+         * Vergroot exact wat er zich onder het dradenkruis van de rijarm-loep bevindt!
+         */
+        function renderCoupledLoupeInspector() {
+            const w = loupeCanvas.width;
+            const h = loupeCanvas.height;
+            lctx.clearRect(0, 0, w, h);
+
+            const loupePt = geoToScreen(planimeter.loupeLat, planimeter.loupeLon);
+            const mag = planimeter.loupeMagnification;
+
+            // Kopieer en vergroot een uitsnede rond loupePt van het hoofdcanvas (zonder het planimeter-instrument zelf te dupliceren)
+            const dpr = window.devicePixelRatio || 1;
+            const srcRadiusX = (w / 2) / mag;
+            const srcRadiusY = (h / 2) / mag;
+
+            lctx.save();
+            lctx.beginPath();
+            lctx.arc(w / 2, h / 2, w / 2 - 2, 0, Math.PI * 2);
+            lctx.clip();
+
+            // Pas eventuele spiegeling van het optische pad toe
+            lctx.translate(w / 2, h / 2);
+            lctx.scale(planimeter.mirrorX, planimeter.mirrorY);
+            lctx.translate(-w / 2, -h / 2);
+
+            lctx.drawImage(
+                canvas,
+                (loupePt.x - srcRadiusX) * dpr,
+                (loupePt.y - srcRadiusY) * dpr,
+                (srcRadiusX * 2) * dpr,
+                (srcRadiusY * 2) * dpr,
+                0, 0, w, h
+            );
+
+            // Optische dradenkruis & Fraunhofer 589nm micrometer-cirkels in het loepvenster
+            lctx.setTransform(1, 0, 0, 1, 0, 0);
+            lctx.strokeStyle = 'rgba(0, 245, 212, 0.8)';
+            lctx.lineWidth = 1;
+            lctx.beginPath();
+            lctx.moveTo(0, h / 2); lctx.lineTo(w, h / 2);
+            lctx.moveTo(w / 2, 0); lctx.lineTo(w / 2, h);
+            lctx.stroke();
+
+            lctx.strokeStyle = '#ff5c77';
+            lctx.lineWidth = 1.5;
+            lctx.beginPath();
+            lctx.arc(w / 2, h / 2, 12, 0, Math.PI * 2);
+            lctx.stroke();
+
+            lctx.strokeStyle = 'rgba(255, 209, 102, 0.55)';
+            lctx.beginPath();
+            lctx.arc(w / 2, h / 2, 36, 0, Math.PI * 2);
+            lctx.stroke();
+            lctx.restore();
+
+            // Update de Loep tekstuele uitlezing (φ, λ, RA, Dec & Horizon status)
+            const ns = planimeter.loupeLat >= 0 ? 'N' : 'S';
+            const ew = planimeter.loupeLon >= 0 ? 'E' : 'W';
+            document.getElementById('loupeGeoReadout').textContent =
+                `φ ${Math.abs(planimeter.loupeLat).toFixed(4)}° ${ns}, λ ${Math.abs(planimeter.loupeLon).toFixed(4)}° ${ew}`;
+
+            const skyEq = geoToSkyEquivalent(planimeter.loupeLat, planimeter.loupeLon);
+            const hData = computeCelestialHorizonData(skyEq.raDeg / 15.0, skyEq.decDeg, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
+
+            document.getElementById('loupeSkyReadout').textContent =
+                `RA ${skyEq.raDeg.toFixed(2)}° | Dec ${skyEq.decDeg >= 0 ? '+' : ''}${skyEq.decDeg.toFixed(2)}°`;
+            document.getElementById('loupeHorizonStatus').textContent =
+                `h = ${hData.altDeg >= 0 ? '+' : ''}${hData.altDeg.toFixed(1)}° (${hData.isAboveHorizon ? 'BOVEN HORIZON' : 'ONDER HORIZON'})`;
+            document.getElementById('loupeHorizonStatus').className =
+                hData.isAboveHorizon ? 'text-[#00f5d4] font-bold text-[10px]' : 'text-rose-400 font-bold text-[10px]';
+        }
+
+        /**
+         * ============================================================================
+         * 10. PLANIMETER TRANSFORMATIE, AUTO-TRACE & DIGITIZER BEREKENINGEN
+         * ============================================================================
+         */
+        function updatePlanimeterTransform() {
+            planimeter.tiltDeg = parseFloat(document.getElementById('planTiltSlider').value);
+            planimeter.zoomScale = parseFloat(document.getElementById('planZoomSlider').value);
+            planimeter.rotationDeg = parseFloat(document.getElementById('planRotSlider').value);
+            planimeter.loupeMagnification = parseFloat(document.getElementById('loupeMagSlider').value);
+
+            document.getElementById('planTiltVal').textContent = `${planimeter.tiltDeg}°`;
+            document.getElementById('planZoomVal').textContent = `${planimeter.zoomScale.toFixed(2).replace('.', ',')}×`;
+            document.getElementById('planRotVal').textContent = `${planimeter.rotationDeg}°`;
+            document.getElementById('loupeMagVal').textContent = `${planimeter.loupeMagnification.toFixed(1).replace('.', ',')}×`;
+            document.getElementById('loupeZoomBadge').textContent = `Lens ${planimeter.loupeMagnification.toFixed(1).replace('.', ',')}× | Fraunhofer 589nm`;
+
+            renderCanvas();
+        }
+
+        function togglePlanimeterMirror(axis) {
+            if (axis === 'x') {
+                planimeter.mirrorX *= -1;
+                const btn = document.getElementById('btnMirrorX');
+                btn.textContent = planimeter.mirrorX === 1 ? '↔️ Spiegelen X (Pool R/L): NORMAAL' : '↔️ Spiegelen X: GESPIEGELD';
+            } else {
+                planimeter.mirrorY *= -1;
+                const btn = document.getElementById('btnMirrorY');
+                btn.textContent = planimeter.mirrorY === 1 ? '↕️ Spiegelen Y (Inversie): NORMAAL' : '↕️ Spiegelen Y: GEÏNVERTEERD';
+            }
+            renderCanvas();
+        }
+
+        function resetPlanimeterTransform() {
+            planimeter.tiltDeg = 22;
+            planimeter.zoomScale = 1.0;
+            planimeter.rotationDeg = 0;
+            planimeter.mirrorX = 1;
+            planimeter.mirrorY = 1;
+            planimeter.loupeMagnification = 4.0;
+            document.getElementById('planTiltSlider').value = 22;
+            document.getElementById('planZoomSlider').value = 1.0;
+            document.getElementById('planRotSlider').value = 0;
+            document.getElementById('loupeMagSlider').value = 4.0;
+            updatePlanimeterTransform();
+        }
+
+        function centerLoupeOnAldebaran() {
+            planimeter.loupeLat = 46.85;
+            planimeter.loupeLon = 2.35;
+            renderCanvas();
+        }
+
+        let autoTraceInterval = null;
+        function togglePlanimeterAutoTrace() {
+            planimeter.autoTracing = !planimeter.autoTracing;
+            const btn = document.getElementById('btnAutoTrace');
+            if (planimeter.autoTracing) {
+                btn.textContent = '⏹ Stop Contour';
+                btn.className = 'flex-1 py-1 px-2 rounded bg-rose-600 text-white font-bold text-[10px]';
+                autoTraceInterval = setInterval(() => {
+                    if (digitizedPoints.length < 2) return;
+                    planimeter.traceAngle = (planimeter.traceAngle + 0.04) % digitizedPoints.length;
+                    const idx = Math.floor(planimeter.traceAngle);
+                    const nextIdx = (idx + 1) % digitizedPoints.length;
+                    const frac = planimeter.traceAngle - idx;
+
+                    const p1 = digitizedPoints[idx];
+                    const p2 = digitizedPoints[nextIdx];
+                    planimeter.loupeLat = p1.lat + (p2.lat - p1.lat) * frac;
+                    planimeter.loupeLon = p1.lon + (p2.lon - p1.lon) * frac;
+                    stepPlanimeter(0.05);
+                    renderCanvas();
+                }, 40);
+            } else {
+                btn.textContent = '🔄 Auto-Contour Volgen';
+                btn.className = 'flex-1 py-1 px-2 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400 text-[#ffd166] font-bold text-[10px]';
+                clearInterval(autoTraceInterval);
+            }
+        }
+
+        function togglePlanimeterInstrument() {
+            layers.planimeterOnMap = !layers.planimeterOnMap;
+            const btn = document.getElementById('btnTogglePlanimeterOnMap');
+            btn.textContent = layers.planimeterOnMap ? '🔍 OTT 573 + LOEP: AAN' : '🔍 OTT 573 + LOEP: UIT';
+            renderCanvas();
+        }
+
+        function stepPlanimeter(delta) {
+            planimeter.wheelCount = +(planimeter.wheelCount + delta * 0.015).toFixed(3);
+            const ha = (planimeter.wheelCount * 4258.042).toFixed(1);
+            document.getElementById('wheel3Val').textContent = planimeter.wheelCount.toFixed(3).replace('.', ',');
+            document.getElementById('haReadout').textContent = `${Number(ha).toLocaleString('nl-NL')} ha`;
+        }
+
+        /**
+         * ============================================================================
+         * 11. DIGITIZER, SFERISCHE OPPERVLAKTE & GEOJSON EXPORT
+         * ============================================================================
+         */
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const R = 6371.0;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function updateDigitizerMetrics() {
+            document.getElementById('digCountTxt').textContent = `${digitizedPoints.length} punten`;
+            if (digitizedPoints.length < 2) {
+                document.getElementById('digPerimTxt').textContent = '0,00 km';
+                document.getElementById('digAreaTxt').textContent = '0,00 km²';
+                return;
+            }
+            let perim = 0;
+            for (let i = 0; i < digitizedPoints.length; i++) {
+                const p1 = digitizedPoints[i];
+                const p2 = digitizedPoints[(i + 1) % digitizedPoints.length];
+                perim += haversineKm(p1.lat, p1.lon, p2.lat, p2.lon);
+            }
+            // Sferische Shoelace benadering voor oppervlak in km²
+            let areaDeg2 = 0;
+            if (digitizedPoints.length >= 3) {
+                for (let i = 0; i < digitizedPoints.length; i++) {
+                    const p1 = digitizedPoints[i];
+                    const p2 = digitizedPoints[(i + 1) % digitizedPoints.length];
+                    areaDeg2 += (p1.lon * p2.lat - p2.lon * p1.lat);
+                }
+                areaDeg2 = Math.abs(areaDeg2) / 2.0;
+            }
+            const cosMeanLat = Math.cos(46.0 * Math.PI / 180);
+            const areaKm2 = areaDeg2 * 111.32 * 111.32 * cosMeanLat;
+
+            document.getElementById('digPerimTxt').textContent = `${perim.toFixed(2).replace('.', ',')} km`;
+            document.getElementById('digAreaTxt').textContent = `${areaKm2.toFixed(2).replace('.', ',')} km²`;
+        }
+
+        function toggleDigitizeMode() {
+            digitizedMode = !digitizedMode;
+            const btn = document.getElementById('btnDigitizeMode');
+            btn.textContent = digitizedMode ? '📍 Klik-Analyse: ACTIEF' : '📍 Klik-Analyse: UIT';
+            btn.className = digitizedMode
+                ? 'px-2 py-1.5 rounded bg-[#00f5d4] text-slate-950 font-bold'
+                : 'px-2 py-1.5 rounded bg-slate-800 border border-slate-600 text-slate-200 font-bold hover:border-[#00f5d4]';
+        }
+
+        function clearDigitizedNodes() {
+            digitizedPoints = [];
+            updateDigitizerMetrics();
+            renderCanvas();
+        }
+
+        function buildGeoJSONObject() {
+            const sol = computeSolarGeodesy(currentSolarDay);
+            const features = [];
+
+            // 1. Geanalyseerde Polygoon
+            if (digitizedPoints.length >= 3) {
+                const coords = digitizedPoints.map(p => [+(p.lon.toFixed(5)), +(p.lat.toFixed(5))]);
+                coords.push(coords[0]);
+                features.push({
+                    type: "Feature",
+                    properties: {
+                        name: "Stier / VORTEX Geodetische Analyse Polygoon",
+                        observer_place: observer.name,
+                        observer_lat: observer.lat,
+                        observer_lon: observer.lon,
+                        tropical_year_doy: currentSolarDay,
+                        solar_longitude_deg: +(sol.lambdaDeg.toFixed(3)),
+                        ott_573_nonius: planimeter.wheelCount
+                    },
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [coords]
+                    }
+                });
+            }
+
+            // 2. Individuele Knooppunten met hun actuele Horizon-status
+            digitizedPoints.forEach((p, idx) => {
+                const skyEq = geoToSkyEquivalent(p.lat, p.lon);
+                const hInfo = computeCelestialHorizonData(skyEq.raDeg / 15.0, skyEq.decDeg, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
+                features.push({
+                    type: "Feature",
+                    properties: {
+                        index: idx + 1,
+                        name: p.name || `Analyse-Knooppunt ${idx + 1}`,
+                        lat_deg: +(p.lat.toFixed(5)),
+                        lon_deg: +(p.lon.toFixed(5)),
+                        ra_deg: +(skyEq.raDeg.toFixed(4)),
+                        dec_deg: +(skyEq.decDeg.toFixed(4)),
+                        altitude_deg: +(hInfo.altDeg.toFixed(2)),
+                        horizon_status: hInfo.isAboveHorizon ? "BOVEN_HORIZON" : "ONDER_HORIZON",
+                        rise_cet: hInfo.riseStr,
+                        set_cet: hInfo.setStr
+                    },
+                    geometry: {
+                        type: "Point",
+                        coordinates: [+(p.lon.toFixed(5)), +(p.lat.toFixed(5))]
+                    }
+                });
+            });
+
+            return {
+                type: "FeatureCollection",
+                metadata: {
+                    generator: "VORTEX 245,91° Geodetische Cockpit & A. Ott Nr. 573 Planimeter",
+                    tropical_solar_year_days: 365.2422,
+                    active_doy: currentSolarDay,
+                    observer: observer
+                },
+                features
+            };
+        }
+
+        function exportGeoJSONFile() {
+            const dataStr = JSON.stringify(buildGeoJSONObject(), null, 2);
+            const blob = new Blob([dataStr], { type: "application/geo+json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vortex_stier_analyse_doy${Math.round(currentSolarDay)}.geojson`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function toggleGeoJsonModal() {
+            const modal = document.getElementById('geoJsonModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('geoJsonTextarea').value = JSON.stringify(buildGeoJSONObject(), null, 2);
+            }
+        }
+
+        function copyGeoJsonText() {
+            const ta = document.getElementById('geoJsonTextarea');
+            ta.select();
+            document.execCommand('copy');
+            document.getElementById('btnCopyGeoJson').textContent = '✅ Gekopieerd!';
+            setTimeout(() => {
+                document.getElementById('btnCopyGeoJson').textContent = '📋 Kopieer naar Klembord';
+            }, 1800);
+        }
+
+        /**
+         * ============================================================================
+         * 12. MUIS-INTERACTIE: SLEEP DE VOLGLOEP, HET POOLANKER, HET BEELD OF DE KAART
+         * ============================================================================
+         */
+        let dragTarget = null; // 'loupe' | 'pole' | 'underlay' | 'map'
+        let dragStartX = 0;
+        let dragStartY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            if (digitizedMode) {
+                const g = screenToGeo(mx, my);
+                digitizedPoints.push({
+                    name: `Punt ${digitizedPoints.length + 1}`,
+                    lat: g.lat,
+                    lon: g.lon
+                });
+                planimeter.loupeLat = g.lat;
+                planimeter.loupeLon = g.lon;
+                updateDigitizerMetrics();
+                renderCanvas();
+                return;
+            }
+
+            if (layers.planimeterOnMap) {
+                const lPt = geoToScreen(planimeter.loupeLat, planimeter.loupeLon);
+                if (Math.hypot(mx - lPt.x, my - lPt.y) < 42 * planimeter.zoomScale) {
+                    dragTarget = 'loupe';
+                    return;
+                }
+                const pPt = geoToScreen(planimeter.poleLat, planimeter.poleLon);
+                if (Math.hypot(mx - pPt.x, my - pPt.y) < 26 * planimeter.zoomScale) {
+                    dragTarget = 'pole';
+                    return;
+                }
+            }
+
+            if (underlay.dragMode && underlay.img) {
+                dragTarget = 'underlay';
+            } else {
+                dragTarget = 'map';
+            }
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            dragTarget = null;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const geo = screenToGeo(mx, my);
+
+            if (dragTarget === 'loupe') {
+                planimeter.loupeLat = geo.lat;
+                planimeter.loupeLon = geo.lon;
+                stepPlanimeter(0.08);
+                renderCanvas();
+            } else if (dragTarget === 'pole') {
+                planimeter.poleLat = geo.lat;
+                planimeter.poleLon = geo.lon;
+                renderCanvas();
+            } else if (dragTarget === 'underlay') {
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                const cosLat = Math.cos(camCenterLat * Math.PI / 180);
+                underlay.lon += dx / (camZoom * cosLat);
+                underlay.lat -= dy / camZoom;
+                renderCanvas();
+            } else if (dragTarget === 'map') {
+                const dx = e.clientX - dragStartX;
+                const dy = e.clientY - dragStartY;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                const cosLat = Math.cos(camCenterLat * Math.PI / 180);
+                camCenterLon -= dx / (camZoom * cosLat);
+                camCenterLat += dy / camZoom;
+                renderCanvas();
+            }
+
+            // Update Bovenste Cursor-balk met Breedte/Lengtegraad én Hemelhoogte boven/onder de horizon
+            const ns = geo.lat >= 0 ? 'N' : 'S';
+            const ew = geo.lon >= 0 ? 'E' : 'W';
+            document.getElementById('cursorCoordReadout').textContent =
+                `φ ${Math.abs(geo.lat).toFixed(4)}° ${ns}, λ ${Math.abs(geo.lon).toFixed(4)}° ${ew}`;
+
+            const skyEq = geoToSkyEquivalent(geo.lat, geo.lon);
+            const hData = computeCelestialHorizonData(skyEq.raDeg / 15.0, skyEq.decDeg, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
+            const hSign = hData.altDeg >= 0 ? '+' : '';
+            document.getElementById('cursorSkyReadout').textContent =
+                `RA ${(skyEq.raDeg / 15).toFixed(2)}h, Dec ${skyEq.decDeg >= 0 ? '+' : ''}${skyEq.decDeg.toFixed(1)}° (h = ${hSign}${hData.altDeg.toFixed(1)}° ${hData.isAboveHorizon ? 'BOVEN HORIZON' : 'ONDER HORIZON'})`;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.12 : 0.89;
+            camZoom = Math.max(12, Math.min(180, camZoom * factor));
+            renderCanvas();
+        }, { passive: false });
+
+        /**
+         * ============================================================================
+         * 13. IN-/UITKLAPPEN VAN PANELEN EN OVERIGE KNOPPEN
+         * ============================================================================
+         */
+        function toggleSection(secId) {
+            const el = document.getElementById(secId);
+            const icon = document.getElementById(`icon-${secId}`);
+            if (!el) return;
+            el.classList.toggle('hidden');
+            if (icon) icon.textContent = el.classList.contains('hidden') ? '▶' : '▼';
+        }
+
+        function toggleTopCalendar() {
+            const el = document.getElementById('topCalendarCollapsible');
+            const btn = document.getElementById('btnCollapseTop');
+            el.classList.toggle('hidden');
+            btn.textContent = el.classList.contains('hidden') ? '▼ Kalenderbalk' : '▲ Kalenderbalk';
+            setTimeout(resizeCanvas, 50);
+        }
+
+        function toggleLeftPanel() {
+            const p = document.getElementById('leftCockpitPanel');
+            const btn = document.getElementById('fabLeftPanel');
+            p.classList.toggle('hidden');
+            btn.textContent = p.classList.contains('hidden') ? '▶ Open Links' : '◀ Sluit Links';
+        }
+
+        function toggleRightPanel() {
+            const p = document.getElementById('rightCockpitPanel');
+            const btn = document.getElementById('fabRightPanel');
+            p.classList.toggle('hidden');
+            btn.textContent = p.classList.contains('hidden') ? '◀ Open Rechts' : 'Sluit Rechts ▶';
+        }
+
+        function toggleAllSidePanels() {
+            const l = document.getElementById('leftCockpitPanel');
+            const r = document.getElementById('rightCockpitPanel');
+            const btn = document.getElementById('togglePanelsBtn');
+            const hideBoth = !l.classList.contains('hidden') || !r.classList.contains('hidden');
+            if (hideBoth) {
+                l.classList.add('hidden');
+                r.classList.add('hidden');
+                btn.textContent = '👁️ Alle Panelen: UIT';
+            } else {
+                l.classList.remove('hidden');
+                r.classList.remove('hidden');
+                btn.textContent = '👁️ Alle Panelen: AAN';
+            }
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            const btns = {
+                hybrid: document.getElementById('modeHybridBtn'),
+                geo: document.getElementById('modeGeoBtn'),
+                sky: document.getElementById('modeSkyBtn')
+            };
+            Object.entries(btns).forEach(([k, b]) => {
+                b.className = (k === mode)
+                    ? 'px-2.5 py-1 rounded font-bold bg-[#00f5d4] text-slate-950 transition'
+                    : 'px-2.5 py-1 rounded font-medium text-slate-300 hover:bg-slate-800 transition';
+            });
+            renderCanvas();
+        }
+
+        function toggleLayer(key) {
+            layers[key] = !layers[key];
+            renderCanvas();
+        }
+
+        // Sliders koppelen
+        document.getElementById('solarDaySlider').addEventListener('input', (e) => setSolarDay(e.target.value));
+        document.getElementById('obsHourSlider').addEventListener('input', (e) => setObsHour(e.target.value));
+
+        let isSolarPlaying = false;
+        let solarTimer = null;
+        document.getElementById('playSolarBtn').addEventListener('click', function() {
+            isSolarPlaying = !isSolarPlaying;
+            if (isSolarPlaying) {
+                this.textContent = '⏸ Stop';
+                solarTimer = setInterval(() => {
+                    let next = currentSolarDay + 0.5;
+                    if (next > TROPICAL_YEAR_DAYS) next = 0;
+                    setSolarDay(next);
+                }, 45);
+            } else {
+                this.textContent = '▶ Jaar';
+                clearInterval(solarTimer);
+            }
+        });
+
+        window.onload = function() {
+            buildMonthsBar();
+            resizeCanvas();
+            updateAllCalculationsAndUI();
+        };
+    </script>
+</body>
+</html>
