@@ -97,27 +97,44 @@
     <!-- ========================================================================= -->
     <header id="solarYearHeader" class="w-full vortex-panel z-30 shrink-0 border-t-0 border-x-0 px-3.5 py-2 transition-all">
         <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
                 <div class="w-2.5 h-2.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_#ffd166] animate-pulse"></div>
                 <h1 class="text-xs md:text-sm font-bold tracking-wider uppercase text-white">
-                    TROPISCH ZONNEJAAR (365,2422d) • ZON, MAAN, PLANETEN, POOLANKERS & MULTI-LOADER (JPG/SVG/STL/GEOJSON)
+                    TROPISCH ZONNEJAAR (365,2422d) • 3000 V.CHR.–3000 N.CHR. • MULTI-LOADER (PNG/JPG/SVG/STL/GEOJSON)
                 </h1>
+                <!-- Historische Jaartallen Kiezer (-3000 v.Chr. t/m +3000 n.Chr.) -->
                 <select id="obsYearSelect" onchange="setObsYear(this.value)" class="mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-[#ffd166] border border-amber-400/50 outline-none">
-                    <option value="2025">Jaar 2025</option>
-                    <option value="2026" selected>Jaar 2026 (Eclips/Lock)</option>
-                    <option value="2027">Jaar 2027</option>
-                    <option value="2028">Jaar 2028</option>
-                    <option value="2030">Jaar 2030</option>
+                    <option value="-3000">3000 v.Chr. (Stier Lente-Equinox / Aldebaran)</option>
+                    <option value="-2560">2560 v.Chr. (Gizeh / Piramide Tijdperk)</option>
+                    <option value="-2000">2000 v.Chr. (Einde Stier-Tijdperk)</option>
+                    <option value="-1600">1600 v.Chr. (Nebra Hemelschijf / Bronstijd)</option>
+                    <option value="-500">500 v.Chr. (Babylonische Astrometrie)</option>
+                    <option value="-130">130 v.Chr. (Hipparchus Precessie-catalogus)</option>
+                    <option value="1">1 n.Chr. (Begin Jaartelling)</option>
+                    <option value="1054">1054 n.Chr. (Supernova M1 Krabnevel 4 Juli)</option>
+                    <option value="1600">1600 n.Chr. (Tycho Brahe / Johannes Kepler)</option>
+                    <option value="2000">2000 n.Chr. (Epoch J2000.0)</option>
+                    <option value="2025">2025 n.Chr.</option>
+                    <option value="2026" selected>2026 n.Chr. (Eclips 12/8 & BepiColombo Lock)</option>
+                    <option value="2028">2028 n.Chr.</option>
+                    <option value="2500">2500 n.Chr. (Toekomstige Precessie)</option>
+                    <option value="3000">3000 n.Chr.</option>
                 </select>
+                <!-- Vrij Jaar-invoerveld (-3000 tot +3000) -->
+                <div class="flex items-center bg-slate-950 border border-cyan-500/40 rounded px-1.5 py-0.5 mono text-[10px]">
+                    <span class="text-slate-400 mr-1">Jaar:</span>
+                    <input type="number" id="customYearInput" min="-3000" max="3000" step="1" value="2026" onchange="setObsYear(this.value)" class="w-16 bg-transparent text-[#00f5d4] font-bold outline-none text-center">
+                    <span id="eraBadge" class="text-[9px] text-amber-300 ml-1">n.Chr.</span>
+                </div>
             </div>
 
-            <!-- Snelknoppen Zonnejaar, Master Alle Overlays Uit & Paneel-Bediening -->
+            <!-- Snelknoppen Zonnejaar, PNG Snapshot, Master Alle Overlays Uit & Paneel-Bediening -->
             <div class="flex flex-wrap items-center gap-1 mono text-[11px]">
+                <button onclick="setHistoricalEraPreset(-3000, 79.25)" class="px-2 py-0.5 rounded bg-amber-950/90 hover:bg-amber-800 text-[#ffd166] border border-amber-400 font-bold transition" title="Spring naar 3000 v.Chr. Lente-Equinox in Stier">
+                    🏛️ 3000 v.Chr.
+                </button>
                 <button onclick="setSolarDay(79.25)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-500/40 transition">
                     🌱 20 Mrt
-                </button>
-                <button onclick="setSolarDay(140.5)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-amber-900/70 text-amber-300 border border-amber-500/40 transition">
-                    🐂 21 Mei
                 </button>
                 <button onclick="setSolarDay(224.5)" class="px-2 py-0.5 rounded bg-rose-950/90 hover:bg-rose-800 text-rose-200 border border-rose-400 font-bold transition">
                     🌑 12 Aug Eclips
@@ -125,8 +142,8 @@
                 <button onclick="setSolarDay(289.85)" class="px-2 py-0.5 rounded bg-cyan-950/90 hover:bg-cyan-800 text-[#00f5d4] border border-[#00f5d4] font-bold transition">
                     ⚡ 16 Okt Lock
                 </button>
-                <button onclick="setSolarDay(305.5)" class="px-2 py-0.5 rounded bg-purple-950/90 hover:bg-purple-800 text-purple-200 border border-purple-400 font-semibold transition">
-                    🔭 1 Nov
+                <button onclick="exportCanvasToPNG()" class="px-2 py-0.5 rounded bg-indigo-950/90 hover:bg-indigo-800 text-indigo-200 border border-indigo-400 font-bold transition" title="Exporteer huidige kaart + loep als hoge-resolutie .PNG afbeelding">
+                    📸 Export .PNG
                 </button>
                 <button onclick="toggleMasterAllOverlays()" id="btnMasterOverlays" class="ml-1 px-2.5 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white border border-rose-300 font-bold shadow-[0_0_12px_rgba(244,63,94,0.5)] transition">
                     🚫 ALLE OVERLAYS UIT
@@ -145,7 +162,7 @@
             <!-- Alle 12 Maanden (JAN t/m DEC) -->
             <div id="monthsGrid" class="grid grid-cols-6 lg:grid-cols-12 gap-1"></div>
 
-            <!-- Dag-Slider + Uur-Slider (UTC/CET) + Diepe Tijd Δt + Live Zonnejaar, Maan & Venus Telemetrie -->
+            <!-- Dag-Slider + Uur-Slider (UTC/CET) + Historische Jaar-Slider (-3000 tot +3000) + Telemetrie -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 items-center bg-slate-950/90 p-2 rounded-lg border border-slate-800">
                 <!-- Dag in het Zonnejaar (3 kol) -->
                 <div class="lg:col-span-3 flex flex-col gap-0.5">
@@ -164,7 +181,7 @@
                 </div>
 
                 <!-- Tijdstip op de Dag (00:00 - 24:00 CET) & Sterrentijd (3 kol) -->
-                <div class="lg:col-span-3 flex flex-col gap-0.5 border-l border-slate-800 pl-2">
+                <div class="lg:col-span-2 flex flex-col gap-0.5 border-l border-slate-800 pl-2">
                     <div class="flex justify-between items-center text-[11px] mono">
                         <span class="text-cyan-300 font-semibold">🕒 CET: <strong id="obsTimeReadout" class="text-white">20:34</strong></span>
                         <span class="text-purple-300">LST: <strong id="lstReadout" class="text-[#ffd166]">22h 14m</strong></span>
@@ -172,24 +189,23 @@
                     <input type="range" id="obsHourSlider" min="0" max="24" step="0.02" value="20.566" class="w-full accent-[#00f5d4] bg-slate-800 h-1.5 rounded cursor-pointer my-1">
                     <div class="flex justify-between text-[9px] mono text-slate-400">
                         <button onclick="setObsHour(0)" class="hover:text-white">00:00</button>
-                        <button onclick="setObsHour(8)" class="hover:text-white">08:00</button>
                         <button onclick="setObsHour(12)" class="hover:text-white">12:00</button>
-                        <button onclick="setObsHour(20.566)" class="text-[#00f5d4] hover:underline">20:34 Lock</button>
-                        <button onclick="setObsHour(23.99)" class="hover:text-white">24:00</button>
+                        <button onclick="setObsHour(20.566)" class="text-[#00f5d4] hover:underline">20:34</button>
                     </div>
                 </div>
 
-                <!-- Diepe Tijd Kinematica Slider Δt voor Gaia DR3 Eigenbewegingen (2 kol) -->
-                <div class="lg:col-span-2 flex flex-col gap-0.5 border-l border-slate-800 pl-2">
+                <!-- Historisch Jaartal Slider (-3000 v.Chr. tot +3000 n.Chr.) + Precessie (3 kol) -->
+                <div class="lg:col-span-3 flex flex-col gap-0.5 border-l border-slate-800 pl-2">
                     <div class="flex justify-between items-center text-[10px] mono">
-                        <span class="text-amber-300">✨ Ster Δt:</span>
-                        <strong id="deepTimeReadout" class="text-white">0 jr (J2026)</strong>
+                        <span class="text-amber-300">🏛️ Historisch Jaar:</span>
+                        <strong id="histYearSliderReadout" class="text-[#ffd166]">2026 n.Chr. (Δψ +0,4°)</strong>
                     </div>
-                    <input type="range" id="deepTimeSlider" min="-50000" max="100000" step="500" value="0" oninput="setDeepTimeYears(this.value)" class="w-full accent-amber-400 bg-slate-800 h-1.5 rounded cursor-pointer my-1">
+                    <input type="range" id="histYearSlider" min="-3000" max="3000" step="1" value="2026" oninput="setObsYear(this.value)" class="w-full accent-amber-400 bg-slate-800 h-1.5 rounded cursor-pointer my-1">
                     <div class="flex justify-between text-[9px] mono text-slate-400">
-                        <button onclick="setDeepTimeYears(-25000)" class="hover:text-white">-25k</button>
-                        <button onclick="setDeepTimeYears(0)" class="text-amber-300 hover:underline">Nu (0)</button>
-                        <button onclick="setDeepTimeYears(50000)" class="hover:text-white">+50k jr</button>
+                        <button onclick="setObsYear(-3000)" class="text-amber-300 hover:underline">3000 v.Chr.</button>
+                        <button onclick="setObsYear(-1600)" class="hover:text-white">1600 v.Chr.</button>
+                        <button onclick="setObsYear(1054)" class="hover:text-white">1054 (M1)</button>
+                        <button onclick="setObsYear(2026)" class="text-[#00f5d4] hover:underline">2026 n.Chr.</button>
                     </div>
                 </div>
 
@@ -350,46 +366,46 @@
                         </button>
                         <button onclick="toggleLayer('vortex')" id="btnToggleVortex" class="px-1.5 py-1 rounded bg-amber-500/20 border border-amber-400 text-amber-200 font-bold text-[10px]">
                             ⚡ 245,91°: AAN
-                        </button>
-                        <button onclick="toggleLayer('taurusGeo')" id="btnToggleTaurus" class="px-1.5 py-1 rounded bg-cyan-500/20 border border-cyan-400 text-cyan-200 font-bold text-[10px]">
-                            🐂 Stier: AAN
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTIE 2: MULTI-FORMAAT BESTANDSLOADER ONDER OVERLAY (JPG, PNG, SVG, STL, GEOJSON, JSON) -->
+            <!-- SECTIE 2: MULTI-FORMAAT BESTANDSLOADER ONDER OVERLAY (PNG, JPG, SVG, STL, GEOJSON, JSON) -->
             <div>
                 <div onclick="toggleSection('secUnderlay')" class="vortex-header px-3 py-2 flex items-center justify-between">
-                    <span class="mono text-xs font-bold text-[#ffd166] uppercase">📂 2. MULTI-LOADER: JPG / SVG / STL / GEOJSON / JSON</span>
+                    <span class="mono text-xs font-bold text-[#ffd166] uppercase">📂 2. MULTI-LOADER: PNG / JPG / SVG / STL / GEOJSON</span>
                     <span id="icon-secUnderlay" class="mono text-xs text-[#ffd166]">▼</span>
                 </div>
                 <div id="secUnderlay" class="p-3 space-y-2.5 text-xs mono">
                     <div class="bg-slate-950/90 p-2 rounded border border-indigo-500/40 space-y-1.5">
                         <div class="text-[10px] text-indigo-200 font-semibold">
-                            Laad bestanden onder de geodetische overlay (of sleep ze op de kaart):
+                            Laad PNG, JPG, SVG, 3D STL of GeoJSON onder de overlay (of sleep op kaart):
                         </div>
                         <div class="flex gap-1.5">
                             <label class="flex-1 cursor-pointer px-2 py-2 rounded bg-indigo-950 hover:bg-indigo-800 border border-indigo-400 text-white text-center font-bold transition text-[11px]">
-                                📥 Kies JPG / SVG / STL / GeoJSON / JSON
-                                <input type="file" id="multiFileInput" accept=".jpg,.jpeg,.png,.webp,.svg,.stl,.geojson,.json" multiple class="hidden" onchange="handleMultiFormatUpload(event)">
+                                📥 Kies .PNG / .JPG / .SVG / .STL / .GeoJSON
+                                <input type="file" id="multiFileInput" accept=".png,.jpg,.jpeg,.webp,.svg,.stl,.geojson,.json,image/png,image/jpeg,image/svg+xml" multiple class="hidden" onchange="handleMultiFormatUpload(event)">
                             </label>
                         </div>
 
-                        <!-- Ingebouwde Presets om direct zonder extern bestand te testen -->
-                        <div class="grid grid-cols-3 gap-1 pt-1">
-                            <button onclick="loadBuiltinStarChartUnderlay()" class="px-1.5 py-1 rounded bg-amber-950/80 hover:bg-amber-800 border border-amber-400/70 text-[#ffd166] font-bold text-[10px]">
-                                🌟 Hyaden JPG
+                        <!-- Ingebouwde Presets (incl. Hyaden Sterrenkaart PNG, Transparante V-Asterisme PNG, STL & SVG) -->
+                        <div class="grid grid-cols-2 gap-1 pt-1">
+                            <button onclick="loadBuiltinHyadenSterrenkaartPNG()" class="px-1.5 py-1.5 rounded bg-emerald-950/90 hover:bg-emerald-800 border border-[#00f5d4] text-[#00f5d4] font-bold text-[10px]">
+                                🖼️ hyaden_sterrenkaart.PNG
                             </button>
-                            <button onclick="loadBuiltinCalibrationSTL()" class="px-1.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-800 border border-cyan-400/70 text-[#00f5d4] font-bold text-[10px]">
-                                🧊 Kalibratie.STL
+                            <button onclick="loadBuiltinTransparentGridPNG()" class="px-1.5 py-1.5 rounded bg-amber-950/80 hover:bg-amber-800 border border-amber-400/70 text-[#ffd166] font-bold text-[10px]">
+                                ✨ Transparante Kalibratie.PNG
+                            </button>
+                            <button onclick="loadBuiltinCalibrationSTL()" class="px-1.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-800 border border-cyan-400/70 text-cyan-200 font-bold text-[10px]">
+                                🧊 Kalibratieplaat.STL
                             </button>
                             <button onclick="loadBuiltinScherpenisseSVG()" class="px-1.5 py-1 rounded bg-purple-950/80 hover:bg-purple-800 border border-purple-400/70 text-purple-200 font-bold text-[10px]">
-                                📐 Sluis.SVG
+                                📐 Scherpenisse.SVG
                             </button>
                         </div>
-                        <div id="loadedFilesStatus" class="text-[10px] text-emerald-300 truncate pt-0.5">
-                            Gereed voor import (.jpg, .png, .svg, .stl, .geojson, .json)
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                            <span id="loadedFilesStatus" class="text-[10px] text-emerald-300 truncate">
+                                Gereed (.png, .jpg, .svg, .stl, .geojson, .json)
+                            </span>
+                            <button onclick="exportCanvasToPNG()" class="px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[9px] shrink-0">
+                                💾 Opslaan als .PNG
+                            </button>
                         </div>
                     </div>
 
@@ -469,8 +485,11 @@
                         <button onclick="exportGeoJSONFile()" class="flex-1 py-1.5 px-2 rounded bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold transition">
                             💾 Download .GeoJSON
                         </button>
+                        <button onclick="exportCanvasToPNG()" class="py-1.5 px-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition">
+                            🖼️ Export .PNG
+                        </button>
                         <button onclick="toggleGeoJsonModal()" class="py-1.5 px-2 rounded bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300 font-semibold">
-                            🔍 JSON Code
+                            🔍 JSON
                         </button>
                     </div>
                 </div>
@@ -877,15 +896,70 @@
 
         /**
          * ============================================================================
-         * 4. SFERISCHE ASTRONOMIE & PLANETAIRE EPHEMERIDEN (ZON, MAAN, VENUS & PLANETEN)
+         * 4. SFERISCHE ASTRONOMIE, PRECESSIE (3000 V.CHR. – 3000 N.CHR.) & PLANETEN
          * ============================================================================
          */
         function getDaysSinceJ2000(year, doy, hourCET) {
             const utHours = hourCET - 1.0;
-            // J2000.0 is 1 Jan 2000 12:00 TT
             const yearsDiff = year - 2000;
-            const leapDays = Math.floor((year - 1997) / 4);
-            return yearsDiff * 365.0 + leapDays + doy + (utHours - 12.0) / 24.0;
+            return yearsDiff * TROPICAL_YEAR_DAYS + doy + (utHours - 12.0) / 24.0;
+        }
+
+        /**
+         * Berekent de Axiale Precessie (IAU benadering, ~25.772-jarige cyclus = 50,288" per jaar)
+         * en zet J2000 equatoriale coördinaten + eigenbeweging om naar het gekozen historische jaartal (bijv. -3000 v.Chr.).
+         */
+        function computePrecessedAndProperMotionStar(raDegJ2000, decDegJ2000, pmRaMasYr, pmDecMasYr, targetYear) {
+            const dtYears = (targetYear - 2000) + deepTimeDeltaYears;
+
+            // 1. Eigenbeweging (Proper Motion) over dtYears
+            const cosDec0 = Math.max(0.05, Math.cos(decDegJ2000 * Math.PI / 180));
+            const dRaPmDeg = ((pmRaMasYr || 0) * dtYears) / (3600000.0 * cosDec0);
+            const dDecPmDeg = ((pmDecMasYr || 0) * dtYears) / 3600000.0;
+
+            const ra1Rad = (raDegJ2000 + dRaPmDeg) * Math.PI / 180;
+            const dec1Rad = Math.max(-89.9, Math.min(89.9, decDegJ2000 + dDecPmDeg)) * Math.PI / 180;
+
+            // 2. Transformeer van Equatoriaal J2000 naar Eclipticaal, pas Precessie Δψ toe, en terug naar Equatoriaal van Datum
+            const epsRad = 23.43929 * Math.PI / 180;
+            const xEq = Math.cos(dec1Rad) * Math.cos(ra1Rad);
+            const yEq = Math.cos(dec1Rad) * Math.sin(ra1Rad);
+            const zEq = Math.sin(dec1Rad);
+
+            // Equatoriaal -> Eclipticaal
+            const xEcl = xEq;
+            const yEcl = yEq * Math.cos(epsRad) + zEq * Math.sin(epsRad);
+            const zEcl = -yEq * Math.sin(epsRad) + zEq * Math.cos(epsRad);
+
+            let eclLonRad = Math.atan2(yEcl, xEcl);
+            const eclLatRad = Math.asin(Math.max(-1, Math.min(1, zEcl)));
+
+            // Precessie in eclipticale lengte: 50,28796" per jaar = 0,013968878° per jaar
+            const deltaPsiDeg = dtYears * (50.28796 / 3600.0);
+            eclLonRad += deltaPsiDeg * Math.PI / 180;
+
+            // Terug van Eclipticaal naar Equatoriaal van het gekozen historische jaar
+            const xEclNew = Math.cos(eclLatRad) * Math.cos(eclLonRad);
+            const yEclNew = Math.cos(eclLatRad) * Math.sin(eclLonRad);
+            const zEclNew = Math.sin(eclLatRad);
+
+            const xEqNew = xEclNew;
+            const yEqNew = yEclNew * Math.cos(epsRad) - zEclNew * Math.sin(epsRad);
+            const zEqNew = yEclNew * Math.sin(epsRad) + zEclNew * Math.cos(epsRad);
+
+            const raNewDeg = (Math.atan2(yEqNew, xEqNew) * 180 / Math.PI + 360) % 360;
+            const decNewDeg = Math.asin(Math.max(-1, Math.min(1, zEqNew))) * 180 / Math.PI;
+
+            return {
+                raDeg: raNewDeg,
+                raHours: raNewDeg / 15.0,
+                decDeg: decNewDeg,
+                deltaPsiDeg
+            };
+        }
+
+        function formatYearHistorical(yr) {
+            return yr < 0 ? `${Math.abs(yr)} v.Chr.` : `${yr} n.Chr.`;
         }
 
         function solveKeplerRad(M_rad, e) {
@@ -1280,16 +1354,24 @@
             });
 
             const dayOfMonth = Math.max(1, Math.floor(currentSolarDay - activeMonth.startDoy + 1));
-            document.getElementById('activeDateString').textContent = `${dayOfMonth} ${activeMonth.name} ${currentObsYear}`;
+            const yrLabel = formatYearHistorical(currentObsYear);
+            document.getElementById('activeDateString').textContent = `${dayOfMonth} ${activeMonth.name} (${yrLabel})`;
             document.getElementById('doyReadout').textContent = currentSolarDay.toFixed(2).replace('.', ',');
             document.getElementById('obsTimeReadout').textContent = formatHoursHM(currentObsHourCET);
+
+            const deltaPsi = ((currentObsYear - 2000) * 50.28796 / 3600.0);
+            const psiSign = deltaPsi >= 0 ? '+' : '';
+            const histReadoutEl = document.getElementById('histYearSliderReadout');
+            if (histReadoutEl) {
+                histReadoutEl.textContent = `${yrLabel} (Δψ ${psiSign}${deltaPsi.toFixed(1)}°)`;
+            }
 
             const lstH = computeLSTHours(currentSolarDay, currentObsHourCET, observer.lon);
             const lstHr = Math.floor(lstH);
             const lstMn = Math.floor((lstH - lstHr) * 60);
             document.getElementById('lstReadout').textContent = `${String(lstHr).padStart(2, '0')}h ${String(lstMn).padStart(2, '0')}m`;
 
-            // Bereken Zon, Maan, Venus & Planeten op het actuele tijdstip
+            // Bereken Zon, Maan, Venus & Planeten op het actuele tijdstip (incl. jaartallen tot 3000 v.Chr.)
             currentPlanetaryBodies = computeAllSolarSystemBodies(currentObsYear, currentSolarDay, currentObsHourCET);
 
             // Update Dynamische Poolankers die aan Zon, Maan of Planeten gekoppeld zijn
@@ -1321,23 +1403,19 @@
             document.getElementById('sunRiseSetLabel').textContent = `${formatHoursHM(riseH)} / ${formatHoursHM(setH)}`;
             document.getElementById('activeObsLabel').textContent = `${observer.lat.toFixed(2)}°N, ${observer.lon.toFixed(2)}°E (${observer.name.split(' ')[0]})`;
 
-            // Combineer Zon, Maan, Planeten én Sterrenbeelden voor de rechter Horizon-Tabel
+            // Combineer Zon, Maan, Planeten én Sterrenbeelden (met Precessie + Gaia DR3 Eigenbeweging) voor de rechter Horizon-Tabel
             const combinedTargets = [];
             if (celestialFilter === 'all' || celestialFilter === 'planets') {
                 currentPlanetaryBodies.forEach(b => combinedTargets.push(b));
             }
             if (celestialFilter === 'all' || celestialFilter === 'stars') {
                 CONSTELLATION_TARGETS.forEach(c => {
-                    // Pas diepe-tijd eigenbeweging Δt toe
-                    const dRaDeg = (c.pmRa * deepTimeDeltaYears) / (3600000 * Math.cos(c.decDeg * Math.PI / 180));
-                    const dDecDeg = (c.pmDec * deepTimeDeltaYears) / 3600000;
-                    const shiftedRaHours = ((c.raHours * 15 + dRaDeg + 360) % 360) / 15.0;
-                    const shiftedDecDeg = Math.max(-89.9, Math.min(89.9, c.decDeg + dDecDeg));
+                    const prec = computePrecessedAndProperMotionStar(c.raHours * 15.0, c.decDeg, c.pmRa, c.pmDec, currentObsYear);
                     combinedTargets.push({
                         ...c,
-                        raHours: shiftedRaHours,
-                        raDeg: shiftedRaHours * 15,
-                        decDeg: shiftedDecDeg
+                        raHours: prec.raHours,
+                        raDeg: prec.raDeg,
+                        decDeg: prec.decDeg
                     });
                 });
             }
@@ -1401,14 +1479,40 @@
         }
 
         function setObsYear(yr) {
-            currentObsYear = parseInt(yr) || 2026;
+            let parsed = parseInt(yr, 10);
+            if (isNaN(parsed)) parsed = 2026;
+            currentObsYear = Math.max(-3000, Math.min(3000, parsed));
+
+            const inputEl = document.getElementById('customYearInput');
+            if (inputEl) inputEl.value = currentObsYear;
+            const sliderEl = document.getElementById('histYearSlider');
+            if (sliderEl) sliderEl.value = currentObsYear;
+            const badgeEl = document.getElementById('eraBadge');
+            if (badgeEl) badgeEl.textContent = currentObsYear < 0 ? 'v.Chr.' : 'n.Chr.';
+            const selectEl = document.getElementById('obsYearSelect');
+            if (selectEl) {
+                const matchOpt = Array.from(selectEl.options).find(o => parseInt(o.value, 10) === currentObsYear);
+                if (matchOpt) selectEl.value = String(currentObsYear);
+            }
             updateAllCalculationsAndUI();
+        }
+
+        function setHistoricalEraPreset(yearVal, doyVal) {
+            if (doyVal !== undefined) {
+                currentSolarDay = doyVal;
+                document.getElementById('solarDaySlider').value = currentSolarDay;
+            }
+            setObsYear(yearVal);
         }
 
         function setDeepTimeYears(yrs) {
             deepTimeDeltaYears = parseFloat(yrs) || 0;
-            document.getElementById('deepTimeSlider').value = deepTimeDeltaYears;
-            document.getElementById('deepTimeReadout').textContent = deepTimeDeltaYears === 0 ? `0 jr (J${currentObsYear})` : `${deepTimeDeltaYears > 0 ? '+' : ''}${(deepTimeDeltaYears / 1000).toFixed(1)}k jr`;
+            const dtSlider = document.getElementById('deepTimeSlider');
+            if (dtSlider) dtSlider.value = deepTimeDeltaYears;
+            const dtReadout = document.getElementById('deepTimeReadout');
+            if (dtReadout) {
+                dtReadout.textContent = deepTimeDeltaYears === 0 ? `0 jr (${formatYearHistorical(currentObsYear)})` : `${deepTimeDeltaYears > 0 ? '+' : ''}${(deepTimeDeltaYears / 1000).toFixed(1)}k jr`;
+            }
             updateAllCalculationsAndUI();
         }
 
@@ -1701,70 +1805,238 @@
             renderCanvas();
         }
 
-        function loadBuiltinStarChartUnderlay() {
-            // Genereer een hoog-contrast astronomische kalibratieplaat van het Hyaden-veld
+        /**
+         * Ingebouwde hoog-contrast PNG-generator van de "hyaden_sterrenkaart.png" (Cartografische Astrometrie & Catalogus-Identificatie)
+         * zodat de exacte PNG van de gebruiker altijd direct met 1 klik onder de geodetische overlay geladen kan worden.
+         */
+        function loadBuiltinHyadenSterrenkaartPNG() {
             const off = document.createElement('canvas');
-            off.width = 900;
-            off.height = 650;
+            off.width = 1100;
+            off.height = 800;
             const octx = off.getContext('2d');
 
-            octx.fillStyle = '#070c18';
+            // Diepe nachtblauwe achtergrond zoals hyaden_sterrenkaart.png
+            octx.fillStyle = '#0a0e17';
             octx.fillRect(0, 0, off.width, off.height);
 
-            // Graadnet op de kalibratiekaart
-            octx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+            // Kaderrand en astrometrisch graadnet (RA 4u45m links tot 4u10m rechts, Dec +13° tot +20°)
+            const padL = 70, padR = 40, padT = 85, padB = 65;
+            const plotW = off.width - padL - padR;
+            const plotH = off.height - padT - padB;
+
+            octx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
             octx.lineWidth = 1;
-            for (let x = 50; x < off.width; x += 80) {
-                octx.beginPath(); octx.moveTo(x, 0); octx.lineTo(x, off.height); octx.stroke();
-            }
-            for (let y = 50; y < off.height; y += 80) {
-                octx.beginPath(); octx.moveTo(0, y); octx.lineTo(off.width, y); octx.stroke();
+            octx.setLineDash([2, 3]);
+
+            const mapRaDec = (raMinTotal, decDeg) => {
+                // 4u45m (285m) links -> 4u10m (250m) rechts
+                const x = padL + ((285 - raMinTotal) / 35.0) * plotW;
+                const y = padT + ((20.5 - decDeg) / 8.0) * plotH;
+                return { x, y };
+            };
+
+            for (let m = 250; m <= 285; m += 5) {
+                const p1 = mapRaDec(m, 12.5);
+                const p2 = mapRaDec(m, 20.5);
+                octx.beginPath(); octx.moveTo(p1.x, p1.y); octx.lineTo(p2.x, p2.y); octx.stroke();
+                octx.fillStyle = '#cbd5e1';
+                octx.font = '12px "Inter", sans-serif';
+                octx.fillText(`4u ${m - 240}m`, p1.x - 20, off.height - 35);
             }
 
-            // Titel & Kadastraal kader
-            octx.strokeStyle = '#ffd166';
-            octx.lineWidth = 3;
-            octx.strokeRect(16, 16, off.width - 32, off.height - 32);
-            octx.fillStyle = '#ffd166';
-            octx.font = 'bold 20px "Fira Code", monospace';
-            octx.fillText('KALIBRATIE-ONDERGROND: HYADEN (CALDWELL 41) & STIER REGIO', 40, 52);
-            octx.fillStyle = '#00f5d4';
-            octx.font = '14px "Fira Code", monospace';
-            octx.fillText('Geodetische Projectie onder Vector-Overlay | Epoch J2000 / Gaia DR3', 40, 76);
+            for (let d = 13; d <= 20; d += 1) {
+                const p1 = mapRaDec(285, d);
+                const p2 = mapRaDec(250, d);
+                octx.beginPath(); octx.moveTo(p1.x, p1.y); octx.lineTo(p2.x, p2.y); octx.stroke();
+                octx.fillStyle = '#cbd5e1';
+                octx.font = '12px "Inter", sans-serif';
+                octx.fillText(`${d}°`, 35, p1.y + 4);
+            }
+            octx.setLineDash([]);
 
-            // Teken V-vorm en sterren op de test-ondergrond
-            const pts = [
-                { x: 480, y: 190, r: 9, col: '#ff9f1c', lbl: 'Aldebaran (α Tau)' },
-                { x: 560, y: 120, r: 6, col: '#ffd166', lbl: 'Ain (ε Tau)' },
-                { x: 640, y: 240, r: 6, col: '#ffd166', lbl: 'δ¹ Tau' },
-                { x: 730, y: 360, r: 7, col: '#ffd166', lbl: 'Primus Hyadum (γ Tau)' },
-                { x: 585, y: 315, r: 6, col: '#ffffff', lbl: 'θ¹/θ² Tau' }
-            ];
-            octx.strokeStyle = 'rgba(255, 209, 102, 0.6)';
+            // Hoofdtitel
+            octx.fillStyle = '#ffffff';
+            octx.font = 'bold 21px "Inter", sans-serif';
+            octx.fillText('HYADEN STERRENKAART (Taurus / Stier) — PNG KALIBRATIE LAAG', 235, 36);
+            octx.fillStyle = '#94a3b8';
+            octx.font = 'bold 15px "Inter", sans-serif';
+            octx.fillText('Cartografische Astrometrie & Catalogus-Identificatie (Flamsteed & HD)', 290, 62);
+
+            // V-asterisme Noordpoot & Zuidpoot
+            const pEps = mapRaDec(268.6, 19.18); // ε Tau (Ain)
+            const pDel = mapRaDec(262.9, 17.54); // δ Tau (Hyadum II)
+            const pGam = mapRaDec(259.8, 15.63); // γ Tau (Hyadum I)
+            const pThe = mapRaDec(268.7, 15.92); // θ¹/θ² Tau
+            const pAld = mapRaDec(275.9, 16.51); // Aldebaran (α Tau)
+
+            octx.strokeStyle = '#e07a5f';
             octx.lineWidth = 2.5;
-            octx.setLineDash([8, 6]);
+            octx.setLineDash([7, 5]);
             octx.beginPath();
-            octx.moveTo(560, 120); octx.lineTo(640, 240); octx.lineTo(730, 360); octx.lineTo(585, 315); octx.lineTo(480, 190);
+            octx.moveTo(pEps.x, pEps.y);
+            octx.lineTo(pDel.x, pDel.y);
+            octx.lineTo(pGam.x, pGam.y);
+            octx.lineTo(pThe.x, pThe.y);
+            octx.lineTo(pAld.x, pAld.y);
             octx.stroke();
             octx.setLineDash([]);
 
-            pts.forEach(p => {
-                octx.fillStyle = p.col;
-                octx.beginPath(); octx.arc(p.x, p.y, p.r, 0, Math.PI * 2); octx.fill();
-                octx.fillStyle = '#ffffff';
-                octx.font = 'bold 13px "Fira Code", monospace';
-                octx.fillText(p.lbl, p.x + 14, p.y + 4);
+            // Flamsteed Blauwe Hoofdreeks-sterren uit hyaden_sterrenkaart.png
+            const flamsteedStars = [
+                { raM: 265.5, dec: 17.92, lbl: "68 (δ³)" },
+                { raM: 264.1, dec: 17.44, lbl: "64 (δ²)" },
+                { raM: 264.4, dec: 16.79, lbl: "63" },
+                { raM: 259.6, dec: 16.51, lbl: "55" },
+                { raM: 253.9, dec: 15.41, lbl: "48" },
+                { raM: 260.7, dec: 15.02, lbl: "58" },
+                { raM: 262.1, dec: 14.06, lbl: "57" },
+                { raM: 266.3, dec: 15.61, lbl: "71" },
+                { raM: 270.1, dec: 15.63, lbl: "80" },
+                { raM: 270.6, dec: 15.68, lbl: "81" },
+                { raM: 271.8, dec: 15.84, lbl: "85" },
+                { raM: 278.2, dec: 16.05, lbl: "89" },
+                { raM: 279.3, dec: 15.86, lbl: "92 (σ²)" },
+                { raM: 273.8, dec: 14.76, lbl: "86 (ρ)" },
+                { raM: 268.8, dec: 14.73, lbl: "76" },
+                { raM: 272.2, dec: 13.72, lbl: "83" },
+                { raM: 269.0, dec: 13.05, lbl: "79" }
+            ];
+            flamsteedStars.forEach(s => {
+                const pt = mapRaDec(s.raM, s.dec);
+                octx.fillStyle = '#3b82f6';
+                octx.beginPath(); octx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2); octx.fill();
+                octx.strokeStyle = '#ffffff'; octx.lineWidth = 1; octx.stroke();
+                octx.fillStyle = '#60a5fa';
+                octx.font = 'bold 11px "Fira Code", monospace';
+                octx.fillText(s.lbl, pt.x + 7, pt.y + 4);
             });
 
+            // Kernsterren van de Hyaden-V met rood/oranje kaderlabels
+            const mainLabels = [
+                { pt: pEps, name: "ε Tau (Ain)", col: "#f87171" },
+                { pt: pDel, name: "δ Tau (Hyadum II)", col: "#f87171" },
+                { pt: pGam, name: "γ Tau (Hyadum I)", col: "#f87171" },
+                { pt: pThe, name: "θ¹/θ² Tau", col: "#f87171" },
+                { pt: pAld, name: "Aldebaran (α Tau)", col: "#fb923c" }
+            ];
+            mainLabels.forEach(m => {
+                octx.fillStyle = m.col;
+                octx.beginPath(); octx.arc(m.pt.x, m.pt.y, 8, 0, Math.PI * 2); octx.fill();
+                octx.strokeStyle = '#ffffff'; octx.lineWidth = 2; octx.stroke();
+
+                octx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                const tw = octx.measureText(m.name).width + 24;
+                octx.fillRect(m.pt.x + 10, m.pt.y - 22, tw, 22);
+                octx.strokeStyle = m.col;
+                octx.lineWidth = 1.5;
+                octx.strokeRect(m.pt.x + 10, m.pt.y - 22, tw, 22);
+
+                octx.fillStyle = '#ffffff';
+                octx.font = 'bold 12px "Inter", sans-serif';
+                octx.fillText(m.name, m.pt.x + 16, m.pt.y - 7);
+            });
+
+            const pngDataUrl = off.toDataURL('image/png');
             const img = new Image();
             img.onload = function() {
                 underlay.img = img;
                 underlay.visible = true;
                 underlay.lat = 46.2;
                 underlay.lon = 1.5;
+                document.getElementById('loadedFilesStatus').textContent = `✅ PNG geladen: hyaden_sterrenkaart.png (${img.width}×${img.height} px)`;
                 renderCanvas();
             };
-            img.src = off.toDataURL();
+            img.src = pngDataUrl;
+        }
+
+        /**
+         * Ingebouwde Transparante Kalibratie-PNG met Alfa-kanaal (zodat de onderliggende kaart van Europa zichtbaar blijft)
+         */
+        function loadBuiltinTransparentGridPNG() {
+            const off = document.createElement('canvas');
+            off.width = 900;
+            off.height = 650;
+            const octx = off.getContext('2d');
+            octx.clearRect(0, 0, off.width, off.height); // 100% Transparant PNG Alfa-kanaal!
+
+            // Concentrische Geodetische Meetringen op transparante PNG
+            const cx = off.width / 2, cy = off.height / 2;
+            [90, 180, 270].forEach(r => {
+                octx.strokeStyle = 'rgba(0, 245, 212, 0.55)';
+                octx.lineWidth = 2;
+                octx.beginPath(); octx.arc(cx, cy, r, 0, Math.PI * 2); octx.stroke();
+            });
+
+            octx.strokeStyle = '#ffd166';
+            octx.lineWidth = 2.5;
+            octx.strokeRect(20, 20, off.width - 40, off.height - 40);
+            octx.fillStyle = '#ffd166';
+            octx.font = 'bold 18px "Fira Code", monospace';
+            octx.fillText('TRANSPARANTE .PNG KALIBRATIE-LAAG (MET ALFA-KANAAL)', 40, 52);
+
+            const img = new Image();
+            img.onload = function() {
+                underlay.img = img;
+                underlay.visible = true;
+                document.getElementById('loadedFilesStatus').textContent = `✅ Transparante PNG geladen (${img.width}×${img.height} RGBA)`;
+                renderCanvas();
+            };
+            img.src = off.toDataURL('image/png');
+        }
+
+        function loadBuiltinStarChartUnderlay() {
+            loadBuiltinHyadenSterrenkaartPNG();
+        }
+
+        /**
+         * Exporteer het volledige geodetische kaartcanvas + de gekoppelde A. Ott 573 Loep-uitsnede als hoge-resolutie .PNG bestand
+         */
+        function exportCanvasToPNG() {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const ectx = exportCanvas.getContext('2d');
+
+            // 1. Kopieer hoofdcanvas
+            ectx.drawImage(canvas, 0, 0);
+
+            // 2. Teken een watermerk-stempel met Jaartal (3000 v.Chr. - 3000 n.Chr.), DOY en Waarnemerslocatie + Loep-inzet
+            const dpr = window.devicePixelRatio || 1;
+            ectx.save();
+            ectx.scale(dpr, dpr);
+
+            ectx.fillStyle = 'rgba(5, 8, 17, 0.88)';
+            ectx.strokeStyle = '#00f5d4';
+            ectx.lineWidth = 1.5;
+            ectx.fillRect(16, cHeight - 78, 540, 62);
+            ectx.strokeRect(16, cHeight - 78, 540, 62);
+
+            ectx.fillStyle = '#ffd166';
+            ectx.font = 'bold 12px "Fira Code", monospace';
+            ectx.fillText(`VORTEX 245,91° GEODESIE & ASTROMETRIE — ${formatYearHistorical(currentObsYear)} | DOY ${currentSolarDay.toFixed(2)}`, 28, cHeight - 56);
+            ectx.fillStyle = '#00f5d4';
+            ectx.font = '11px "Fira Code", monospace';
+            ectx.fillText(`Waarnemer: ${observer.name} (${observer.lat.toFixed(3)}°N, ${observer.lon.toFixed(3)}°E) | CET ${formatHoursHM(currentObsHourCET)}`, 28, cHeight - 38);
+            ectx.fillStyle = '#cbd5e1';
+            ectx.fillText(`A. Ott Nr. 573 Loep: φ ${planimeter.loupeLat.toFixed(3)}°N, λ ${planimeter.loupeLon.toFixed(3)}°E | Nonius ${planimeter.wheelCount}`, 28, cHeight - 22);
+
+            // Voeg de vergrote Loep-cirkel rechtsonder in de PNG-export toe
+            const lx = cWidth - 155, ly = cHeight - 155;
+            ectx.drawImage(loupeCanvas, lx, ly, 132, 132);
+            ectx.strokeStyle = '#ffd166';
+            ectx.lineWidth = 3;
+            ectx.beginPath(); ectx.arc(lx + 66, ly + 66, 66, 0, Math.PI * 2); ectx.stroke();
+            ectx.restore();
+
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            const yrSlug = currentObsYear < 0 ? `${Math.abs(currentObsYear)}BC` : `${currentObsYear}AD`;
+            a.href = dataUrl;
+            a.download = `vortex_geodesie_${yrSlug}_doy_${Math.round(currentSolarDay)}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            document.getElementById('loadedFilesStatus').textContent = `📸 PNG geëxporteerd: vortex_geodesie_${yrSlug}.png`;
         }
 
         function updateUnderlayParams() {
@@ -2237,11 +2509,10 @@
         function drawTaurusAstrometryNodes(tCtx) {
             tCtx.save();
             const nodes = TAURUS_GEOJSON_NODES.map(n => {
-                // Pas diepe-tijd eigenbeweging Δt (in jaren) toe op RA en Dec
-                const dRaDeg = ((n.pmRa || 0) * deepTimeDeltaYears) / (3600000 * Math.cos(n.dec * Math.PI / 180));
-                const dDecDeg = ((n.pmDec || 0) * deepTimeDeltaYears) / 3600000;
-                const effRa = n.ra + dRaDeg;
-                const effDec = n.dec + dDecDeg;
+                // Bereken exacte positie voor het gekozen historische jaar (-3000 v.Chr. tot +3000 n.Chr.) incl. Precessie & Gaia DR3 Eigenbeweging
+                const prec = computePrecessedAndProperMotionStar(n.ra, n.dec, n.pmRa || 0, n.pmDec || 0, currentObsYear);
+                const effRa = prec.raDeg;
+                const effDec = prec.decDeg;
                 const pt = skyToScreen(effRa, effDec);
                 const hInfo = computeCelestialHorizonData(effRa / 15.0, effDec, currentSolarDay, currentObsHourCET, observer.lat, observer.lon);
                 return { ...n, effRa, effDec, pt, hInfo };
