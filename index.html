@@ -655,13 +655,30 @@
     <div class="section-box">
       <div class="section-title">
         <span>1B. Achtergrond (BG) & WebRTC Camera Matrix</span>
-        <span id="webrtc-status" class="mono" style="font-size:9.5px; color:var(--muted);">CAM UIT</span>
+        <span id="webrtc-status" class="mono" style="font-size:9.5px; color:var(--muted);">● CAM UIT</span>
+      </div>
+      <div class="row">
+        <select id="cam-device-select" onchange="onCameraDeviceChange(this.value)" style="flex:1; font-size:10px;">
+          <option value="auto">📷 Automatische Camera (HD 1280×720)</option>
+          <option value="environment">🌍 Achtercamera (Environment)</option>
+          <option value="user">👤 Voorcamera (User / FaceCam)</option>
+          <option value="synth">🧪 Synthetische Kalibratie-Stream (Test-Target)</option>
+        </select>
+        <button onclick="refreshCameraDevices()" title="Ververs aangesloten camera's" style="padding:3px 6px;">🔄</button>
       </div>
       <div class="grid-4">
         <button onclick="startWebRTCCamera()" class="cyan-btn">📹 Start Cam</button>
         <button id="btn-webrtc-pause" onclick="togglePauseWebRTC()">⏯ Pauze</button>
-        <button onclick="captureWebRTCFrameToBg()">📸 Freeze</button>
+        <button onclick="captureWebRTCFrameToBg()" title="Bevries huidig videoframe naar statische BG-laag">📸 Freeze</button>
         <button onclick="stopWebRTCCamera()">⏹ Stop</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; background:rgba(0,0,0,0.45); padding:5px; border-radius:4px; border:1px solid rgba(0,229,255,0.2);">
+        <canvas id="webrtc-pip-canvas" width="112" height="64" style="width:112px; height:64px; background:#020408; border:1px solid var(--cyan); border-radius:3px; flex-shrink:0;"></canvas>
+        <div style="font-size:9.5px; color:var(--muted); line-height:1.35; flex:1;">
+          <div style="color:var(--gold-light); font-weight:700;">Live WebRTC PiP Monitor</div>
+          <div id="webrtc-res-lbl" class="mono">Geen actieve stream</div>
+          <button onclick="startSyntheticTestStream()" style="margin-top:3px; padding:2px 6px; font-size:9px;">🧪 Start Synthetische Stream</button>
+        </div>
       </div>
       <div class="grid-4">
         <button onclick="zoomBackground(1.15)">🔍 BG Zoom +</button>
@@ -679,10 +696,15 @@
         <button onclick="resetBackgroundTransform()">⟳ Reset BG</button>
       </div>
       <div class="row">
+        <span style="font-size:10px; color:var(--muted); width:88px;">BG Opacity (<span id="lbl-bg-opa">80%</span>):</span>
+        <input type="range" id="slider-bg-opacity" min="0.10" max="1.00" step="0.05" value="0.80" oninput="setBackgroundOpacity(this.value)" style="flex:1;">
+      </div>
+      <div class="row">
         <input type="file" id="bg-upload" accept="image/*" onchange="handleBgUpload(event)" style="font-size:9.5px; flex:1;">
         <button onclick="clearBgImage()">Wis BG</button>
       </div>
-      <video id="webrtc-video" autoplay playsinline muted style="display:none;"></video>
+      <!-- CRITICAL WEBRTC FIX: Never use display:none on video, or Chrome/WebKit pauses frame decoding -->
+      <video id="webrtc-video" autoplay playsinline muted style="position:fixed; left:0; top:0; width:1px; height:1px; opacity:0.01; pointer-events:none; z-index:-1;"></video>
     </div>
 
     <!-- TEKENGEREEDSCHAP & HISTORIE PALET -->
@@ -1249,6 +1271,10 @@ const STATE = {
     stream: null,
     active: false,
     paused: false,
+    synthetic: false,
+    synthCanvas: null,
+    rafId: null,
+    selectedDeviceId: 'auto',
     facingMode: 'environment'
   }
 };
@@ -1493,52 +1519,91 @@ function exportVortexGeoJSON() {
 /* ----------------------------------------------------------------------------
  * VOORGROND (FG) & ACHTERGROND (BG) TRANSFORMATIECONTROLLERS + screenToDrawCoords()
  * ---------------------------------------------------------------------------- */
+/**
+ * Exacte Voorgrond (FG) Affiene Matrix:
+ * translate(cx + panX, cy + panY) -> rotate(rotation) -> scale(scale * sx, scale * sy) -> translate(-cx, -cy)
+ */
 function applyForegroundTransform(ctx, w, h) {
   const v = STATE.view;
+  const sx = v.flipX ? -1 : 1;
+  const sy = v.flipY ? -1 : 1;
   ctx.translate(w * 0.5 + v.panX, h * 0.5 + v.panY);
-  ctx.scale(v.scale * (v.flipX ? -1 : 1), v.scale * (v.flipY ? -1 : 1));
   ctx.rotate(v.rotation * DEG);
-  ctx.translate(-w * 0.5, -h * 0.5);
-}
-
-function applyBackgroundTransform(ctx, w, h) {
-  const m = STATE.bgMedia;
-  ctx.translate(w * 0.5 + m.panX, h * 0.5 + m.panY);
-  ctx.scale(m.scale * (m.flipX ? -1 : 1), m.scale * (m.flipY ? -1 : 1));
-  ctx.rotate(m.rotation * DEG);
+  ctx.scale(v.scale * sx, v.scale * sy);
   ctx.translate(-w * 0.5, -h * 0.5);
 }
 
 /**
- * Exacte coördinatencorrectie op de voorgrond voor actieve schaling, rotatie en spiegeling
+ * Exacte Achtergrond (BG) Affiene Matrix:
+ * translate(cx + panX, cy + panY) -> rotate(rotation) -> scale(scale * sx, scale * sy) -> translate(-cx, -cy)
  */
-function screenToDrawCoords(sx, sy) {
+function applyBackgroundTransform(ctx, w, h) {
+  const m = STATE.bgMedia;
+  const sx = m.flipX ? -1 : 1;
+  const sy = m.flipY ? -1 : 1;
+  ctx.translate(w * 0.5 + m.panX, h * 0.5 + m.panY);
+  ctx.rotate(m.rotation * DEG);
+  ctx.scale(m.scale * sx, m.scale * sy);
+  ctx.translate(-w * 0.5, -h * 0.5);
+}
+
+/**
+ * Exacte wiskundige inverse van applyForegroundTransform in omgekeerde volgorde:
+ * 1) Trek (cx + panX, cy + panY) af
+ * 2) Roteer met -rotRad
+ * 3) Deel door (scale * sx, scale * sy)
+ * 4) Tel (cx, cy) op
+ */
+function screenToDrawCoords(screenX, screenY) {
   const w = uiCanvas.width, h = uiCanvas.height;
+  const cx = w * 0.5, cy = h * 0.5;
   const v = STATE.view;
   const safeScale = Math.max(0.05, v.scale);
-  let dx = sx - (w * 0.5 + v.panX);
-  let dy = sy - (h * 0.5 + v.panY);
-  dx /= (safeScale * (v.flipX ? -1 : 1));
-  dy /= (safeScale * (v.flipY ? -1 : 1));
+  const sx = v.flipX ? -1 : 1;
+  const sy = v.flipY ? -1 : 1;
+
+  // Stap 1: Translatie naar draaipunt
+  const dx = screenX - (cx + v.panX);
+  const dy = screenY - (cy + v.panY);
+
+  // Stap 2: Inverse rotatie (-v.rotation)
   const cosR = Math.cos(-v.rotation * DEG);
   const sinR = Math.sin(-v.rotation * DEG);
   const rx = dx * cosR - dy * sinR;
   const ry = dx * sinR + dy * cosR;
-  return { x: rx + w * 0.5, y: ry + h * 0.5 };
+
+  // Stap 3 & 4: Inverse schaling/spiegeling + terug naar wereldcentrum
+  const wx = rx / (safeScale * sx) + cx;
+  const wy = ry / (safeScale * sy) + cy;
+  return { x: wx, y: wy };
 }
 
 function drawCoordsToScreen(wx, wy) {
   const w = uiCanvas.width, h = uiCanvas.height;
+  const cx = w * 0.5, cy = h * 0.5;
   const v = STATE.view;
-  const dx = wx - w * 0.5;
-  const dy = wy - h * 0.5;
+  const sx = v.flipX ? -1 : 1;
+  const sy = v.flipY ? -1 : 1;
+
+  // Stap 1: Van wereldcentrum + schaal/spiegeling
+  const dx = (wx - cx) * v.scale * sx;
+  const dy = (wy - cy) * v.scale * sy;
+
+  // Stap 2: Voorwaartse rotatie (+v.rotation)
   const cosR = Math.cos(v.rotation * DEG);
   const sinR = Math.sin(v.rotation * DEG);
-  let rx = dx * cosR - dy * sinR;
-  let ry = dx * sinR + dy * cosR;
-  rx *= v.scale * (v.flipX ? -1 : 1);
-  ry *= v.scale * (v.flipY ? -1 : 1);
-  return { x: rx + w * 0.5 + v.panX, y: ry + h * 0.5 + v.panY };
+  const rx = dx * cosR - dy * sinR;
+  const ry = dx * sinR + dy * cosR;
+
+  // Stap 3: Tel (cx + panX, cy + panY) op
+  return { x: rx + cx + v.panX, y: ry + cy + v.panY };
+}
+
+function setBackgroundOpacity(val) {
+  STATE.draw.bgOpacity = Math.max(0.1, Math.min(1.0, parseFloat(val) || 0.8));
+  const lbl = document.getElementById('lbl-bg-opa');
+  if (lbl) lbl.textContent = Math.round(STATE.draw.bgOpacity * 100) + '%';
+  renderAll();
 }
 
 function zoomForeground(factor) {
@@ -1645,6 +1710,117 @@ function resetAllTransforms() {
   resetBackgroundTransform();
 }
 
+/**
+ * Historie Palet (Undo / Redo) Functies
+ */
+function recordHistoryStep(actionName) {
+  const dataURL = paintBuffer.toDataURL();
+  STATE.history.undoStack.push({
+    action: actionName,
+    dataURL,
+    tracerX: STATE.planimeter.tracerX,
+    tracerY: STATE.planimeter.tracerY,
+    poleX: STATE.planimeter.poleX,
+    poleY: STATE.planimeter.poleY,
+    tracePath: [...STATE.planimeter.tracePath],
+    view: { ...STATE.view },
+    bgMedia: { ...STATE.bgMedia }
+  });
+  if (STATE.history.undoStack.length > STATE.history.maxSteps) {
+    STATE.history.undoStack.shift();
+  }
+  // Wis redo-stack bij nieuwe actie
+  STATE.history.redoStack = [];
+  updateHistoryUI();
+}
+
+function undoStep() {
+  if (STATE.history.undoStack.length === 0) return;
+  const currentSnapshot = {
+    action: 'Huidige staat',
+    dataURL: paintBuffer.toDataURL(),
+    tracerX: STATE.planimeter.tracerX,
+    tracerY: STATE.planimeter.tracerY,
+    poleX: STATE.planimeter.poleX,
+    poleY: STATE.planimeter.poleY,
+    tracePath: [...STATE.planimeter.tracePath],
+    view: { ...STATE.view },
+    bgMedia: { ...STATE.bgMedia }
+  };
+  STATE.history.redoStack.push(currentSnapshot);
+
+  const prev = STATE.history.undoStack.pop();
+  restoreSnapshot(prev);
+  updateHistoryUI();
+}
+
+function redoStep() {
+  if (STATE.history.redoStack.length === 0) return;
+  const currentSnapshot = {
+    action: 'Huidige staat',
+    dataURL: paintBuffer.toDataURL(),
+    tracerX: STATE.planimeter.tracerX,
+    tracerY: STATE.planimeter.tracerY,
+    poleX: STATE.planimeter.poleX,
+    poleY: STATE.planimeter.poleY,
+    tracePath: [...STATE.planimeter.tracePath],
+    view: { ...STATE.view },
+    bgMedia: { ...STATE.bgMedia }
+  };
+  STATE.history.undoStack.push(currentSnapshot);
+
+  const next = STATE.history.redoStack.pop();
+  restoreSnapshot(next);
+  updateHistoryUI();
+}
+
+function restoreSnapshot(snap) {
+  STATE.planimeter.tracerX = snap.tracerX;
+  STATE.planimeter.tracerY = snap.tracerY;
+  STATE.planimeter.poleX = snap.poleX;
+  STATE.planimeter.poleY = snap.poleY;
+  STATE.planimeter.tracePath = [...snap.tracePath];
+  STATE.view = { ...snap.view };
+  STATE.bgMedia = { ...snap.bgMedia };
+
+  const img = new Image();
+  img.onload = function() {
+    paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
+    paintCtx.drawImage(img, 0, 0);
+    solvePlanimeterKinematics();
+    computeGreensTheoremArea();
+    updateTransformReadouts();
+    renderAll();
+  };
+  img.src = snap.dataURL;
+}
+
+function clearHistoryLog() {
+  STATE.history.undoStack = [];
+  STATE.history.redoStack = [];
+  updateHistoryUI();
+}
+
+function updateHistoryUI() {
+  const undoLen = STATE.history.undoStack.length;
+  const redoLen = STATE.history.redoStack.length;
+  const lbl = document.getElementById('hdr-hist');
+  if (lbl) lbl.textContent = `${undoLen}/${STATE.history.maxSteps}`;
+
+  const winLbl = document.getElementById('win1-hist-lbl');
+  if (winLbl) winLbl.textContent = `${undoLen} undo | ${redoLen} redo`;
+
+  const logBox = document.getElementById('history-log-box');
+  if (logBox) {
+    if (undoLen === 0) {
+      logBox.innerHTML = '<span style="color:var(--muted);">Geen historie-acties gelogd.</span>';
+    } else {
+      const recent = STATE.history.undoStack.slice(-6).reverse();
+      logBox.innerHTML = recent.map((item, idx) => `<div>• ${item.action}</div>`).join('');
+    }
+  }
+}
+
 function updateTransformReadouts() {
   const v = STATE.view;
   const m = STATE.bgMedia;
@@ -1677,143 +1853,246 @@ function updateTransformReadouts() {
 }
 
 /* ----------------------------------------------------------------------------
- * HISTORIE-PALET (UNDO / REDO)
+ * WEBRTC CAMERA API (MET ENUMERATIE, FALLBACK & SYNTHETISCHE STREAM)
  * ---------------------------------------------------------------------------- */
-function captureCurrentStateSnapshot(actionLabel) {
-  return {
-    label: actionLabel || 'Actie',
-    timestamp: new Date().toLocaleTimeString('nl-NL'),
-    drawDataUrl: paintBuffer.width > 0 ? paintBuffer.toDataURL() : null,
-    view: { ...STATE.view },
-    bgMedia: { ...STATE.bgMedia },
-    planimeter: {
-      visibleOnCanvas: STATE.planimeter.visibleOnCanvas,
-      poleX: STATE.planimeter.poleX,
-      poleY: STATE.planimeter.poleY,
-      tracerX: STATE.planimeter.tracerX,
-      tracerY: STATE.planimeter.tracerY,
-      tracePath: STATE.planimeter.tracePath.map(p => ({ x: p.x, y: p.y }))
-    },
-    placedTexts: STATE.draw.placedTexts.map(t => ({ ...t }))
-  };
-}
-
-function recordHistoryStep(actionLabel) {
-  const snap = captureCurrentStateSnapshot(actionLabel);
-  STATE.history.undoStack.push(snap);
-  if (STATE.history.undoStack.length > STATE.history.maxSteps) {
-    STATE.history.undoStack.shift();
-  }
-  STATE.history.redoStack = [];
-  updateHistoryUI();
-}
-
-function applyStateSnapshot(snap) {
-  if (!snap) return;
-  STATE.view = { ...STATE.view, ...snap.view, isPanning: false };
-  if (snap.bgMedia) STATE.bgMedia = { ...STATE.bgMedia, ...snap.bgMedia };
-  STATE.planimeter.visibleOnCanvas = snap.planimeter.visibleOnCanvas;
-  STATE.planimeter.poleX = snap.planimeter.poleX;
-  STATE.planimeter.poleY = snap.planimeter.poleY;
-  STATE.planimeter.tracerX = snap.planimeter.tracerX;
-  STATE.planimeter.tracerY = snap.planimeter.tracerY;
-  STATE.planimeter.tracePath = snap.planimeter.tracePath.map(p => ({ x: p.x, y: p.y }));
-  STATE.draw.placedTexts = snap.placedTexts.map(t => ({ ...t }));
-
-  syncOttVisibilityButtons();
-  if (snap.drawDataUrl) {
-    const img = new Image();
-    img.onload = function() {
-      paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
-      paintCtx.drawImage(img, 0, 0);
-      renderAll();
-    };
-    img.src = snap.drawDataUrl;
-  } else {
-    paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
-  }
-  solvePlanimeterKinematics();
-  computeGreensTheoremArea();
-  updateTransformReadouts();
-  renderAll();
-}
-
-function undoStep() {
-  if (STATE.history.undoStack.length === 0) return;
-  STATE.history.redoStack.push(captureCurrentStateSnapshot('Current'));
-  applyStateSnapshot(STATE.history.undoStack.pop());
-  updateHistoryUI();
-}
-
-function redoStep() {
-  if (STATE.history.redoStack.length === 0) return;
-  STATE.history.undoStack.push(captureCurrentStateSnapshot('RedoBase'));
-  applyStateSnapshot(STATE.history.redoStack.pop());
-  updateHistoryUI();
-}
-
-function clearHistoryLog() {
-  STATE.history.undoStack = [];
-  STATE.history.redoStack = [];
-  updateHistoryUI();
-}
-
-function updateHistoryUI() {
-  const uLen = STATE.history.undoStack.length;
-  const rLen = STATE.history.redoStack.length;
-  document.getElementById('hdr-hist').textContent = `${uLen}/${rLen}`;
-  const lbl = document.getElementById('win1-hist-lbl');
-  if (lbl) lbl.textContent = `${uLen} undo | ${rLen} redo`;
-  const box = document.getElementById('history-log-box');
-  if (box) {
-    if (uLen === 0) {
-      box.innerHTML = '<span style="color:var(--muted);">Historie-palet gereed. Elke transformatie, tekening of planimeter-scan wordt vastgelegd.</span>';
-    } else {
-      box.innerHTML = STATE.history.undoStack.slice(-6).reverse().map((s, idx) =>
-        `<div>#${uLen - idx} [${s.timestamp}] — <b style="color:var(--gold-light);">${s.label}</b></div>`
-      ).join('');
-    }
+async function refreshCameraDevices() {
+  const sel = document.getElementById('cam-device-select');
+  if (!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = devices.filter(d => d.kind === 'videoinput');
+    const currentVal = sel.value;
+    sel.innerHTML = `
+      <option value="auto">📷 Automatische Camera (HD 1280×720)</option>
+      <option value="environment">🌍 Achtercamera (Environment)</option>
+      <option value="user">👤 Voorcamera (User / FaceCam)</option>
+      <option value="synth">🧪 Synthetische Kalibratie-Stream (Test-Target)</option>
+    `;
+    videoInputs.forEach((dev, idx) => {
+      const opt = document.createElement('option');
+      opt.value = dev.deviceId;
+      opt.textContent = `🎥 ${dev.label || ('Camera #' + (idx + 1))}`;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === currentVal)) sel.value = currentVal;
+  } catch (e) {
+    // Negeren indien geblokkeerd door browserbeleid
   }
 }
 
-/* ----------------------------------------------------------------------------
- * WEBRTC CAMERA API
- * ---------------------------------------------------------------------------- */
+function onCameraDeviceChange(val) {
+  STATE.webrtc.selectedDeviceId = val;
+  if (val === 'synth') {
+    startSyntheticTestStream();
+  } else if (STATE.webrtc.active) {
+    startWebRTCCamera();
+  }
+}
+
 async function startWebRTCCamera() {
+  const selVal = document.getElementById('cam-device-select')?.value || STATE.webrtc.selectedDeviceId || 'auto';
+  if (selVal === 'synth') {
+    startSyntheticTestStream();
+    return;
+  }
+
   const video = document.getElementById('webrtc-video');
   const statusEl = document.getElementById('webrtc-status');
+  const resLbl = document.getElementById('webrtc-res-lbl');
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    startSyntheticTestStream('Geen fysieke WebRTC API -> Synthetische Stream actief');
+    return;
+  }
+
   try {
-    if (STATE.webrtc.stream) stopWebRTCCamera();
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: STATE.webrtc.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
+    stopWebRTCCamera(false);
+
+    // Primair constraint-profiel op basis van geselecteerd device of facingMode
+    let primaryConstraints = { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
+    if (selVal === 'environment' || selVal === 'user') {
+      primaryConstraints.video.facingMode = { ideal: selVal };
+    } else if (selVal !== 'auto') {
+      primaryConstraints.video.deviceId = { exact: selVal };
+    }
+
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(primaryConstraints);
+    } catch (firstErr) {
+      // Fallback naar universele { video: true, audio: false } bij OverconstrainedError / NotFoundError
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+
     STATE.webrtc.stream = stream;
     STATE.webrtc.active = true;
+    STATE.webrtc.synthetic = false;
     STATE.webrtc.paused = false;
-    video.srcObject = stream;
-    await video.play();
-    if (statusEl) { statusEl.textContent = 'LIVE WEBRTC'; statusEl.style.color = 'var(--green)'; }
 
-    const loopCam = () => {
-      if (!STATE.webrtc.active) return;
-      if (!STATE.webrtc.paused) {
-        renderBackgroundLayer();
-        render20xMagnifierLoupe();
-      }
-      requestAnimationFrame(loopCam);
-    };
-    requestAnimationFrame(loopCam);
+    video.srcObject = stream;
+    video.muted = true;
+    video.setAttribute('playsinline', '');
+
+    // Wacht tot metadata geladen is en start afspelen
+    await new Promise((resolve) => {
+      let resolved = false;
+      const done = () => { if (!resolved) { resolved = true; resolve(); } };
+      video.onloadedmetadata = done;
+      setTimeout(done, 800);
+    });
+    await video.play();
+
+    await refreshCameraDevices();
+
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+    if (statusEl) { statusEl.textContent = '● LIVE WEBRTC'; statusEl.style.color = 'var(--green)'; }
+    if (resLbl) resLbl.textContent = `Stream: ${vw}×${vh} px (Actief)`;
+
+    startWebRTCRenderLoop();
   } catch (err) {
-    if (statusEl) { statusEl.textContent = 'GEEN CAM (' + err.name + ')'; statusEl.style.color = 'var(--red)'; }
+    // Automatische fallback naar de synthetische test-camera als de gebruiker geen webcam heeft of in een iframe zonder cam-rechten werkt
+    startSyntheticTestStream(`Fallback (${err.name}): Synthetische Stream`);
   }
+}
+
+/**
+ * Synthetische WebRTC Kalibratie-Stream zodat de live video-pipeline, PiP-monitor,
+ * BG-matrix en Freeze-functie altijd 100% werken, ook zonder fysieke camera.
+ */
+function startSyntheticTestStream(reasonText) {
+  stopWebRTCCamera(false);
+  if (!STATE.webrtc.synthCanvas) {
+    STATE.webrtc.synthCanvas = document.createElement('canvas');
+    STATE.webrtc.synthCanvas.width = 1280;
+    STATE.webrtc.synthCanvas.height = 720;
+  }
+  STATE.webrtc.active = true;
+  STATE.webrtc.synthetic = true;
+  STATE.webrtc.paused = false;
+
+  const statusEl = document.getElementById('webrtc-status');
+  const resLbl = document.getElementById('webrtc-res-lbl');
+  if (statusEl) { statusEl.textContent = '● SYNTH CAM LIVE'; statusEl.style.color = 'var(--cyan)'; }
+  if (resLbl) resLbl.textContent = reasonText || 'Synthetische Stream 1280×720 (60fps)';
+
+  startWebRTCRenderLoop();
+}
+
+function updateSyntheticCameraFrame() {
+  const c = STATE.webrtc.synthCanvas;
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+  const t = performance.now() * 0.001;
+
+  // Donkerblauwe optische test-achtergrond
+  const grad = ctx.createRadialGradient(w*0.5, h*0.5, 40, w*0.5, h*0.5, w*0.6);
+  grad.addColorStop(0, '#0f2442');
+  grad.addColorStop(1, '#040914');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Kalibratierooster
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.18)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= w; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  for (let y = 0; y <= h; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+  // Roterende VORTEX 245,91° & Gulden Snede kalibratieschijf
+  ctx.save();
+  ctx.translate(w * 0.5, h * 0.5);
+  ctx.strokeStyle = '#d4af37';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(0, 0, 220, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 136, 0, Math.PI * 2); ctx.stroke();
+
+  const scanAng = t * 0.85;
+  ctx.strokeStyle = '#00e676';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(Math.cos(scanAng) * 220, Math.sin(scanAng) * 220);
+  ctx.stroke();
+
+  // Simuleer Perceel 369 Bol van Lodijke doelwit
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.85)';
+  ctx.fillStyle = 'rgba(0, 229, 255, 0.14)';
+  ctx.beginPath();
+  for (let i = 0; i < 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    const r = 110 + 12 * Math.sin(3 * a + t);
+    const px = Math.cos(a) * r, py = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // Tijdstempel & Telemetrie in de videostream
+  ctx.fillStyle = '#f9e29c';
+  ctx.font = 'bold 20px Courier New';
+  ctx.fillText(`VORTEX OS WEBRTC SYNTH-CAM | 245,91° | t=${t.toFixed(2)}s`, 32, 42);
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = '15px Courier New';
+  ctx.fillText('Gebruik BG-Schaal / BG-Rotatie / BG-Spiegel of klik [Freeze] om op te meten met Ott Nr. 573', 32, 68);
+}
+
+function getActiveWebRTCSourceElement() {
+  if (!STATE.webrtc.active) return null;
+  if (STATE.webrtc.synthetic && STATE.webrtc.synthCanvas) {
+    return STATE.webrtc.synthCanvas;
+  }
+  const video = document.getElementById('webrtc-video');
+  if (video && video.readyState >= 2 && video.videoWidth > 0) {
+    return video;
+  }
+  return null;
+}
+
+function updateWebRTCPiPMonitor() {
+  const pip = document.getElementById('webrtc-pip-canvas');
+  if (!pip) return;
+  const pctx = pip.getContext('2d');
+  const pw = pip.width, ph = pip.height;
+  pctx.clearRect(0, 0, pw, ph);
+
+  const src = getActiveWebRTCSourceElement();
+  if (!src) {
+    pctx.fillStyle = '#020408';
+    pctx.fillRect(0, 0, pw, ph);
+    pctx.fillStyle = '#64748b';
+    pctx.font = '9px Courier New';
+    pctx.fillText('CAM OFFLINE', 22, 35);
+    return;
+  }
+
+  pctx.save();
+  pctx.translate(pw * 0.5, ph * 0.5);
+  pctx.scale(STATE.bgMedia.flipX ? -1 : 1, STATE.bgMedia.flipY ? -1 : 1);
+  pctx.rotate(STATE.bgMedia.rotation * DEG);
+  pctx.drawImage(src, -pw * 0.5, -ph * 0.5, pw, ph);
+  pctx.restore();
+}
+
+function startWebRTCRenderLoop() {
+  if (STATE.webrtc.rafId) cancelAnimationFrame(STATE.webrtc.rafId);
+  const step = () => {
+    if (!STATE.webrtc.active) return;
+    if (!STATE.webrtc.paused) {
+      if (STATE.webrtc.synthetic) updateSyntheticCameraFrame();
+      updateWebRTCPiPMonitor();
+      renderAll();
+    }
+    STATE.webrtc.rafId = requestAnimationFrame(step);
+  };
+  STATE.webrtc.rafId = requestAnimationFrame(step);
 }
 
 function togglePauseWebRTC() {
   if (!STATE.webrtc.active) return;
   const video = document.getElementById('webrtc-video');
   STATE.webrtc.paused = !STATE.webrtc.paused;
-  if (video) {
+  if (video && !STATE.webrtc.synthetic) {
     if (STATE.webrtc.paused) video.pause();
     else video.play();
   }
@@ -1821,33 +2100,46 @@ function togglePauseWebRTC() {
 }
 
 function captureWebRTCFrameToBg() {
-  const video = document.getElementById('webrtc-video');
-  if (!STATE.webrtc.active || !video || video.readyState < 2) return;
-  recordHistoryStep('Freeze WebRTC Frame');
-  const vw = Math.max(1, video.videoWidth || 1280);
-  const vh = Math.max(1, video.videoHeight || 720);
+  const src = getActiveWebRTCSourceElement();
+  if (!src) return;
+  recordHistoryStep('Freeze WebRTC Frame naar BG');
+  const vw = Math.max(1, src.videoWidth || src.width || 1280);
+  const vh = Math.max(1, src.videoHeight || src.height || 720);
   const off = document.createElement('canvas');
   off.width = vw; off.height = vh;
-  off.getContext('2d').drawImage(video, 0, 0, vw, vh);
+  off.getContext('2d').drawImage(src, 0, 0, vw, vh);
   const img = new Image();
   img.onload = function() {
     STATE.draw.bgImage = img;
-    stopWebRTCCamera();
+    stopWebRTCCamera(true);
     renderAll();
   };
   img.src = off.toDataURL('image/png');
 }
 
-function stopWebRTCCamera() {
+function stopWebRTCCamera(doRender = true) {
+  if (STATE.webrtc.rafId) {
+    cancelAnimationFrame(STATE.webrtc.rafId);
+    STATE.webrtc.rafId = null;
+  }
   if (STATE.webrtc.stream) {
     STATE.webrtc.stream.getTracks().forEach(t => t.stop());
     STATE.webrtc.stream = null;
   }
+  const video = document.getElementById('webrtc-video');
+  if (video) video.srcObject = null;
+
   STATE.webrtc.active = false;
+  STATE.webrtc.synthetic = false;
   STATE.webrtc.paused = false;
+
   const statusEl = document.getElementById('webrtc-status');
-  if (statusEl) { statusEl.textContent = 'CAM UIT'; statusEl.style.color = 'var(--muted)'; }
-  renderAll();
+  const resLbl = document.getElementById('webrtc-res-lbl');
+  if (statusEl) { statusEl.textContent = '● CAM UIT'; statusEl.style.color = 'var(--muted)'; }
+  if (resLbl) resLbl.textContent = 'Geen actieve stream';
+  document.getElementById('btn-webrtc-pause')?.classList.remove('active');
+  updateWebRTCPiPMonitor();
+  if (doRender) renderAll();
 }
 
 function toggleWebRTCCameraShortcut() {
@@ -2649,13 +2941,13 @@ function renderBackgroundLayer() {
   bgCtx.save();
   applyBackgroundTransform(bgCtx, w, h);
 
-  const video = document.getElementById('webrtc-video');
-  if (STATE.webrtc.active && video && video.readyState >= 2) {
-    const vw = Math.max(1, video.videoWidth || 1280);
-    const vh = Math.max(1, video.videoHeight || 720);
+  const liveSrc = getActiveWebRTCSourceElement();
+  if (liveSrc) {
+    const vw = Math.max(1, liveSrc.videoWidth || liveSrc.width || 1280);
+    const vh = Math.max(1, liveSrc.videoHeight || liveSrc.height || 720);
     bgCtx.globalAlpha = STATE.draw.bgOpacity;
     const s = Math.min(w / vw, h / vh);
-    bgCtx.drawImage(video, (w - vw * s) / 2, (h - vh * s) / 2, vw * s, vh * s);
+    bgCtx.drawImage(liveSrc, (w - vw * s) / 2, (h - vh * s) / 2, vw * s, vh * s);
   } else if (STATE.draw.bgImage && STATE.draw.bgImage.width > 0 && STATE.draw.bgImage.height > 0) {
     const img = STATE.draw.bgImage;
     bgCtx.globalAlpha = STATE.draw.bgOpacity;
@@ -2976,28 +3268,44 @@ function render20xMagnifierLoupe() {
 
   const p = STATE.planimeter;
   const zoom = 4.0;
+  // Converteer de wereldpositie van Omtrekpen S naar de actuele schermcoördinaat
+  const screenTracer = drawCoordsToScreen(p.tracerX, p.tracerY);
 
   loupeCtx.save();
   loupeCtx.fillStyle = '#03060c';
   loupeCtx.fillRect(0, 0, lw, lh);
 
-  loupeCtx.translate(lw * 0.5, lh * 0.5);
-  loupeCtx.scale(zoom * (STATE.view.flipX ? -1 : 1), zoom * (STATE.view.flipY ? -1 : 1));
-  loupeCtx.rotate(STATE.view.rotation * DEG);
-  loupeCtx.translate(-p.tracerX, -p.tracerY);
+  // Kopieer samengestelde BG (incl. WebRTC) + Tekenlaag + Astrolaag rondom Omtrekpen S
+  const srcW = Math.max(4, lw / zoom);
+  const srcH = Math.max(4, lh / zoom);
+  const sx = screenTracer.x - srcW * 0.5;
+  const sy = screenTracer.y - srcH * 0.5;
 
-  if (paintBuffer.width > 0 && paintBuffer.height > 0) {
-    loupeCtx.drawImage(paintBuffer, 0, 0);
-  }
+  [bgCanvas, drawCanvas, astroCanvas].forEach(layerCanv => {
+    if (layerCanv && layerCanv.width > 0 && layerCanv.height > 0) {
+      loupeCtx.drawImage(layerCanv, sx, sy, srcW, srcH, 0, 0, lw, lh);
+    }
+  });
+
+  // Teken ook het actieve contourpad scherp in de loupe
   if (p.tracePath.length > 1) {
-    loupeCtx.strokeStyle = '#00e5ff'; loupeCtx.lineWidth = 1.2;
+    loupeCtx.save();
+    loupeCtx.translate(lw * 0.5, lh * 0.5);
+    loupeCtx.rotate(STATE.view.rotation * DEG);
+    loupeCtx.scale(zoom * STATE.view.scale * (STATE.view.flipX ? -1 : 1), zoom * STATE.view.scale * (STATE.view.flipY ? -1 : 1));
+    loupeCtx.translate(-p.tracerX, -p.tracerY);
+    loupeCtx.strokeStyle = '#00e5ff';
+    loupeCtx.lineWidth = 1.0 / Math.max(0.25, STATE.view.scale);
     loupeCtx.beginPath();
     loupeCtx.moveTo(p.tracePath[0].x, p.tracePath[0].y);
     for (let i = 1; i < p.tracePath.length; i++) loupeCtx.lineTo(p.tracePath[i].x, p.tracePath[i].y);
-    loupeCtx.closePath(); loupeCtx.stroke();
+    loupeCtx.closePath();
+    loupeCtx.stroke();
+    loupeCtx.restore();
   }
   loupeCtx.restore();
 
+  // Fraunhofer 589nm kruisdraad & concentrische micrometer-ringen
   loupeCtx.save();
   loupeCtx.strokeStyle = 'rgba(255, 193, 7, 0.85)';
   loupeCtx.lineWidth = 1;
@@ -3729,6 +4037,8 @@ window.addEventListener('mouseup', () => { activeDragWin = null; });
 window.addEventListener('resize', resizeCanvases);
 window.onload = function() {
   resizeCanvases();
+  refreshCameraDevices();
+  updateWebRTCPiPMonitor();
   populateGeodesyTable();
   convertWgsToRdUI();
   syncDateTimeInput();
