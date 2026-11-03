@@ -384,23 +384,29 @@
   <div class="top-telemetry">
     <span>Epoch: <b id="hdr-epoch">1969-02-07 12:00 UT</b></span>
     <span>JDE: <b id="hdr-jde">2440260.0008</b></span>
-    <span>Zoom: <b id="hdr-zoom">1.00×</b></span>
-    <span>Rot: <b id="hdr-rot">0.0°</b></span>
-    <span>Spiegel: <b id="hdr-flip">Normaal</b></span>
+    <span>Tableau: <b id="hdr-zoom">1.00×</b> | <b id="hdr-rot">0.0°</b> | <b id="hdr-flip">Norm</b></span>
+    <span>Cam/Bg: <b id="hdr-bg-xform">1.00× | 0° | Norm</b></span>
     <span>Ott 573: <b id="hdr-ott">0.00 cm²</b></span>
     <span>Hist: <b id="hdr-hist">0/0</b></span>
   </div>
   <div class="top-actions">
+    <button id="btn-top-ott" class="active" onclick="toggleOttCanvas()" title="Zet A. Ott Nr. 573 Planimeter layer Aan/Uit (Sneltoets: P)">📐 Ott 573: AAN</button>
+    <button onclick="zoomTableau(1.15)" title="Tableau Zoom In (+)">🔍+</button>
+    <button onclick="zoomTableau(0.87)" title="Tableau Zoom Uit (-)">🔍−</button>
+    <button onclick="rotateTableau(-15)" title="Draai Tableau -15° (Q)">↺</button>
+    <button onclick="rotateTableau(15)" title="Draai Tableau +15° (E)">↻</button>
+    <button onclick="toggleTableauFlip('x')" title="Spiegel Tableau X (H)">↔X</button>
+    <button onclick="toggleTableauFlip('y')" title="Spiegel Tableau Y (V)">↕Y</button>
     <button onclick="undoStep()" title="Stap terugzetten (Ctrl+Z)">↩️ Undo</button>
     <button onclick="redoStep()" title="Stap vooruitzetten (Ctrl+Y)">↪️ Redo</button>
-    <button onclick="resetOttOnlyMode()" title="Zet bij de plano alle layers uit (enkel Ott 573 zichtbaar)">🎯 Plano (Layers Uit)</button>
+    <button onclick="resetOttOnlyMode()" title="Zet bij de plano alle astro/geo layers uit">🎯 Plano</button>
     <button onclick="exportFullSnapshot()" title="Exporteer 4-laags PNG kunstwerk">📷 PNG</button>
   </div>
 </div>
 
 <!-- QUICK LAYER TOGGLE STRIP (ALL OFF ON START EXCEPT OTT 573) -->
 <div id="layer-strip">
-  <div class="layer-chip ott-chip active" id="chip-ott" onclick="toggleOttCanvas()">📐 A. Ott Nr. 573 (AAN)</div>
+  <div class="layer-chip ott-chip active" id="chip-ott" onclick="toggleOttCanvas()" title="Sneltoets [P]">📐 A. Ott Nr. 573 Layer (AAN)</div>
   <div class="layer-chip" id="chip-constellations" onclick="toggleLayer('constellations')">✨ Sterrenbeelden</div>
   <div class="layer-chip" id="chip-planets" onclick="toggleLayer('planets')">🪐 Zon, Maan & Planeten</div>
   <div class="layer-chip" id="chip-moons" onclick="toggleLayer('moons')">🛰️ Jupitermanen</div>
@@ -416,9 +422,9 @@
 <!-- ===================================================================== -->
 <!-- WINDOW 1: TEKENEN, WEBRTC CAMERA, TABLEAU ROTATIE/SPIEGELING & HISTORIE -->
 <!-- ===================================================================== -->
-<div id="win-1" class="floating-win" style="top:92px; left:14px; width:380px;">
+<div id="win-1" class="floating-win" style="top:92px; left:14px; width:410px;">
   <div class="win-header" onmousedown="startDragWin(event, 'win-1')">
-    <span>🎨 1. Tekenen, WebRTC Camera, Transformaties & Historie</span>
+    <span>🎨 1. Tekenen, WebRTC Camera, Beeld-Transformaties & Historie</span>
     <div class="win-controls">
       <div class="win-btn" onclick="toggleWindow('win-1')">✕</div>
     </div>
@@ -427,57 +433,88 @@
     <!-- TABLEAU ZOOM, DRAAIEN & SPIEGELEN (MUIS + TOETSENBORD) -->
     <div class="section-box">
       <div class="section-title">
-        <span>Tableau Zoom, Draaien & Spiegelen</span>
-        <span class="mono" style="font-size:9px; color:var(--cyan);">Toetsen: +/-, Q/E, H/V, Pijlen</span>
-      </div>
-      <div class="grid-3">
-        <button onclick="zoomTableau(1.18)">🔍 Zoom In (+)</button>
-        <button onclick="zoomTableau(0.84)">🔍 Zoom Uit (-)</button>
-        <button onclick="resetTableauTransform()">⟳ Reset View (0)</button>
+        <span>1A. Gehele Tableau Zoom, Draaien & Spiegelen</span>
+        <span class="mono" style="font-size:9px; color:var(--cyan);">Toetsen: +/-, Q/E, H/V, P, 0</span>
       </div>
       <div class="grid-4">
+        <button onclick="zoomTableau(1.18)">🔍 Zoom +</button>
+        <button onclick="zoomTableau(0.85)">🔍 Zoom −</button>
+        <button id="btn-tab-flipx" onclick="toggleTableauFlip('x')">↔ Spiegel X (H)</button>
+        <button id="btn-tab-flipy" onclick="toggleTableauFlip('y')">↕ Spiegel Y (V)</button>
+      </div>
+      <div class="grid-4">
+        <button onclick="rotateTableau(-90)">↺ -90°</button>
         <button onclick="rotateTableau(-15)">↺ -15° (Q)</button>
-        <button onclick="rotateTableau(-1)">↺ -1°</button>
-        <button onclick="rotateTableau(1)">↻ +1°</button>
         <button onclick="rotateTableau(15)">↻ +15° (E)</button>
+        <button onclick="rotateTableau(90)">↻ +90°</button>
       </div>
-      <div class="grid-2">
-        <button id="btn-tab-flipx" onclick="toggleTableauFlip('x')">↔ Spiegel Tableau X (H)</button>
-        <button id="btn-tab-flipy" onclick="toggleTableauFlip('y')">↕ Spiegel Tableau Y (V)</button>
+      <div class="row">
+        <span style="font-size:10px; color:var(--muted); width:78px;">Hoek (<span id="lbl-tab-rot-slider">0°</span>):</span>
+        <input type="range" id="slider-tab-rot" min="0" max="360" step="0.5" value="0" oninput="setTableauRotationExact(this.value)" style="flex:1;">
+        <button onclick="resetTableauTransform()">⟳ Reset (0)</button>
       </div>
+    </div>
+
+    <!-- WEBRTC CAMERA & ACHTERGRONDBEELD ONAFHANKELIJK SPIEGELEN / ZOOMEN / DRAAIEN -->
+    <div class="section-box">
+      <div class="section-title">
+        <span>1B. WebRTC Camera & Beeld (Zoom / Draai / Spiegel)</span>
+        <span id="webrtc-status" class="mono" style="font-size:9.5px; color:var(--muted);">UIT</span>
+      </div>
+      <div class="row">
+        <select id="webrtc-device-select" onchange="switchWebRTCDevice(this.value)" style="flex:1;">
+          <option value="environment">Camera: Achter / Top-Down (Environment)</option>
+          <option value="user">Camera: Voorzijde / FaceCam (User)</option>
+        </select>
+        <span id="webrtc-res-lbl" class="mono" style="font-size:9.5px; color:var(--cyan);">--×--</span>
+      </div>
+      <div class="grid-4">
+        <button id="btn-webrtc-start" onclick="startWebRTCCamera()" class="cyan-btn">📹 Start Cam</button>
+        <button id="btn-webrtc-pause" onclick="togglePauseWebRTC()">⏯ Pauze</button>
+        <button onclick="captureWebRTCFrameToBg()">📸 Freeze</button>
+        <button onclick="stopWebRTCCamera()">⏹ Stop</button>
+      </div>
+      <div class="grid-4" style="margin-top:2px;">
+        <button onclick="zoomBgMedia(1.18)" title="Zoom WebRTC/Beeld In">🔍 Cam +</button>
+        <button onclick="zoomBgMedia(0.85)" title="Zoom WebRTC/Beeld Uit">🔍 Cam −</button>
+        <button id="btn-bg-flipx" onclick="toggleBgMediaFlip('x')" title="Spiegel WebRTC/Beeld Horizontaal (Shift+H)">↔ Cam X</button>
+        <button id="btn-bg-flipy" onclick="toggleBgMediaFlip('y')" title="Spiegel WebRTC/Beeld Verticaal (Shift+V)">↕ Cam Y</button>
+      </div>
+      <div class="grid-4">
+        <button onclick="rotateBgMedia(-90)">↺ Cam -90°</button>
+        <button onclick="rotateBgMedia(-15)">↺ -15°</button>
+        <button onclick="rotateBgMedia(15)">↻ +15°</button>
+        <button onclick="rotateBgMedia(90)">↻ Cam +90°</button>
+      </div>
+      <div class="row">
+        <span style="font-size:10px; color:var(--muted); width:82px;">Cam Rot (<span id="lbl-bg-rot-slider">0°</span>):</span>
+        <input type="range" id="slider-bg-rot" min="0" max="360" step="0.5" value="0" oninput="setBgMediaRotationExact(this.value)" style="flex:1;">
+        <button onclick="resetBgMediaTransform()">⟳ Reset Cam</button>
+      </div>
+      <div class="row">
+        <span style="font-size:10px; color:var(--muted); width:82px;">Cam Opacity:</span>
+        <input type="range" id="slider-bg-opacity" min="0.05" max="1" step="0.05" value="0.80" oninput="setBgMediaOpacity(this.value)" style="flex:1;">
+      </div>
+      <video id="webrtc-video" autoplay playsinline muted style="display:none;"></video>
     </div>
 
     <!-- HISTORIE & STAPPEN TERUGZETTEN -->
     <div class="section-box">
       <div class="section-title">
-        <span>Historie & Voorgaande Stappen Terugzetten</span>
-        <span class="mono" id="win1-hist-lbl" style="font-size:9.5px; color:var(--gold-light);">0 stappen</span>
+        <span>1C. Historie & Voorgaande Stappen Terugzetten</span>
+        <span class="mono" id="win1-hist-lbl" style="font-size:9.5px; color:var(--gold-light);">0/40 stappen</span>
       </div>
       <div class="grid-3">
         <button onclick="undoStep()" class="cyan-btn">↩️ Stap Terug (Ctrl+Z)</button>
         <button onclick="redoStep()" class="cyan-btn">↪️ Stap Vooruit (Ctrl+Y)</button>
         <button onclick="clearHistoryLog()">🧹 Wis Historie</button>
       </div>
-      <div id="history-log-box" class="lcd-box" style="max-height:68px; overflow-y:auto; font-size:9.5px;"></div>
-    </div>
-
-    <!-- WEBRTC CAMERA API -->
-    <div class="section-box">
-      <div class="section-title">
-        <span>WebRTC Camera API (Live Video op Tableau)</span>
-        <span id="webrtc-status" class="mono" style="font-size:9.5px; color:var(--muted);">UIT</span>
-      </div>
-      <div class="grid-3">
-        <button id="btn-webrtc-start" onclick="startWebRTCCamera()" class="cyan-btn">📹 Start Camera</button>
-        <button onclick="captureWebRTCFrameToBg()">📸 Freeze Frame</button>
-        <button onclick="stopWebRTCCamera()">⏹ Stop Camera</button>
-      </div>
-      <video id="webrtc-video" autoplay playsinline muted style="display:none;"></video>
+      <div id="history-log-box" class="lcd-box" style="max-height:62px; overflow-y:auto; font-size:9.5px;"></div>
     </div>
 
     <!-- VRIJE HAND TEKENEN -->
     <div class="section-box">
-      <div class="section-title"><span>Vrije Hand & Geometrisch Tekenen</span></div>
+      <div class="section-title"><span>1D. Vrije Hand & Geometrisch Tekenen</span></div>
       <div class="grid-4">
         <button id="tool-nav" class="active" onclick="setDrawTool('nav')">🖐️ Pan/Ott</button>
         <button id="tool-brush" onclick="setDrawTool('brush')">🖌️ Penseel</button>
@@ -493,7 +530,7 @@
 
     <!-- ACHTERGRONDAFBEELDING & TEKST -->
     <div class="section-box">
-      <div class="section-title"><span>Achtergrondafbeelding, Tekst & Vlaggen</span></div>
+      <div class="section-title"><span>1E. Statisch Beeld Upload, Tekst & Vlaggen</span></div>
       <input type="file" id="bg-upload" accept="image/*" onchange="handleBgUpload(event)" style="font-size:10px;">
       <div class="grid-3">
         <button onclick="setBgFit('contain')">Contain</button>
@@ -505,7 +542,7 @@
         <button onclick="placeTextAtCenter()">📌 Plaats</button>
       </div>
       <input type="text" id="flag-search" placeholder="Zoek vlag/baken (Zeeland, Tholen, Laren, Bourges)..." oninput="filterFlags(this.value)">
-      <div id="flag-list" class="grid-3" style="max-height:68px; overflow-y:auto;"></div>
+      <div id="flag-list" class="grid-3" style="max-height:60px; overflow-y:auto;"></div>
     </div>
   </div>
 </div>
@@ -931,6 +968,15 @@ const STATE = {
     panStartX: 0,
     panStartY: 0
   },
+  // Onafhankelijke Transformaties voor WebRTC Camera & Achtergrondbeeld
+  bgMedia: {
+    scale: 1.0,
+    rotation: 0.0,
+    flipX: false,
+    flipY: false,
+    panX: 0.0,
+    panY: 0.0
+  },
   // A. Ott Nr. 573 Planimeter
   planimeter: {
     visibleOnCanvas: true,
@@ -968,7 +1014,7 @@ const STATE = {
     startY: 0,
     bgImage: null,
     bgFit: 'contain',
-    bgOpacity: 0.72,
+    bgOpacity: 0.80,
     placedTexts: []
   },
   procrustes: {
@@ -976,16 +1022,18 @@ const STATE = {
     lastResult: null,
     helmertResult: null
   },
-  // Historie-stack voor Undo & Redo
+  // Historie-stack voor Undo & Redo (40 stappen)
   history: {
     undoStack: [],
     redoStack: [],
-    maxSteps: 35
+    maxSteps: 40
   },
   // WebRTC Camera Stream
   webrtc: {
     stream: null,
-    active: false
+    active: false,
+    paused: false,
+    facingMode: 'environment'
   }
 };
 
@@ -1066,6 +1114,10 @@ const astroCtx = astroCanvas.getContext('2d');
 const uiCtx = uiCanvas.getContext('2d');
 const loupeCtx = loupeCanvas.getContext('2d');
 
+// Offscreen buffer voor vrije-hand tekeningen in tableau-coördinaten zodat deze meestrekken bij zoomen/draaien/spiegelen
+const paintBuffer = document.createElement('canvas');
+const paintCtx = paintBuffer.getContext('2d');
+
 /* ----------------------------------------------------------------------------
  * HISTORIE (UNDO / REDO) SYSTEEM
  * ---------------------------------------------------------------------------- */
@@ -1073,9 +1125,11 @@ function captureCurrentStateSnapshot(actionLabel) {
   return {
     label: actionLabel || 'Actie',
     timestamp: new Date().toLocaleTimeString('nl-NL'),
-    drawDataUrl: drawCanvas.width > 0 ? drawCanvas.toDataURL() : null,
+    drawDataUrl: paintBuffer.width > 0 ? paintBuffer.toDataURL() : null,
     view: { ...STATE.view },
+    bgMedia: { ...STATE.bgMedia },
     planimeter: {
+      visibleOnCanvas: STATE.planimeter.visibleOnCanvas,
       poleX: STATE.planimeter.poleX,
       poleY: STATE.planimeter.poleY,
       tracerX: STATE.planimeter.tracerX,
@@ -1099,6 +1153,8 @@ function recordHistoryStep(actionLabel) {
 function applyStateSnapshot(snap) {
   if (!snap) return;
   STATE.view = { ...STATE.view, ...snap.view, isPanning: false };
+  if (snap.bgMedia) STATE.bgMedia = { ...STATE.bgMedia, ...snap.bgMedia };
+  STATE.planimeter.visibleOnCanvas = snap.planimeter.visibleOnCanvas;
   STATE.planimeter.poleX = snap.planimeter.poleX;
   STATE.planimeter.poleY = snap.planimeter.poleY;
   STATE.planimeter.tracerX = snap.planimeter.tracerX;
@@ -1106,16 +1162,18 @@ function applyStateSnapshot(snap) {
   STATE.planimeter.tracePath = snap.planimeter.tracePath.map(p => ({ x: p.x, y: p.y }));
   STATE.draw.placedTexts = snap.placedTexts.map(t => ({ ...t }));
 
+  syncOttVisibilityButtons();
+
   if (snap.drawDataUrl) {
     const img = new Image();
     img.onload = function() {
-      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-      drawCtx.drawImage(img, 0, 0);
+      paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
+      paintCtx.drawImage(img, 0, 0);
       renderAll();
     };
     img.src = snap.drawDataUrl;
   } else {
-    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
   }
   solvePlanimeterKinematics();
   computeGreensTheoremArea();
@@ -1156,9 +1214,9 @@ function updateHistoryUI() {
   const box = document.getElementById('history-log-box');
   if (box) {
     if (uLen === 0) {
-      box.innerHTML = '<span style="color:var(--muted);">Geen opgeslagen stappen. Teken, verplaats de Ott 573 of roteer om historie op te bouwen.</span>';
+      box.innerHTML = '<span style="color:var(--muted);">Geen opgeslagen stappen. Teken, verplaats de Ott 573 of roteer/spiegel om historie op te bouwen.</span>';
     } else {
-      box.innerHTML = STATE.history.undoStack.slice(-5).reverse().map((s, idx) =>
+      box.innerHTML = STATE.history.undoStack.slice(-6).reverse().map((s, idx) =>
         `<div>#${uLen - idx} [${s.timestamp}] — <b style="color:var(--gold-light);">${s.label}</b></div>`
       ).join('');
     }
@@ -1166,29 +1224,42 @@ function updateHistoryUI() {
 }
 
 /* ----------------------------------------------------------------------------
- * WEBRTC CAMERA API
+ * WEBRTC CAMERA API MET EIGEN ZOOM / ROTATIE / SPIEGELING
  * ---------------------------------------------------------------------------- */
 async function startWebRTCCamera() {
   const video = document.getElementById('webrtc-video');
   const statusEl = document.getElementById('webrtc-status');
+  const resEl = document.getElementById('webrtc-res-lbl');
+  const modeSelect = document.getElementById('webrtc-device-select');
+  const facing = modeSelect ? modeSelect.value : STATE.webrtc.facingMode;
+
   try {
     if (STATE.webrtc.stream) stopWebRTCCamera();
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     });
     STATE.webrtc.stream = stream;
     STATE.webrtc.active = true;
+    STATE.webrtc.paused = false;
+    STATE.webrtc.facingMode = facing;
     video.srcObject = stream;
     await video.play();
+
     if (statusEl) {
       statusEl.textContent = 'LIVE WEBRTC';
       statusEl.style.color = 'var(--green)';
     }
+    if (resEl) {
+      resEl.textContent = `${video.videoWidth || 1280}×${video.videoHeight || 720}`;
+    }
+
     const loopWebRTC = () => {
       if (!STATE.webrtc.active) return;
-      renderBackgroundLayer();
-      render20xMagnifierLoupe();
+      if (!STATE.webrtc.paused) {
+        renderBackgroundLayer();
+        render20xMagnifierLoupe();
+      }
       requestAnimationFrame(loopWebRTC);
     };
     requestAnimationFrame(loopWebRTC);
@@ -1197,6 +1268,30 @@ async function startWebRTCCamera() {
       statusEl.textContent = 'GEEN CAM (' + err.name + ')';
       statusEl.style.color = 'var(--red)';
     }
+  }
+}
+
+function switchWebRTCDevice(mode) {
+  STATE.webrtc.facingMode = mode;
+  if (STATE.webrtc.active) {
+    startWebRTCCamera();
+  }
+}
+
+function togglePauseWebRTC() {
+  if (!STATE.webrtc.active) return;
+  const video = document.getElementById('webrtc-video');
+  STATE.webrtc.paused = !STATE.webrtc.paused;
+  if (video) {
+    if (STATE.webrtc.paused) video.pause();
+    else video.play();
+  }
+  const btn = document.getElementById('btn-webrtc-pause');
+  if (btn) btn.classList.toggle('active', STATE.webrtc.paused);
+  const statusEl = document.getElementById('webrtc-status');
+  if (statusEl) {
+    statusEl.textContent = STATE.webrtc.paused ? 'GEPAUZEERD' : 'LIVE WEBRTC';
+    statusEl.style.color = STATE.webrtc.paused ? 'var(--amber)' : 'var(--green)';
   }
 }
 
@@ -1223,6 +1318,7 @@ function stopWebRTCCamera() {
     STATE.webrtc.stream = null;
   }
   STATE.webrtc.active = false;
+  STATE.webrtc.paused = false;
   const statusEl = document.getElementById('webrtc-status');
   if (statusEl) {
     statusEl.textContent = 'UIT';
@@ -1232,7 +1328,7 @@ function stopWebRTCCamera() {
 }
 
 /* ----------------------------------------------------------------------------
- * TABLEAU VIEW TRANSFORMATIES (ZOOM, DRAAIEN, SPIEGELEN, PAN)
+ * TABLEAU ÉN WEBRTC/BEELD TRANSFORMATIES (ZOOM, DRAAIEN, SPIEGELEN, PAN)
  * ---------------------------------------------------------------------------- */
 function applyViewTransformToContext(ctx, w, h) {
   const v = STATE.view;
@@ -1243,7 +1339,20 @@ function applyViewTransformToContext(ctx, w, h) {
 }
 
 /**
- * Inverteer schermcoördinaten (clientX, clientY) naar getransformeerde tableau-coördinaten
+ * Past aanvullend de onafhankelijke WebRTC / Achtergrondbeeld transformatie toe
+ */
+function applyBgMediaTransformToContext(ctx, w, h) {
+  const m = STATE.bgMedia;
+  ctx.translate(w * 0.5 + m.panX, h * 0.5 + m.panY);
+  ctx.scale(m.scale * (m.flipX ? -1 : 1), m.scale * (m.flipY ? -1 : 1));
+  ctx.rotate(m.rotation * DEG);
+  ctx.translate(-w * 0.5, -h * 0.5);
+}
+
+/**
+ * Exacte inverse affiene transformatie van schermcoördinaten (sx, sy) naar tableau-coördinaten (x, y)
+ * Volgorde voorwaarts: T(center+pan) * S(sx, sy) * R(theta) * T(-center)
+ * Volgorde achterwaarts: T(+center) * R(-theta) * S(1/sx, 1/sy) * T(-(center+pan))
  */
 function screenToTableauCoords(sx, sy) {
   const w = uiCanvas.width, h = uiCanvas.height;
@@ -1260,15 +1369,21 @@ function screenToTableauCoords(sx, sy) {
 }
 
 function zoomTableau(factor) {
-  recordHistoryStep(factor > 1 ? 'Zoom In' : 'Zoom Uit');
-  STATE.view.scale = Math.max(0.25, Math.min(6.0, STATE.view.scale * factor));
+  recordHistoryStep(factor > 1 ? 'Tableau Zoom In' : 'Tableau Zoom Uit');
+  STATE.view.scale = Math.max(0.20, Math.min(8.0, STATE.view.scale * factor));
   updateTransformReadouts();
   renderAll();
 }
 
 function rotateTableau(deltaDeg) {
-  recordHistoryStep(`Roteer ${deltaDeg > 0 ? '+' : ''}${deltaDeg}°`);
+  recordHistoryStep(`Tableau Roteer ${deltaDeg > 0 ? '+' : ''}${deltaDeg}°`);
   STATE.view.rotation = euclideanMod(STATE.view.rotation + deltaDeg, 360);
+  updateTransformReadouts();
+  renderAll();
+}
+
+function setTableauRotationExact(val) {
+  STATE.view.rotation = euclideanMod(parseFloat(val) || 0, 360);
   updateTransformReadouts();
   renderAll();
 }
@@ -1293,20 +1408,85 @@ function resetTableauTransform() {
   renderAll();
 }
 
+/* Onafhankelijke WebRTC / Achtergrondbeeld Transformatie functies */
+function zoomBgMedia(factor) {
+  recordHistoryStep(factor > 1 ? 'Cam/Beeld Zoom In' : 'Cam/Beeld Zoom Uit');
+  STATE.bgMedia.scale = Math.max(0.20, Math.min(8.0, STATE.bgMedia.scale * factor));
+  updateTransformReadouts();
+  renderAll();
+}
+
+function rotateBgMedia(deltaDeg) {
+  recordHistoryStep(`Cam/Beeld Roteer ${deltaDeg > 0 ? '+' : ''}${deltaDeg}°`);
+  STATE.bgMedia.rotation = euclideanMod(STATE.bgMedia.rotation + deltaDeg, 360);
+  updateTransformReadouts();
+  renderAll();
+}
+
+function setBgMediaRotationExact(val) {
+  STATE.bgMedia.rotation = euclideanMod(parseFloat(val) || 0, 360);
+  updateTransformReadouts();
+  renderAll();
+}
+
+function toggleBgMediaFlip(axis) {
+  recordHistoryStep(`Spiegel Cam/Beeld ${axis.toUpperCase()}`);
+  if (axis === 'x') STATE.bgMedia.flipX = !STATE.bgMedia.flipX;
+  if (axis === 'y') STATE.bgMedia.flipY = !STATE.bgMedia.flipY;
+  updateTransformReadouts();
+  renderAll();
+}
+
+function resetBgMediaTransform() {
+  recordHistoryStep('Reset Cam/Beeld View');
+  STATE.bgMedia.scale = 1.0;
+  STATE.bgMedia.rotation = 0.0;
+  STATE.bgMedia.flipX = false;
+  STATE.bgMedia.flipY = false;
+  STATE.bgMedia.panX = 0.0;
+  STATE.bgMedia.panY = 0.0;
+  updateTransformReadouts();
+  renderAll();
+}
+
+function setBgMediaOpacity(val) {
+  STATE.draw.bgOpacity = Math.max(0.05, Math.min(1.0, parseFloat(val) || 0.8));
+  renderAll();
+}
+
 function updateTransformReadouts() {
   const v = STATE.view;
+  const m = STATE.bgMedia;
+
   document.getElementById('hdr-zoom').textContent = `${v.scale.toFixed(2)}×`;
   document.getElementById('hdr-rot').textContent = `${v.rotation.toFixed(1)}°`;
-  let flipTxt = 'Normaal';
-  if (v.flipX && v.flipY) flipTxt = 'X+Y Gespiegeld';
-  else if (v.flipX) flipTxt = 'X Gespiegeld';
-  else if (v.flipY) flipTxt = 'Y Gespiegeld';
+  let flipTxt = 'Norm';
+  if (v.flipX && v.flipY) flipTxt = 'X+Y';
+  else if (v.flipX) flipTxt = 'Spiegel-X';
+  else if (v.flipY) flipTxt = 'Spiegel-Y';
   document.getElementById('hdr-flip').textContent = flipTxt;
 
-  const bx = document.getElementById('btn-tab-flipx');
-  const by = document.getElementById('btn-tab-flipy');
-  if (bx) bx.classList.toggle('active', v.flipX);
-  if (by) by.classList.toggle('active', v.flipY);
+  let mFlipTxt = 'Norm';
+  if (m.flipX && m.flipY) mFlipTxt = 'X+Y';
+  else if (m.flipX) mFlipTxt = 'X';
+  else if (m.flipY) mFlipTxt = 'Y';
+  const bgHdr = document.getElementById('hdr-bg-xform');
+  if (bgHdr) bgHdr.textContent = `${m.scale.toFixed(2)}× | ${Math.round(m.rotation)}° | ${mFlipTxt}`;
+
+  const sTab = document.getElementById('slider-tab-rot');
+  const lTab = document.getElementById('lbl-tab-rot-slider');
+  if (sTab) sTab.value = v.rotation;
+  if (lTab) lTab.textContent = `${v.rotation.toFixed(1)}°`;
+
+  const sBg = document.getElementById('slider-bg-rot');
+  const lBg = document.getElementById('lbl-bg-rot-slider');
+  if (sBg) sBg.value = m.rotation;
+  if (lBg) lBg.textContent = `${m.rotation.toFixed(1)}°`;
+
+  document.getElementById('btn-tab-flipx')?.classList.toggle('active', v.flipX);
+  document.getElementById('btn-tab-flipy')?.classList.toggle('active', v.flipY);
+  document.getElementById('btn-bg-flipx')?.classList.toggle('active', m.flipX);
+  document.getElementById('btn-bg-flipy')?.classList.toggle('active', m.flipY);
 }
 
 /* ----------------------------------------------------------------------------
@@ -2152,21 +2332,21 @@ function resizeCanvases() {
   const w = Math.max(1, window.innerWidth || (container && container.clientWidth) || 1024);
   const h = Math.max(1, window.innerHeight || (container && container.clientHeight) || 768);
 
-  let tempDraw = null;
-  if (drawCanvas.width > 0 && drawCanvas.height > 0) {
-    tempDraw = document.createElement('canvas');
-    tempDraw.width = drawCanvas.width;
-    tempDraw.height = drawCanvas.height;
-    tempDraw.getContext('2d').drawImage(drawCanvas, 0, 0);
+  let tempPaint = null;
+  if (paintBuffer.width > 0 && paintBuffer.height > 0) {
+    tempPaint = document.createElement('canvas');
+    tempPaint.width = paintBuffer.width;
+    tempPaint.height = paintBuffer.height;
+    tempPaint.getContext('2d').drawImage(paintBuffer, 0, 0);
   }
 
-  [bgCanvas, drawCanvas, astroCanvas, uiCanvas].forEach(c => {
+  [bgCanvas, drawCanvas, astroCanvas, uiCanvas, paintBuffer].forEach(c => {
     c.width = w;
     c.height = h;
   });
 
-  if (tempDraw && tempDraw.width > 0 && tempDraw.height > 0) {
-    drawCtx.drawImage(tempDraw, 0, 0);
+  if (tempPaint && tempPaint.width > 0 && tempPaint.height > 0) {
+    paintCtx.drawImage(tempPaint, 0, 0);
   }
 
   if (STATE.planimeter.poleX === 0 && STATE.planimeter.poleY === 0) {
@@ -2198,12 +2378,18 @@ function renderBackgroundLayer() {
   bgCtx.clearRect(0, 0, w, h);
 
   bgCtx.save();
+  // Pas eerst de globale Tableau-transformatie toe, en daarna de specifieke WebRTC/Beeld-transformatie
   applyViewTransformToContext(bgCtx, w, h);
+  applyBgMediaTransformToContext(bgCtx, w, h);
 
   const video = document.getElementById('webrtc-video');
   if (STATE.webrtc.active && video && video.readyState >= 2) {
-    bgCtx.globalAlpha = 0.85;
-    bgCtx.drawImage(video, 0, 0, w, h);
+    bgCtx.globalAlpha = STATE.draw.bgOpacity;
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+    const s = Math.min(w / vw, h / vh);
+    const dw = vw * s, dh = vh * s;
+    bgCtx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
   } else if (STATE.draw.bgImage) {
     bgCtx.globalAlpha = STATE.draw.bgOpacity;
     const img = STATE.draw.bgImage;
@@ -2215,9 +2401,20 @@ function renderBackgroundLayer() {
       const s = Math.max(w / img.width, h / img.height);
       dw = img.width * s; dh = img.height * s;
     }
-    bgCtx.drawImage(img, (w - dw)/2, (h - dh)/2, dw, dh);
+    bgCtx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
   }
   bgCtx.restore();
+}
+
+function renderDrawingLayer() {
+  const w = drawCanvas.width, h = drawCanvas.height;
+  drawCtx.clearRect(0, 0, w, h);
+  if (paintBuffer.width > 0 && paintBuffer.height > 0) {
+    drawCtx.save();
+    applyViewTransformToContext(drawCtx, w, h);
+    drawCtx.drawImage(paintBuffer, 0, 0);
+    drawCtx.restore();
+  }
 }
 
 function renderAstroAndGeoLayer() {
@@ -2406,7 +2603,10 @@ function renderOttPlanimeterLayer() {
   uiCtx.clearRect(0, 0, w, h);
 
   const p = STATE.planimeter;
-  if (!p.visibleOnCanvas) return;
+  if (!p.visibleOnCanvas) {
+    render20xMagnifierLoupe();
+    return;
+  }
 
   solvePlanimeterKinematics();
 
@@ -2565,24 +2765,44 @@ function render20xMagnifierLoupe() {
 
   const p = STATE.planimeter;
   const zoom = 4.0;
-  const srcW = lw / zoom, srcH = lh / zoom;
-  const sx = p.tracerX - srcW / 2, sy = p.tracerY - srcH / 2;
 
   loupeCtx.save();
   loupeCtx.fillStyle = '#03060c';
   loupeCtx.fillRect(0, 0, lw, lh);
 
-  if (bgCanvas.width > 0 && bgCanvas.height > 0) {
-    loupeCtx.drawImage(bgCanvas, sx, sy, srcW, srcH, 0, 0, lw, lh);
-  }
-  if (drawCanvas.width > 0 && drawCanvas.height > 0) {
-    loupeCtx.drawImage(drawCanvas, sx, sy, srcW, srcH, 0, 0, lw, lh);
-  }
-  if (astroCanvas.width > 0 && astroCanvas.height > 0) {
-    loupeCtx.drawImage(astroCanvas, sx, sy, srcW, srcH, 0, 0, lw, lh);
-  }
+  // Centreer de 20x loupe exact op de rijstift (p.tracerX, p.tracerY) in tableau-coördinaten
+  loupeCtx.translate(lw * 0.5, lh * 0.5);
+  loupeCtx.scale(zoom * (STATE.view.flipX ? -1 : 1), zoom * (STATE.view.flipY ? -1 : 1));
+  loupeCtx.rotate(STATE.view.rotation * DEG);
+  loupeCtx.translate(-p.tracerX, -p.tracerY);
 
-  loupeCtx.strokeStyle = 'rgba(255, 193, 7, 0.78)';
+  // 1. Teken getransformeerd WebRTC- of Achtergrondbeeld in de loupe
+  const w = bgCanvas.width, h = bgCanvas.height;
+  loupeCtx.save();
+  applyBgMediaTransformToContext(loupeCtx, w, h);
+  const video = document.getElementById('webrtc-video');
+  if (STATE.webrtc.active && video && video.readyState >= 2) {
+    loupeCtx.globalAlpha = STATE.draw.bgOpacity;
+    const vw = video.videoWidth || 1280, vh = video.videoHeight || 720;
+    const s = Math.min(w / vw, h / vh);
+    loupeCtx.drawImage(video, (w - vw * s) / 2, (h - vh * s) / 2, vw * s, vh * s);
+  } else if (STATE.draw.bgImage) {
+    loupeCtx.globalAlpha = STATE.draw.bgOpacity;
+    const img = STATE.draw.bgImage;
+    const s = STATE.draw.bgFit === 'cover' ? Math.max(w / img.width, h / img.height) : Math.min(w / img.width, h / img.height);
+    loupeCtx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s);
+  }
+  loupeCtx.restore();
+
+  // 2. Teken de vrije-hand tekenbuffer in de loupe
+  if (paintBuffer.width > 0 && paintBuffer.height > 0) {
+    loupeCtx.drawImage(paintBuffer, 0, 0);
+  }
+  loupeCtx.restore();
+
+  // 3. Fraunhofer 589nm kruisdraad en micrometerschaal
+  loupeCtx.save();
+  loupeCtx.strokeStyle = 'rgba(255, 193, 7, 0.82)';
   loupeCtx.lineWidth = 1;
   loupeCtx.beginPath();
   loupeCtx.moveTo(0, lh/2); loupeCtx.lineTo(lw, lh/2);
@@ -2629,6 +2849,7 @@ function renderJupiterMoonsDiagram(galileanMoons) {
 
 function renderAll() {
   renderBackgroundLayer();
+  renderDrawingLayer();
   renderAstroAndGeoLayer();
   renderOttPlanimeterLayer();
   updateOttReadouts();
@@ -2780,15 +3001,26 @@ function toggleLayer(layerKey) {
 }
 
 function toggleOttCanvas() {
+  recordHistoryStep(STATE.planimeter.visibleOnCanvas ? 'Planimeter Layer UIT' : 'Planimeter Layer AAN');
   STATE.planimeter.visibleOnCanvas = !STATE.planimeter.visibleOnCanvas;
+  syncOttVisibilityButtons();
+  renderAll();
+}
+
+function syncOttVisibilityButtons() {
+  const vis = STATE.planimeter.visibleOnCanvas;
   const chip = document.getElementById('chip-ott');
   const chk = document.getElementById('chk-ott-visible');
+  const topBtn = document.getElementById('btn-top-ott');
   if (chip) {
-    chip.classList.toggle('active', STATE.planimeter.visibleOnCanvas);
-    chip.textContent = STATE.planimeter.visibleOnCanvas ? '📐 A. Ott Nr. 573 (AAN)' : '📐 A. Ott Nr. 573 (UIT)';
+    chip.classList.toggle('active', vis);
+    chip.textContent = vis ? '📐 A. Ott Nr. 573 Layer (AAN)' : '📐 A. Ott Nr. 573 Layer (UIT)';
   }
-  if (chk) chk.checked = STATE.planimeter.visibleOnCanvas;
-  renderAll();
+  if (chk) chk.checked = vis;
+  if (topBtn) {
+    topBtn.classList.toggle('active', vis);
+    topBtn.textContent = vis ? '📐 Ott 573: AAN' : '📐 Ott 573: UIT';
+  }
 }
 
 /**
@@ -2807,11 +3039,7 @@ function resetOttOnlyMode() {
     if (d) d.classList.remove('open');
   }
   STATE.planimeter.visibleOnCanvas = true;
-  const ottChip = document.getElementById('chip-ott');
-  if (ottChip) {
-    ottChip.classList.add('active');
-    ottChip.textContent = '📐 A. Ott Nr. 573 (AAN)';
-  }
+  syncOttVisibilityButtons();
   renderAll();
 }
 
@@ -2943,7 +3171,7 @@ function setDrawTool(toolName) {
 
 function clearDrawingLayer() {
   recordHistoryStep('Wis Tekenlaag');
-  drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  paintCtx.clearRect(0, 0, paintBuffer.width, paintBuffer.height);
   renderAll();
 }
 
@@ -2954,6 +3182,7 @@ function handleBgUpload(ev) {
   reader.onload = function(e) {
     const img = new Image();
     img.onload = function() {
+      recordHistoryStep('Upload Achtergrondbeeld');
       STATE.draw.bgImage = img;
       renderAll();
     };
@@ -2963,7 +3192,11 @@ function handleBgUpload(ev) {
 }
 
 function setBgFit(mode) { STATE.draw.bgFit = mode; renderAll(); }
-function clearBgImage() { STATE.draw.bgImage = null; renderAll(); }
+function clearBgImage() {
+  recordHistoryStep('Verwijder Achtergrondbeeld');
+  STATE.draw.bgImage = null;
+  renderAll();
+}
 
 function placeTextAtCenter() {
   const inp = document.getElementById('canvas-text-input');
@@ -3042,7 +3275,11 @@ function exportFullSnapshot() {
 drawCanvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   const factor = e.deltaY < 0 ? 1.10 : 0.90;
-  STATE.view.scale = Math.max(0.25, Math.min(6.0, STATE.view.scale * factor));
+  if (e.shiftKey) {
+    STATE.bgMedia.scale = Math.max(0.20, Math.min(8.0, STATE.bgMedia.scale * factor));
+  } else {
+    STATE.view.scale = Math.max(0.20, Math.min(8.0, STATE.view.scale * factor));
+  }
   updateTransformReadouts();
   renderAll();
 }, { passive: false });
@@ -3069,7 +3306,7 @@ drawCanvas.addEventListener('pointerdown', (e) => {
   }
 
   if (STATE.draw.tool === 'nav') {
-    if (e.shiftKey || e.button === 1) {
+    if (e.shiftKey || e.button === 1 || !p.visibleOnCanvas) {
       STATE.view.isPanning = true;
       STATE.view.panStartX = sx - STATE.view.panX;
       STATE.view.panStartY = sy - STATE.view.panY;
@@ -3088,11 +3325,11 @@ drawCanvas.addEventListener('pointerdown', (e) => {
 
   recordHistoryStep(`Teken (${STATE.draw.tool})`);
   STATE.draw.isDrawing = true;
-  STATE.draw.startX = sx;
-  STATE.draw.startY = sy;
+  STATE.draw.startX = tabPt.x;
+  STATE.draw.startY = tabPt.y;
   if (STATE.draw.tool === 'brush' || STATE.draw.tool === 'eraser') {
-    drawCtx.beginPath();
-    drawCtx.moveTo(sx, sy);
+    paintCtx.beginPath();
+    paintCtx.moveTo(tabPt.x, tabPt.y);
   }
 });
 
@@ -3132,20 +3369,22 @@ window.addEventListener('pointermove', (e) => {
   const size = parseFloat(document.getElementById('brush-size')?.value || '3');
 
   if (STATE.draw.tool === 'brush') {
-    drawCtx.globalCompositeOperation = 'source-over';
-    drawCtx.strokeStyle = color;
-    drawCtx.lineWidth = size;
-    drawCtx.lineCap = 'round';
-    drawCtx.lineTo(sx, sy);
-    drawCtx.stroke();
+    paintCtx.globalCompositeOperation = 'source-over';
+    paintCtx.strokeStyle = color;
+    paintCtx.lineWidth = size;
+    paintCtx.lineCap = 'round';
+    paintCtx.lineTo(tabPt.x, tabPt.y);
+    paintCtx.stroke();
+    renderDrawingLayer();
     render20xMagnifierLoupe();
   } else if (STATE.draw.tool === 'eraser') {
-    drawCtx.globalCompositeOperation = 'destination-out';
-    drawCtx.lineWidth = size * 3;
-    drawCtx.lineCap = 'round';
-    drawCtx.lineTo(sx, sy);
-    drawCtx.stroke();
-    drawCtx.globalCompositeOperation = 'source-over';
+    paintCtx.globalCompositeOperation = 'destination-out';
+    paintCtx.lineWidth = size * 3;
+    paintCtx.lineCap = 'round';
+    paintCtx.lineTo(tabPt.x, tabPt.y);
+    paintCtx.stroke();
+    paintCtx.globalCompositeOperation = 'source-over';
+    renderDrawingLayer();
     render20xMagnifierLoupe();
   }
 });
@@ -3157,18 +3396,20 @@ window.addEventListener('pointerup', (e) => {
     const rect = drawCanvas.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
-    drawCtx.strokeStyle = document.getElementById('brush-color')?.value || '#d4af37';
-    drawCtx.lineWidth = parseFloat(document.getElementById('brush-size')?.value || '3');
-    drawCtx.beginPath();
-    drawCtx.moveTo(STATE.draw.startX, STATE.draw.startY);
-    drawCtx.lineTo(sx, sy);
-    drawCtx.stroke();
+    const tabPt = screenToTableauCoords(sx, sy);
+    paintCtx.strokeStyle = document.getElementById('brush-color')?.value || '#d4af37';
+    paintCtx.lineWidth = parseFloat(document.getElementById('brush-size')?.value || '3');
+    paintCtx.beginPath();
+    paintCtx.moveTo(STATE.draw.startX, STATE.draw.startY);
+    paintCtx.lineTo(tabPt.x, tabPt.y);
+    paintCtx.stroke();
+    renderDrawingLayer();
     render20xMagnifierLoupe();
   }
   STATE.draw.isDrawing = false;
 });
 
-/* TOETSENBORD-BEDIENING (ZOOM, ROTEREN, SPIEGELEN, PAN, UNDO/REDO) */
+/* TOETSENBORD-BEDIENING (PLANIMETER AAN/UIT, ZOOM, ROTEREN, SPIEGELEN, PAN, UNDO/REDO) */
 window.addEventListener('keydown', (e) => {
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
   if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
@@ -3186,41 +3427,53 @@ window.addEventListener('keydown', (e) => {
   }
 
   switch (e.key) {
+    case 'p':
+    case 'P':
+      e.preventDefault();
+      toggleOttCanvas();
+      break;
     case '+':
     case '=':
       e.preventDefault();
-      zoomTableau(1.14);
+      if (e.shiftKey) zoomBgMedia(1.14);
+      else zoomTableau(1.14);
       break;
     case '-':
     case '_':
       e.preventDefault();
-      zoomTableau(0.88);
+      if (e.shiftKey) zoomBgMedia(0.88);
+      else zoomTableau(0.88);
       break;
     case 'q':
     case 'Q':
     case '[':
       e.preventDefault();
-      rotateTableau(-5);
+      if (e.shiftKey) rotateBgMedia(-5);
+      else rotateTableau(-5);
       break;
     case 'e':
     case 'E':
     case ']':
       e.preventDefault();
-      rotateTableau(5);
+      if (e.shiftKey) rotateBgMedia(5);
+      else rotateTableau(5);
       break;
     case 'h':
     case 'H':
       e.preventDefault();
-      toggleTableauFlip('x');
+      if (e.shiftKey) toggleBgMediaFlip('x');
+      else toggleTableauFlip('x');
       break;
     case 'v':
     case 'V':
       e.preventDefault();
-      toggleTableauFlip('y');
+      if (e.shiftKey) toggleBgMediaFlip('y');
+      else toggleTableauFlip('y');
       break;
     case '0':
       e.preventDefault();
-      resetTableauTransform();
+      if (e.shiftKey) resetBgMediaTransform();
+      else resetTableauTransform();
       break;
     case 'ArrowUp':
       e.preventDefault();
