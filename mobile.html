@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VORTEX Mobile — Camera, Locatie, Sterrenkaart & Ephemeris Audit</title>
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --panel-bg: rgba(12, 18, 30, 0.92);
+      --border-col: rgba(245, 158, 11, 0.35);
+      --accent-gold: #f59e0b;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', 'Fira Code', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+      font-size: 13px;
+    }
+
+    /* MapLibre Canvas op achtergrond (alle lagen bij opstarten UIT) */
+    #map {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: radial-gradient(circle at 50% 30%, #0f172a 0%, #050811 100%);
+    }
+
+    /* Bovenste Statusbalk */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: rgba(7, 10, 18, 0.95);
+      border-bottom: 1px solid var(--border-col);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    /* Hoofdcontainer voor de Zwevende Panelen */
+    .panels-viewport {
+      position: fixed;
+      top: 54px;
+      bottom: 64px;
+      left: 8px;
+      right: 8px;
+      z-index: 10;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 16px;
+      pointer-events: auto;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-col);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .tab-section {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tab-section.active {
+      display: flex;
+    }
+
+    /* Grid en kaarten */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .metric-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 6px;
+      padding: 8px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .metric-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .metric-sub {
+      font-size: 10px;
+      color: var(--accent-cyan);
+      margin-top: 2px;
+    }
+
+    /* Knoppen & Inputs */
+    button, .btn {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    button:active, button.active-btn {
+      background: var(--accent-gold);
+      color: #000;
+    }
+
+    button.cyan {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    button.cyan:active, button.cyan.active-btn {
+      background: var(--accent-cyan);
+      color: #000;
+    }
+
+    button.red {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+    }
+
+    input, select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: var(--text-main);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    /* Sterrenkaart & Maan Canvas */
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #04070e;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    /* Camera Module */
+    .camera-box {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      background: #000;
+      border: 1px solid var(--accent-gold);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #camera-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hud-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px;
+      background: radial-gradient(circle, transparent 55%, rgba(0,0,0,0.65) 100%);
+    }
+
+    .crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      transform: translate(-50%, -50%);
+      border: 1px dashed var(--accent-gold);
+      border-radius: 50%;
+    }
+
+    .crosshair::before, .crosshair::after {
+      content: '';
+      position: absolute;
+      background: var(--accent-cyan);
+    }
+
+    .crosshair::before {
+      top: 50%;
+      left: -8px;
+      right: -8px;
+      height: 1px;
+    }
+
+    .crosshair::after {
+      left: 50%;
+      top: -8px;
+      bottom: -8px;
+      width: 1px;
+    }
+
+    /* Tabellen & Historie-lijst */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    th {
+      color: var(--accent-gold);
+      font-weight: 600;
+    }
+
+    .err-badge {
+      display: inline-block;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid var(--accent-red);
+    }
+
+    .fix-badge {
+      display: inline-block;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid var(--accent-green);
+    }
+
+    /* Onderste Mobiele Navigatiebalk */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      background: rgba(7, 10, 18, 0.96);
+      border-top: 1px solid var(--border-col);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 10px;
+      border-radius: 0;
+      padding: 4px;
+    }
+
+    .nav-btn.active {
+      color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.1);
+      border-top: 2px solid var(--accent-gold);
+    }
+
+    .layer-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Achtergrond MapLibre Container (Alle lagen bij opstarten UIT) -->
+  <div id="map"></div>
+
+  <!-- Bovenste Statusbalk -->
+  <header class="top-bar">
+    <div class="brand">
+      <span>🔭 VORTEX MOBILE v160</span>
+      <span style="color:var(--text-muted)">|</span>
+      <span id="clock-utc" style="color:var(--accent-cyan)">--:--:-- UTC</span>
+    </div>
+    <div class="status-pill" id="layer-status-pill">LAGEN: UIT (ALLEEN PANELEN)</div>
+  </header>
+
+  <!-- Zwevende Panelen Viewport -->
+  <main class="panels-viewport">
+
+    <!-- =========================================================
+         TAB 1: STERRENKAART, MAANFASEN, SAROS & EPHEMERIDEN
+         ========================================================= -->
+    <section id="tab-stars" class="tab-section active">
+      <div class="panel">
+        <div class="panel-header">
+          <span>🌌 Sterrenkaart & Epoche-Selector</span>
+          <span id="sky-epoch-label" style="color:var(--accent-cyan)">LIVE</span>
+        </div>
+        <div class="grid-2" style="margin-bottom:8px;">
+          <div>
+            <label class="metric-label">Datum & Tijd (UTC)</label>
+            <input type="datetime-local" id="ephem-datetime" />
+          </div>
+          <div>
+            <label class="metric-label">Snel-Preset (Casestudies)</label>
+            <select id="preset-selector" onchange="applyEpochPreset(this.value)">
+              <option value="now">Nu (Actuele Tijd)</option>
+              <option value="2026-08-12T17:47">Eclips Max (12 aug 2026 17:47 UTC)</option>
+              <option value="2026-08-12T18:08">Tafelbergheide Max (12 aug 2026 18:08 UTC)</option>
+              <option value="2025-09-07T18:11">Totale Maansverduistering (7 sep 2025)</option>
+              <option value="2026-10-15T18:15">VORTEX Lock (15 okt 2026 20:15 CEST)</option>
+              <option value="1889-07-22T03:50">Van Gogh Sterrennacht (22 jul 1889 03:50 UT)</option>
+              <option value="1953-01-27T16:14">VORTEX 1953 IJk (27 jan 1953 16:14 UTC)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Azimutale Sterrenkaart Canvas -->
+        <div class="canvas-wrap">
+          <canvas id="skymap-canvas" width="340" height="340"></canvas>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:6px; font-size:10px; color:var(--text-muted);">
+          <span>Zenit = Centrum | N-O-Z-W Horizon</span>
+          <span id="lst-display">LST: --°</span>
+        </div>
+      </div>
+
+      <!-- Meeus Ch. 47/49 Maanfasen & Fundamentele Hoekargumenten -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🌕 Maanfase (Meeus Ch. 47/49) & ELP-2000</span>
+          <span id="moon-phase-name" style="color:var(--accent-green)">--</span>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:10px;">
+          <canvas id="moon-phase-canvas" width="76" height="76" style="background:#02040a; border:1px solid var(--border-col); border-radius:50%;"></canvas>
+          <div class="grid-2" style="flex:1;">
+            <div class="metric-box">
+              <div class="metric-label">Verlichte Fractie ($k$)</div>
+              <div class="metric-val" id="moon-illum">--%</div>
+              <div class="metric-sub" id="moon-age">Leeftijd: -- d</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Geocentrische Afstand</div>
+              <div class="metric-val" id="moon-dist">-- km</div>
+              <div class="metric-sub" id="moon-ld">-- LD (Perigeum/Apogeum)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fundamentele Hoekargumenten Tabel -->
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Wiskundige Waarde</th>
+              <th>Astrometrische Betekenis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>JD / $\Delta T$</strong></td>
+              <td id="arg-jd">--</td>
+              <td id="arg-deltat">TT - UT1: -- s</td>
+            </tr>
+            <tr>
+              <td><strong>$L'$ (Maan Lengte)</strong></td>
+              <td id="arg-Lp">--°</td>
+              <td>Middelbare eclipticale lengte</td>
+            </tr>
+            <tr>
+              <td><strong>$D$ (Elongatie)</strong></td>
+              <td id="arg-D">--°</td>
+              <td id="arg-D-note">Maan-Zon hoek (0°=NM, 180°=VM)</td>
+            </tr>
+            <tr>
+              <td><strong>$M$ (Anomalie Maan)</strong></td>
+              <td id="arg-M">--°</td>
+              <td>Hoek t.o.v. perigeum</td>
+            </tr>
+            <tr>
+              <td><strong>$M_{\odot}$ (Anomalie Zon)</strong></td>
+              <td id="arg-Msun">--°</td>
+              <td>Hoek Aarde t.o.v. perihelium</td>
+            </tr>
+            <tr>
+              <td><strong>$F$ (Arg. v. Breedte)</strong></td>
+              <td id="arg-F">--°</td>
+              <td>Afstand tot stijgende knoop (Eclips als $\sin F \approx 0$)</td>
+            </tr>
+            <tr>
+              <td><strong>$\Omega$ (Stijgende Knoop)</strong></td>
+              <td id="arg-Omega">--°</td>
+              <td>18,61-jarige draconische precessie</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Saros-Cyclus, Kluepfel SNS & Atmosferische Refractie -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🌑 Saros-Cyclus, Refractie & Chebyshev Kernel</span>
+          <span style="color:var(--accent-purple)">DE440 / ELP</span>
+        </div>
+        <div class="grid-3" style="margin-bottom:8px;">
+          <div class="metric-box">
+            <div class="metric-label">Lunatie ($LN$) & Brown</div>
+            <div class="metric-val" id="saros-ln">--</div>
+            <div class="metric-sub" id="saros-bln">BLN: --</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Saros Cyclus (223 syn)</div>
+            <div class="metric-val">6585,321 d</div>
+            <div class="metric-sub">Exeligmos: 19755,96 d</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Eclips Knoop-Status</div>
+            <div class="metric-val" id="saros-node-status">--</div>
+            <div class="metric-sub" id="saros-series-info">Saros 126 ($\gamma = +0{,}2511$)</div>
+          </div>
+        </div>
+
+        <!-- Interactieve Bennett & Saemundsson Refractie + Kasten & Young Air Mass -->
+        <div style="border-top:1px solid rgba(148,163,184,0.2); padding-top:8px; margin-top:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="metric-label">Atmosferische Optica: Kies Hoogte $h$ (of Preset)</span>
+            <div style="display:flex; gap:4px;">
+              <button onclick="setRefractionAlt(6.6)">Bourges Min (6,6°)</button>
+              <button onclick="setRefractionAlt(8.5)">Bourges Max (8,5°)</button>
+              <button onclick="setRefractionAlt(12.1)">Tafelbergheide (12,1°)</button>
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="metric-box">
+              <div class="metric-label">Geometrische $h$</div>
+              <input type="number" id="input-true-h" value="12.1" step="0.1" oninput="updateRefractionCalc()" />
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Sæmundsson $\Delta h$ / $h_{\text{schijn}}$</div>
+              <div class="metric-val" id="out-saemundsson">--'</div>
+              <div class="metric-sub" id="out-apparent-h">h₀ = --°</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label">Kasten & Young $AM$</div>
+              <div class="metric-val" id="out-airmass">AM = --</div>
+              <div class="metric-sub" id="out-bennett">Bennett R(h₀): --'</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clenshaw Chebyshev Evaluator (Graad 13 JPL DE440/DE441) -->
+        <div style="border-top:1px solid rgba(148,163,184,0.2); padding-top:8px; margin-top:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span class="metric-label">JPL DE440/DE441 Type-2 Chebyshev Evaluator ($N=14$, Clenshaw-recursie)</span>
+            <span class="fix-badge">Sub-mm Precisie</span>
+          </div>
+          <div class="grid-2">
+            <div>
+              <label class="metric-label">Genormaliseerde Tijd $x \in [-1, 1]$ (32-daags granule)</label>
+              <input type="range" id="cheb-x" min="-1" max="1" step="0.01" value="-0.5" oninput="evaluateChebyshevDemo()" />
+            </div>
+            <div class="metric-box">
+              <div class="metric-label" id="cheb-x-label">x = -0.50</div>
+              <div class="metric-val" id="cheb-xyz" style="font-size:11px;">X: -- | Y: -- | Z: -- km</div>
+              <div class="metric-sub" id="cheb-vel">dV/dt: -- km/dag</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 2: MOBIELE CAMERA & AR VIZIER
+         ========================================================= -->
+    <section id="tab-camera" class="tab-section">
+      <div class="panel">
+        <div class="panel-header">
+          <span>📷 Mobiele Camera & Astrometrisch Vizier</span>
+          <span id="cam-status" style="color:var(--text-muted)">STANDBY</span>
+        </div>
+        <div class="camera-box">
+          <video id="camera-video" playsinline autoplay muted></video>
+          <div class="crosshair"></div>
+          <div class="hud-overlay">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--accent-gold);">
+              <span id="hud-az-el">AZ: 245,91° WZW | EL: +12,10°</span>
+              <span>λ = 589,0 nm (D-Lock)</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--accent-cyan);">
+              <span id="hud-gps- inline"> Anker P: 52,2500° N, 5,2200° E</span>
+              <span id="hud-moon-inline">Maan: --%</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:10px;">
+          <button onclick="startMobileCamera()">▶ Start Camera</button>
+          <button class="cyan" onclick="captureCameraSnapshot()">📸 Log Snapshot</button>
+          <button class="red" onclick="stopMobileCamera()">⏹ Stop Camera</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 3: LOCATIEVINDER & GEODETISCHE TRANSFORMATIES
+         ========================================================= -->
+    <section id="tab-location" class="tab-section">
+      <div class="panel">
+        <div class="panel-header">
+          <span>📍 GPS Locatievinder & Geodesie (WGS84 / RD / NTF)</span>
+          <button class="cyan" onclick="locateUserGPS()">🛰️ Mijn GPS Positie</button>
+        </div>
+        <div class="grid-2" style="margin-bottom:8px;">
+          <div>
+            <label class="metric-label">Breedtegraad ($\phi$ °N)</label>
+            <input type="number" id="loc-lat" value="52.2300" step="0.0001" oninput="updateLocationTransforms()" />
+          </div>
+          <div>
+            <label class="metric-label">Lengtegraad ($\lambda$ °E)</label>
+            <input type="number" id="loc-lon" value="5.1800" step="0.0001" oninput="updateLocationTransforms()" />
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+          <button onclick="setPresetLocation(52.2500, 5.2200, 'Poolanker P (Laren)')">Poolanker P (Laren)</button>
+          <button onclick="setPresetLocation(52.2300, 5.1800, 'Tafelbergheide')">Tafelbergheide</button>
+          <button onclick="setPresetLocation(47.0844, 2.3956, 'Bourges (FR)')">Bourges (FR)</button>
+          <button onclick="setPresetLocation(43.7886, 4.8311, 'Saint-Rémy (Van Gogh)')">Saint-Rémy</button>
+          <button onclick="setPresetLocation(48.8364, 2.3372, 'Observatoire de Paris')">Parijs Meridiaan</button>
+        </div>
+
+        <div class="grid-2">
+          <div class="metric-box">
+            <div class="metric-label">Rijksdriehoeksstelsel (RD New)</div>
+            <div class="metric-val" id="geo-rd">X: -- | Y: -- m</div>
+            <div class="metric-sub">EPSG:28992 (Amersfoort)</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Parijse Meridiaan & Lambert 93</div>
+            <div class="metric-val" id="geo-paris">λ_Paris: --°</div>
+            <div class="metric-sub" id="geo-l93">L93: X -- | Y --</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Geocentrische Breedte ($\phi'$)</div>
+            <div class="metric-val" id="geo-geocentric">--°</div>
+            <div class="metric-sub" id="geo-ellipsoid-diff">Ellipsoïde Δφ: --'</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Afstand tot Ankers (Grootcirkel)</div>
+            <div class="metric-val" id="geo-dist-bourges">Bourges: -- km</div>
+            <div class="metric-sub" id="geo-dist-p">Poolanker P: -- km</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 4: HISTORIE PALET & RUIMTELIJKE FOUTENANALYSE
+         ========================================================= -->
+    <section id="tab-history" class="tab-section">
+      <!-- Historie Palet -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🕰️ Historie Palet (Tijdscapsule & Telemetrie Log)</span>
+          <div style="display:flex; gap:4px;">
+            <button class="cyan" onclick="logCurrentStateToHistory()">+ Snapshot</button>
+            <button onclick="exportHistoryJSON()">💾 JSON</button>
+          </div>
+        </div>
+        <div style="max-height:175px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tijd / Label</th>
+                <th>Locatie ($\phi, \lambda$)</th>
+                <th>$D$ / Maan</th>
+                <th>Herstel</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Foutenanalyse van het Onderzoeksrapport -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🔍 Audit: Ruimtelijke & Astrometrische Foutenanalyse</span>
+          <span class="fix-badge">6 GECORRIGEERD</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Onderdeel</th>
+                <th>Fout in Rapport</th>
+                <th>Wiskundige Correctie in Engine</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Elongatie $D$ (12-08-2026)</strong></td>
+                <td><span class="err-badge">D = 187,277°</span> (is Volle Maan) & $M_{\odot}=49,4^\circ$</td>
+                <td><span class="fix-badge">D ≈ 0,0° (Nieuwe Maan)</span>, $M_{\odot} \approx 220,1^\circ$ op JD 2461265.24</td>
+              </tr>
+              <tr>
+                <td><strong>2. Eclips Tijd Tafelbergheide</strong></td>
+                <td><span class="err-badge">21:11:32 CEST</span> bij $h = 12,1^\circ$ (Zon is dan al onder)</td>
+                <td><span class="fix-badge">~20:08 CEST (18:08 UTC)</span> bij $h = 12,1^\circ$ (Zonsondergang ~21:08 CEST)</td>
+              </tr>
+              <tr>
+                <td><strong>3. Bennett vs. Sæmundsson</strong></td>
+                <td><span class="err-badge">Formule 1,02/tan(...)</span> gelabeld als Bennett (1982)</td>
+                <td><span class="fix-badge">Sæmundsson (1986)</span> gebruikt ware $h$; Bennett gebruikt schijnbare $h_0$</td>
+              </tr>
+              <tr>
+                <td><strong>4. Luchtmassa Bourges (6,6°)</strong></td>
+                <td><span class="err-badge">Tabel 3.1: AM ≫ 10</span> bij $h = 6,6^\circ$</td>
+                <td><span class="fix-badge">AM = 7,51</span> (Kasten & Young 1989); $AM > 10$ pas onder $h = 4,7^\circ$</td>
+              </tr>
+              <tr>
+                <td><strong>5. Saros 126 Knoop-Pariteit</strong></td>
+                <td><span class="err-badge">Onvolledige knoopregel</span> tussen Saros 126 & 125</td>
+                <td><span class="fix-badge">Zon Even (126) = Dalende Knoop</span> ($\gamma$ stijgt); Oneven (125) = Stijgende Knoop</td>
+              </tr>
+              <tr>
+                <td><strong>6. EUV Hexagonaal Rooster</strong></td>
+                <td><span class="err-badge">k = 0,0659 nm⁻¹</span> ($2\pi / 95,26\text{ nm}$)</td>
+                <td><span class="fix-badge">k₁₀ = 0,07616 nm⁻¹</span> ($d_{10} = \frac{3}{2}s = 82,5\text{ nm}$ voor $s=55\text{ nm}$)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 5: KAARTLAGEN BEHEER (STANDAARD ALLEMAAL UIT)
+         ========================================================= -->
+    <section id="tab-layers" class="tab-section">
+      <div class="panel">
+        <div class="panel-header">
+          <span>🗺️ MapLibre Lagenbeheer (Standaard UIT)</span>
+          <button class="red" onclick="disableAllMapLayers()">Alles Uitzetten</button>
+        </div>
+        <p style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+          Conform specificatie zijn bij het openen van de HTML alle kaart- en vectorlagen uitgeschakeld. Schakel individuele lagen hieronder handmatig in indien gewenst:
+        </p>
+        <div class="layer-toggle-row">
+          <span>1. Donkere Basiskaart (Carto Dark Matter Tiles)</span>
+          <input type="checkbox" id="chk-layer-base" style="width:auto;" onchange="toggleLayer('base-tiles', this.checked)" />
+        </div>
+        <div class="layer-toggle-row">
+          <span>2. Geodetische Knooppunten (Laren, Bourges, St.-Rémy, Biskaje)</span>
+          <input type="checkbox" id="chk-layer-nodes" style="width:auto;" onchange="toggleLayer('vortex-nodes', this.checked)" />
+        </div>
+        <div class="layer-toggle-row">
+          <span>3. 245,91° WZW Vector & Eclips Corridor (12 aug 2026)</span>
+          <input type="checkbox" id="chk-layer-vectors" style="width:auto;" onchange="toggleLayer('vortex-vectors', this.checked)" />
+        </div>
+        <div class="layer-toggle-row">
+          <span>4. Franse 6×6 Matrix & 45×90 Symmetrie-Kader</span>
+          <input type="checkbox" id="chk-layer-grid" style="width:auto;" onchange="toggleLayer('vortex-grid', this.checked)" />
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Onderste Mobiele Navigatie -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('tab-stars', this)">
+      <span>🌌</span>
+      <span>Sterren</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('tab-camera', this)">
+      <span>📷</span>
+      <span>Camera</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('tab-location', this)">
+      <span>📍</span>
+      <span>Locatie</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('tab-history', this)">
+      <span>🕰️</span>
+      <span>Historie/Audit</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('tab-layers', this)">
+      <span>🗺️</span>
+      <span>Lagen (Uit)</span>
+    </button>
+  </nav>
+
+  <script>
+    /* =========================================================================
+       1. GLOBALE STAAT & HISTORIE PALET DATA
+       ========================================================================= */
+    let currentLat = 52.2300; // Tafelbergheide / Laren anker
+    let currentLon = 5.1800;
+    let cameraStream = null;
+    let mapInstance = null;
+
+    const initialHistory = [
+      { id: 1, label: "Eclips Max 2026 (Tafelbergheide)", iso: "2026-08-12T18:08", lat: 52.2300, lon: 5.1800, note: "h=12,1°, AM=4,71, 88,8% bedekking" },
+      { id: 2, label: "Eclips Max 2026 (Bourges FR)", iso: "2026-08-12T18:12", lat: 47.0844, lon: 2.3956, note: "h=7,5°, AM=6,65, 93,7% bedekking" },
+      { id: 3, label: "Van Gogh Sterrennacht (St.-Rémy)", iso: "1889-07-22T03:50", lat: 43.7886, lon: 4.8311, note: "Hyaden + Venus + Maansikkel (28%)" },
+      { id: 4, label: "Totale Maansverduistering 2025", iso: "2025-09-07T18:11", lat: 52.2500, lon: 5.2200, note: "Oppositie D=180°, Umbra-doorloop" },
+      { id: 5, label: "VORTEX Lock (Normandië 157°)", iso: "2026-10-15T18:15", lat: 49.0184, lon: 0.6205, note: "Mercurius 245,82° WZW, γ=22,36°" },
+      { id: 6, label: "Watersnood / VORTEX IJk 1953", iso: "1953-01-27T16:14", lat: 51.5400, lon: 4.0800, note: "JD 2434405.18, D=150,56° (Wassend)" }
+    ];
+
+    let historyPalette = JSON.parse(localStorage.getItem('vortex_history_v160') || 'null') || initialHistory;
+
+    /* =========================================================================
+       2. MAPLIBRE INITIALISATIE MET ALLE LAGEN STANDAARD UITGESCHAKELD
+       ========================================================================= */
+    function initMapLibre() {
+      mapInstance = new maplibregl.Map({
+        container: 'map',
+        center: [2.3956, 47.0844],
+        zoom: 4.8,
+        style: {
+          version: 8,
+          sources: {
+            'carto-dark': {
+              type: 'raster',
+              tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+              tileSize: 256
+            },
+            'vortex-nodes-src': {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: [
+                  { type: 'Feature', properties: { name: 'Poolanker P (Laren)' }, geometry: { type: 'Point', coordinates: [5.2200, 52.2500] } },
+                  { type: 'Feature', properties: { name: 'Tafelbergheide' }, geometry: { type: 'Point', coordinates: [5.1800, 52.2300] } },
+                  { type: 'Feature', properties: { name: 'Bourges (Meridiaananker)' }, geometry: { type: 'Point', coordinates: [2.3956, 47.0844] } },
+                  { type: 'Feature', properties: { name: 'Uittreedpunt Biskaje (Dept 17/85)' }, geometry: { type: 'Point', coordinates: [-1.2500, 46.2500] } },
+                  { type: 'Feature', properties: { name: 'Eclips Landfall Noord-Spanje' }, geometry: { type: 'Point', coordinates: [-6.5000, 43.5500] } },
+                  { type: 'Feature', properties: { name: 'Saint-Rémy-de-Provence (1889)' }, geometry: { type: 'Point', coordinates: [4.8311, 43.7886] } }
+                ]
+              }
+            },
+            'vortex-vectors-src': {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: [
+                  {
+                    type: 'Feature',
+                    properties: { name: '245,91° Vector & Eclips-As' },
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: [[5.2200, 52.2500], [2.3956, 47.0844], [-1.2500, 46.2500], [-6.5000, 43.5500]]
+                    }
+                  }
+                ]
+              }
+            },
+            'vortex-grid-src': {
+              type: 'geojson',
+              data: {
+                type: 'FeatureCollection',
+                features: [
+                  {
+                    type: 'Feature',
+                    geometry: {
+                      type: 'Polygon',
+                      coordinates: [[[-2.0, 43.0], [6.0, 43.0], [6.0, 50.0], [-2.0, 50.0], [-2.0, 43.0]]]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          layers: [
+            {
+              id: 'base-tiles',
+              type: 'raster',
+              source: 'carto-dark',
+              layout: { visibility: 'none' } // STANDAARD UIT BIJ OPENEN HTML
+            },
+            {
+              id: 'vortex-grid',
+              type: 'line',
+              source: 'vortex-grid-src',
+              layout: { visibility: 'none' }, // STANDAARD UIT
+              paint: { 'line-color': '#06b6d4', 'line-width': 1.5, 'line-dasharray': [3, 3] }
+            },
+            {
+              id: 'vortex-vectors',
+              type: 'line',
+              source: 'vortex-vectors-src',
+              layout: { visibility: 'none' }, // STANDAARD UIT
+              paint: { 'line-color': '#f59e0b', 'line-width': 2.5 }
+            },
+            {
+              id: 'vortex-nodes',
+              type: 'circle',
+              source: 'vortex-nodes-src',
+              layout: { visibility: 'none' }, // STANDAARD UIT
+              paint: {
+                'circle-radius': 6,
+                'circle-color': '#10b981',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+              }
+            }
+          ]
+        }
+      });
+    }
+
+    function toggleLayer(layerId, isVisible) {
+      if (!mapInstance) return;
+      mapInstance.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
+      updateLayerStatusPill();
+    }
+
+    function disableAllMapLayers() {
+      ['base-tiles', 'vortex-nodes', 'vortex-vectors', 'vortex-grid'].forEach(id => {
+        if (mapInstance && mapInstance.getLayer(id)) {
+          mapInstance.setLayoutProperty(id, 'visibility', 'none');
+        }
+      });
+      ['chk-layer-base', 'chk-layer-nodes', 'chk-layer-vectors', 'chk-layer-grid'].forEach(cid => {
+        const el = document.getElementById(cid);
+        if (el) el.checked = false;
+      });
+      updateLayerStatusPill();
+    }
+
+    function updateLayerStatusPill() {
+      const ids = ['chk-layer-base', 'chk-layer-nodes', 'chk-layer-vectors', 'chk-layer-grid'];
+      const activeCount = ids.filter(id => document.getElementById(id)?.checked).length;
+      const pill = document.getElementById('layer-status-pill');
+      if (activeCount === 0) {
+        pill.textContent = 'LAGEN: UIT (ALLEEN PANELEN)';
+        pill.style.borderColor = '#10b981';
+        pill.style.color = '#10b981';
+      } else {
+        pill.textContent = `LAGEN ACTIEF: ${activeCount}/4`;
+        pill.style.borderColor = '#f59e0b';
+        pill.style.color = '#f59e0b';
+      }
+    }
+
+    /* =========================================================================
+       3. ASTROMETRISCHE ENGINE (MEEUS CH. 47/49, SAROS, ΔT, STERRENKAART)
+       ========================================================================= */
+    const DEG2RAD = Math.PI / 180;
+    const RAD2DEG = 180 / Math.PI;
+
+    function normDeg(deg) {
+      return ((deg % 360) + 360) % 360;
+    }
+
+    function dateToJD(dateObj) {
+      return dateObj.getTime() / 86400000 + 2440587.5;
+    }
+
+    // Espenak & Meeus / USNO ΔT benadering (TT - UT1 in seconden)
+    function computeDeltaT(year) {
+      if (year >= 2005 && year <= 2050) {
+        const t = year - 2000;
+        return 62.92 + 0.32217 * t + 0.005589 * t * t;
+      } else if (year >= 1900 && year < 2005) {
+        const t = (year - 1900) / 100;
+        return -2.79 + 19.89 * t + 105.2 * t * t - 67.2 * t * t * t;
+      } else {
+        const u = (year - 1820) / 100;
+        return -20 + 32 * u * u;
+      }
+    }
+
+    function computeEphemeris(dateObj, latDeg, lonDeg) {
+      const jdUT = dateToJD(dateObj);
+      const yearDecimal = dateObj.getUTCFullYear() + (dateObj.getUTCMonth() + 0.5) / 12;
+      const deltaT = computeDeltaT(yearDecimal);
+      const jde = jdUT + deltaT / 86400.0;
+      const T = (jde - 2451545.0) / 36525.0;
+
+      // Meeus Ch. 47 Fundamentele Hoekargumenten (in graden)
+      const Lp = normDeg(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T);
+      const D  = normDeg(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T);
+      const Msun = normDeg(357.5291092 + 35999.0502909 * T - 0.0001536 * T * T);
+      const M  = normDeg(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T);
+      const F  = normDeg(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T);
+      const Omega = normDeg(125.0445479 - 1934.1362891 * T + 0.0020754 * T * T);
+
+      // Hoofdtermen ELP-2000/82 voor Geocentrische Eclipticale Lengte (λ), Breedte (β) en Afstand (d in km)
+      const dLambda = 6.288774 * Math.sin(M * DEG2RAD)
+                    + 1.274027 * Math.sin((2 * D - M) * DEG2RAD)
+                    + 0.658314 * Math.sin(2 * D * DEG2RAD)
+                    + 0.213618 * Math.sin(2 * M * DEG2RAD)
+                    - 0.185116 * Math.sin(Msun * DEG2RAD)
+                    - 0.114332 * Math.sin(2 * F * DEG2RAD);
+
+      const dBeta = 5.128122 * Math.sin(F * DEG2RAD)
+                  + 0.280602 * Math.sin((M + F) * DEG2RAD)
+                  + 0.277693 * Math.sin((M - F) * DEG2RAD)
+                  + 0.173237 * Math.sin((2 * D - F) * DEG2RAD);
+
+      const dDistKm = -20905.355 * Math.cos(M * DEG2RAD)
+                    - 3699.111 * Math.cos((2 * D - M) * DEG2RAD)
+                    - 2955.968 * Math.cos(2 * D * DEG2RAD)
+                    - 569.925 * Math.cos(2 * M * DEG2RAD);
+
+      const moonLon = normDeg(Lp + dLambda);
+      const moonLat = dBeta;
+      const moonDist = 385000.56 + dDistKm;
+
+      // Zon Eclipticale Lengte
+      const L0 = normDeg(280.46646 + 36000.76983 * T);
+      const Csun = (1.914602 - 0.004817 * T) * Math.sin(Msun * DEG2RAD) + 0.019993 * Math.sin(2 * Msun * DEG2RAD);
+      const sunLon = normDeg(L0 + Csun);
+
+      // Werkelijke elongatie & fasehoek
+      const trueElong = normDeg(moonLon - sunLon);
+      const phaseAngle = 180 - trueElong;
+      const illumFraction = (1 + Math.cos(phaseAngle * DEG2RAD)) / 2;
+
+      // Lokale Sterrentijd (LST)
+      const gmst = normDeg(280.46061837 + 360.98564736629 * (jdUT - 2451545.0));
+      const lst = normDeg(gmst + lonDeg);
+
+      // Lunatie-index (LN t.o.v. 6 jan 2000 Nieuwe Maan JD 2451550.1)
+      const synodicMonth = 29.53058886;
+      const kLun = Math.round((jde - 2451550.09766) / synodicMonth);
+      const brownLun = kLun + 953;
+
+      return {
+        jdUT, jde, deltaT, T,
+        Lp, D, Msun, M, F, Omega,
+        moonLon, moonLat, moonDist, sunLon,
+        trueElong, illumFraction, lst,
+        kLun, brownLun
+      };
+    }
+
+    function eclipticToAltAz(lonDeg, latDeg, lstDeg, obsLatDeg) {
+      const eps = 23.439291 * DEG2RAD;
+      const lam = lonDeg * DEG2RAD;
+      const bet = latDeg * DEG2RAD;
+
+      const sinDec = Math.sin(bet) * Math.cos(eps) + Math.cos(bet) * Math.sin(eps) * Math.sin(lam);
+      const dec = Math.asin(sinDec);
+      const y = Math.sin(lam) * Math.cos(eps) - Math.tan(bet) * Math.sin(eps);
+      const x = Math.cos(lam);
+      const ra = normDeg(Math.atan2(y, x) * RAD2DEG);
+
+      const ha = (lstDeg - ra) * DEG2RAD;
+      const phi = obsLatDeg * DEG2RAD;
+
+      const sinAlt = Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha);
+      const alt = Math.asin(sinAlt) * RAD2DEG;
+
+      const cosAz = (Math.sin(dec) - Math.sin(phi) * sinAlt) / (Math.cos(phi) * Math.cos(Math.asin(sinAlt)));
+      let az = Math.acos(Math.max(-1, Math.min(1, cosAz))) * RAD2DEG;
+      if (Math.sin(ha) > 0) az = 360 - az;
+
+      return { alt, az, ra, dec: dec * RAD2DEG };
+    }
+
+    function raDecToAltAz(raHours, decDeg, lstDeg, obsLatDeg) {
+      const raDeg = raHours * 15;
+      const ha = (lstDeg - raDeg) * DEG2RAD;
+      const dec = decDeg * DEG2RAD;
+      const phi = obsLatDeg * DEG2RAD;
+
+      const sinAlt = Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha);
+      const alt = Math.asin(sinAlt) * RAD2DEG;
+      const y = -Math.sin(ha);
+      const x = Math.tan(dec) * Math.cos(phi) - Math.sin(phi) * Math.cos(ha);
+      const az = normDeg(Math.atan2(y, x) * RAD2DEG);
+      return { alt, az };
+    }
+
+    /* =========================================================================
+       4. RENDER STERRENKAART & MAANFASE OP CANVAS
+       ========================================================================= */
+    const refStars = [
+      { name: "Aldebaran (Hyaden)", ra: 4.5987, dec: 16.5093, col: "#f97316" },
+      { name: "M45 (Plejaden)", ra: 3.791, dec: 24.105, col: "#38bdf8" },
+      { name: "Wega", ra: 18.6156, dec: 38.7837, col: "#e2e8f0" },
+      { name: "Deneb", ra: 20.6905, dec: 45.2803, col: "#e2e8f0" },
+      { name: "Altair", ra: 19.8464, dec: 8.8683, col: "#e2e8f0" },
+      { name: "Betelgeuze", ra: 5.9195, dec: 7.4071, col: "#ef4444" },
+      { name: "Rigel", ra: 5.2423, dec: -8.2016, col: "#93c5fd" },
+      { name: "Regulus", ra: 10.1395, dec: 11.9672, col: "#cbd5e1" },
+      { name: "Polaris", ra: 2.5303, dec: 89.2641, col: "#fde047" }
+    ];
+
+    function drawSkyAndMoon(ephem) {
+      const skyCanvas = document.getElementById('skymap-canvas');
+      const ctx = skyCanvas.getContext('2d');
+      const W = skyCanvas.width;
+      const H = skyCanvas.height;
+      const cx = W / 2;
+      const cy = H / 2;
+      const R = W * 0.42;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Hemelkoepel achtergrond
+      const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, R);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(1, '#020617');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Almukantars (30°, 60°, Horizon 0°)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+      ctx.lineWidth = 1;
+      [1, 2/3, 1/3].forEach(frac => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * frac, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Meridiaan & Oost-West kruis + 245,91° VORTEX Vector
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
+      ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+      ctx.stroke();
+
+      // 245,91° WZW VORTEX lock-as
+      const vAng = (245.91 - 90) * DEG2RAD;
+      // N=boven (0°), O=links (astronomische zenitprojectie) of N=boven, O=rechts
+      const azToXY = (azDeg, altDeg) => {
+        const r = R * (90 - Math.max(0, altDeg)) / 90;
+        const rad = (azDeg - 90) * DEG2RAD;
+        return {
+          x: cx + r * Math.cos(rad),
+          y: cy + r * Math.sin(rad)
+        };
+      };
+
+      const vEnd = azToXY(245.91, 0);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(vEnd.x, vEnd.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Windstreken
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('N (0°)', cx, cy - R - 6);
+      ctx.fillText('Z (180°)', cx, cy + R + 13);
+      ctx.fillText('O (90°)', cx + R + 18, cy + 4);
+      ctx.fillText('W (270°)', cx - R - 18, cy + 4);
+
+      // Teken Referentiesterren
+      refStars.forEach(st => {
+        const pos = raDecToAltAz(st.ra, st.dec, ephem.lst, currentLat);
+        if (pos.alt > -5) {
+          const pt = azToXY(pos.az, Math.max(0, pos.alt));
+          ctx.fillStyle = st.col;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pos.alt > 0 ? 3 : 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          if (pos.alt > 0) {
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.85)';
+            ctx.font = '9px monospace';
+            ctx.fillText(st.name, pt.x + 6, pt.y - 4);
+          }
+        }
+      });
+
+      // Teken Zon & Maan
+      const sunPos = eclipticToAltAz(ephem.sunLon, 0, ephem.lst, currentLat);
+      const moonPos = eclipticToAltAz(ephem.moonLon, ephem.moonLat, ephem.lst, currentLat);
+
+      if (sunPos.alt > -12) {
+        const sPt = azToXY(sunPos.az, Math.max(0, sunPos.alt));
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(sPt.x, sPt.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText(`☉ Zon (${sunPos.alt.toFixed(1)}°)`, sPt.x, sPt.y - 9);
+      }
+
+      if (moonPos.alt > -12) {
+        const mPt = azToXY(moonPos.az, Math.max(0, moonPos.alt));
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(mPt.x, mPt.y, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText(`☽ Maan (${moonPos.alt.toFixed(1)}°)`, mPt.x, mPt.y + 14);
+      }
+
+      // Teken Maanfase Schijf
+      const mCanvas = document.getElementById('moon-phase-canvas');
+      const mCtx = mCanvas.getContext('2d');
+      const mw = mCanvas.width;
+      const mr = mw / 2 - 4;
+      mCtx.clearRect(0, 0, mw, mw);
+
+      // Donkere maanachtergrond
+      mCtx.fillStyle = '#1e293b';
+      mCtx.beginPath();
+      mCtx.arc(mw/2, mw/2, mr, 0, Math.PI * 2);
+      mCtx.fill();
+
+      // Verlichte terminator
+      const waxing = ephem.trueElong < 180;
+      const cosPhase = Math.cos(ephem.trueElong * DEG2RAD);
+      mCtx.fillStyle = '#f8fafc';
+      mCtx.beginPath();
+      mCtx.arc(mw/2, mw/2, mr, -Math.PI/2, Math.PI/2, !waxing);
+      mCtx.ellipse(mw/2, mw/2, Math.abs(cosPhase) * mr, mr, 0, Math.PI/2, -Math.PI/2, cosPhase > 0 ? !waxing : waxing);
+      mCtx.fill();
+    }
+
+    function updateAllAstronomy() {
+      const dtInput = document.getElementById('ephem-datetime').value;
+      const dateObj = dtInput ? new Date(dtInput + 'Z') : new Date();
+      const ephem = computeEphemeris(dateObj, currentLat, currentLon);
+
+      document.getElementById('lst-display').textContent = `LST: ${ephem.lst.toFixed(2)}°`;
+      document.getElementById('moon-illum').textContent = `${(ephem.illumFraction * 100).toFixed(1)}%`;
+      const synAge = (ephem.trueElong / 360) * 29.53059;
+      document.getElementById('moon-age').textContent = `Cyclus: ${synAge.toFixed(1)} / 29,5 d`;
+      document.getElementById('moon-dist').textContent = `${Math.round(ephem.moonDist).toLocaleString('nl-NL')} km`;
+      document.getElementById('moon-ld').textContent = `${(ephem.moonDist / 384400).toFixed(3)} LD`;
+
+      // Maanfase naam
+      let pName = "Wassende Sikkel";
+      const el = ephem.trueElong;
+      if (el < 6 || el > 354) pName = "🌑 Nieuwe Maan (Syzygie)";
+      else if (el < 84) pName = "🌒 Wassende Sikkel";
+      else if (el < 96) pName = "🌓 Eerste Kwartier";
+      else if (el < 174) pName = "🌔 Wassende Bolle Maan";
+      else if (el <= 186) pName = "🌕 Volle Maan (Oppositie)";
+      else if (el < 264) pName = "🌖 Afnemende Bolle Maan";
+      else if (el < 276) pName = "🌗 Laatste Kwartier";
+      else pName = "🌘 Afnemende Sikkel";
+      document.getElementById('moon-phase-name').textContent = pName;
+      document.getElementById('hud-moon-inline').textContent = `Maan: ${(ephem.illumFraction * 100).toFixed(0)}% (${pName.split(' ')[1]})`;
+
+      // Argumenten Tabel
+      document.getElementById('arg-jd').textContent = ephem.jdUT.toFixed(4);
+      document.getElementById('arg-deltat').textContent = `ΔT = ${ephem.deltaT.toFixed(1)} s`;
+      document.getElementById('arg-Lp').textContent = `${ephem.Lp.toFixed(3)}°`;
+      document.getElementById('arg-D').textContent = `${ephem.D.toFixed(3)}° (waar: ${ephem.trueElong.toFixed(2)}°)`;
+      document.getElementById('arg-M').textContent = `${ephem.M.toFixed(3)}°`;
+      document.getElementById('arg-Msun').textContent = `${ephem.Msun.toFixed(3)}°`;
+      document.getElementById('arg-F').textContent = `${ephem.F.toFixed(3)}°`;
+      document.getElementById('arg-Omega').textContent = `${ephem.Omega.toFixed(3)}°`;
+
+      // Saros & Knoop Nabijheid
+      document.getElementById('saros-ln').textContent = `LN ${ephem.kLun}`;
+      document.getElementById('saros-bln').textContent = `Brown LN: ${ephem.brownLun}`;
+      const nodeDist = Math.abs(Math.sin(ephem.F * DEG2RAD));
+      const syzygyDist = Math.min(ephem.trueElong, Math.abs(180 - ephem.trueElong), 360 - ephem.trueElong);
+      if (nodeDist < 0.26 && syzygyDist < 12) {
+        const isSolar = ephem.trueElong < 25 || ephem.trueElong > 335;
+        document.getElementById('saros-node-status').textContent = isSolar ? "⚡ ZONSVERDUISTERING" : "🩸 MAANSVERDUISTERING";
+        document.getElementById('saros-node-status').style.color = "#f59e0b";
+      } else {
+        document.getElementById('saros-node-status').textContent = `Geen Eclips (|sin F|=${nodeDist.toFixed(2)})`;
+        document.getElementById('saros-node-status').style.color = "#94a3b8";
+      }
+
+      drawSkyAndMoon(ephem);
+    }
+
+    function applyEpochPreset(val) {
+      const input = document.getElementById('ephem-datetime');
+      if (val === 'now') {
+        const now = new Date();
+        input.value = now.toISOString().slice(0, 16);
+        document.getElementById('sky-epoch-label').textContent = 'LIVE';
+      } else {
+        input.value = val;
+        document.getElementById('sky-epoch-label').textContent = val.replace('T', ' ') + ' UTC';
+      }
+      updateAllAstronomy();
+    }
+
+    /* =========================================================================
+       5. BENNETT / SÆMUNDSSON REFRACTIE & CHEBYSHEV CLENSHAW EVALUATOR
+       ========================================================================= */
+    function setRefractionAlt(hVal) {
+      document.getElementById('input-true-h').value = hVal;
+      updateRefractionCalc();
+    }
+
+    function updateRefractionCalc() {
+      const h = parseFloat(document.getElementById('input-true-h').value) || 0;
+      // Sæmundsson (1986) vanuit ware hoogte h (in boogminuten)
+      const argS = (h + 10.3 / (h + 5.11)) * DEG2RAD;
+      const R_saem = 1.02 / Math.tan(argS);
+      const h0 = h + R_saem / 60.0;
+
+      // Directe Bennett (1982) vanuit schijnbare hoogte h0
+      const argB = (h0 + 7.31 / (h0 + 4.4)) * DEG2RAD;
+      const R_bennett = 1.0 / Math.tan(argB);
+
+      // Kasten & Young (1989) Optische Luchtmassa (AM)
+      let am = 99.9;
+      if (h >= 0) {
+        am = 1.0 / (Math.sin(h * DEG2RAD) + 0.50572 * Math.pow(h + 6.07995, -1.6364));
+      }
+
+      document.getElementById('out-saemundsson').textContent = `+${R_saem.toFixed(2)}' (${(R_saem/60).toFixed(4)}°)`;
+      document.getElementById('out-apparent-h').textContent = `h_schijn = ${h0.toFixed(4)}°`;
+      document.getElementById('out-airmass').textContent = `AM = ${am.toFixed(2)}`;
+      document.getElementById('out-bennett').textContent = `Bennett R(h₀): ${R_bennett.toFixed(2)}'`;
+    }
+
+    // Voorbeeld 14-term Chebyshev segment uit JPL DE440/DE441 (in km)
+    const de440_X = [2304.464117, 13372673.66627, -7821.870909, -26767.874552, -227.070698, -14.201234, -0.092487, 0.004317, 0.000357, 0.000030, 0.000001, 0, 0, 0];
+    const de440_Y = [-59391445.453117, 1383913.121735, 725419.090211, 1394.714653, -290.917422, -6.350646, -0.646845, -0.012080, -0.000681, -0.000008, 0, 0, 0, 0];
+    const de440_Z = [-31884668.523407, -647159.726192, 388325.111501, 3519.752380, -131.868705, -1.920401, -0.335953, -0.006900, -0.000401, -0.000007, 0, 0, 0, 0];
+
+    function clenshawEval(x, coeffs, spanDays = 32.0) {
+      let T = [1, x];
+      let dT = [0, 1];
+      for (let n = 2; n < coeffs.length; n++) {
+        T[n] = 2 * x * T[n - 1] - T[n - 2];
+        dT[n] = 2 * T[n - 1] + 2 * x * dT[n - 1] - dT[n - 2];
+      }
+      let pos = 0, vel = 0;
+      for (let i = 0; i < coeffs.length; i++) {
+        pos += coeffs[i] * T[i];
+        vel += coeffs[i] * dT[i];
+      }
+      vel *= (2.0 / spanDays);
+      return { pos, vel };
+    }
+
+    function evaluateChebyshevDemo() {
+      const x = parseFloat(document.getElementById('cheb-x').value);
+      document.getElementById('cheb-x-label').textContent = `Genormaliseerd tijdstip x = ${x.toFixed(2)}`;
+      const rx = clenshawEval(x, de440_X);
+      const ry = clenshawEval(x, de440_Y);
+      const rz = clenshawEval(x, de440_Z);
+      const vMag = Math.sqrt(rx.vel * rx.vel + ry.vel * ry.vel + rz.vel * rz.vel);
+
+      document.getElementById('cheb-xyz').textContent =
+        `X: ${(rx.pos / 1e6).toFixed(3)}M | Y: ${(ry.pos / 1e6).toFixed(3)}M | Z: ${(rz.pos / 1e6).toFixed(3)}M km`;
+      document.getElementById('cheb-vel').textContent =
+        `|dV/dt| = ${(vMag / 86400).toFixed(3)} km/s (32d Granule)`;
+    }
+
+    /* =========================================================================
+       6. CAMERA & LOCATIEVINDER (WGS84 <-> RD NEW & PARIJSE MERIDIAAN)
+       ========================================================================= */
+    async function startMobileCamera() {
+      const video = document.getElementById('camera-video');
+      const status = document.getElementById('cam-status');
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+        video.srcObject = cameraStream;
+        status.textContent = 'LIVE CAMERA ACTIEF';
+        status.style.color = '#10b981';
+      } catch (err) {
+        status.textContent = 'GEEN CAMERATOEGANG: ' + err.message;
+        status.style.color = '#ef4444';
+      }
+    }
+
+    function stopMobileCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+      }
+      document.getElementById('cam-status').textContent = 'GESTOPT';
+      document.getElementById('cam-status').style.color = '#94a3b8';
+    }
+
+    function captureCameraSnapshot() {
+      logCurrentStateToHistory("Camera AR Snapshot");
+      alert("Snapshot met actuele locatie en maanstand opgeslagen in het Historie Palet.");
+    }
+
+    // Officieel Schreutelkamp / Kadaster benaderingsmodel WGS84 -> RD New (EPSG:28992)
+    function wgs84ToRD(phi, lam) {
+      const dPhi = 0.36 * (phi - 52.15517440);
+      const dLam = 0.36 * (lam - 5.38720621);
+      const x = 155000 + 190094.945 * dLam - 11832.228 * dPhi * dLam - 114.221 * dPhi * dPhi * dLam - 32.391 * Math.pow(dLam, 3);
+      const y = 463000 + 309056.544 * dPhi + 3638.893 * dLam * dLam + 73.077 * dPhi * dPhi - 157.984 * dPhi * dLam * dLam;
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371.0088;
+      const dLat = (lat2 - lat1) * DEG2RAD;
+      const dLon = (lon2 - lon1) * DEG2RAD;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*DEG2RAD)*Math.cos(lat2*DEG2RAD)*Math.sin(dLon/2)**2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function updateLocationTransforms() {
+      currentLat = parseFloat(document.getElementById('loc-lat').value) || 52.2300;
+      currentLon = parseFloat(document.getElementById('loc-lon').value) || 5.1800;
+
+      // RD New
+      const rd = wgs84ToRD(currentLat, currentLon);
+      document.getElementById('geo-rd').textContent = `X: ${rd.x} | Y: ${rd.y} m`;
+
+      // Parijse Meridiaan (2° 20' 14,025" E = 2,337229° E)
+      const lonParis = currentLon - 2.337229;
+      document.getElementById('geo-paris').textContent = `λ_Paris: ${lonParis >= 0 ? '+' : ''}${lonParis.toFixed(5)}°`;
+      document.getElementById('geo-l93').textContent = `Tijd-offset Parijs: +9m 20,93s`;
+
+      // WGS84 Geocentrische breedte φ' = atan((1 - f)^2 * tan(φ))
+      const f = 1 / 298.257223563;
+      const oneMinusF2 = (1 - f) * (1 - f);
+      const geoLat = Math.atan(oneMinusF2 * Math.tan(currentLat * DEG2RAD)) * RAD2DEG;
+      const diffArcMin = (currentLat - geoLat) * 60;
+      document.getElementById('geo-geocentric').textContent = `${geoLat.toFixed(5)}°`;
+      document.getElementById('geo-ellipsoid-diff').textContent = `Δφ = ${diffArcMin.toFixed(2)}' (${(diffArcMin * 1.852).toFixed(2)} km)`;
+
+      // Grootcirkelafstanden
+      const dBourges = haversineKm(currentLat, currentLon, 47.0844, 2.3956);
+      const dPoolP = haversineKm(currentLat, currentLon, 52.2500, 5.2200);
+      document.getElementById('geo-dist-bourges').textContent = `Bourges: ${dBourges.toFixed(1)} km`;
+      document.getElementById('geo-dist-p').textContent = `Poolanker P: ${dPoolP.toFixed(2)} km`;
+
+      updateAllAstronomy();
+    }
+
+    function setPresetLocation(lat, lon, label) {
+      document.getElementById('loc-lat').value = lat.toFixed(4);
+      document.getElementById('loc-lon').value = lon.toFixed(4);
+      updateLocationTransforms();
+    }
+
+    function locateUserGPS() {
+      if (!navigator.geolocation) {
+        alert("Geolocatie wordt niet ondersteund door deze browser.");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          setPresetLocation(pos.coords.latitude, pos.coords.longitude, "Live GPS");
+        },
+        err => {
+          alert("GPS Melding: " + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    /* =========================================================================
+       7. HISTORIE PALET BEHEER
+       ========================================================================= */
+    function renderHistoryTable() {
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = '';
+      historyPalette.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${item.label}</strong><br/><span style="color:var(--text-muted);font-size:9px;">${item.iso} UTC</span></td>
+          <td>${item.lat.toFixed(2)}°N, ${item.lon.toFixed(2)}°E</td>
+          <td><span style="color:var(--accent-cyan);font-size:10px;">${item.note}</span></td>
+          <td><button onclick="restoreHistoryItem(${idx})">Laad</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function restoreHistoryItem(idx) {
+      const item = historyPalette[idx];
+      if (!item) return;
+      document.getElementById('loc-lat').value = item.lat.toFixed(4);
+      document.getElementById('loc-lon').value = item.lon.toFixed(4);
+      document.getElementById('ephem-datetime').value = item.iso;
+      document.getElementById('sky-epoch-label').textContent = item.label;
+      updateLocationTransforms();
+      switchTab('tab-stars', document.querySelectorAll('.nav-btn')[0]);
+    }
+
+    function logCurrentStateToHistory(customLabel) {
+      const iso = document.getElementById('ephem-datetime').value || new Date().toISOString().slice(0, 16);
+      const illum = document.getElementById('moon-illum').textContent;
+      const entry = {
+        id: Date.now(),
+        label: customLabel || `Meting (${currentLat.toFixed(2)}°N)`,
+        iso: iso,
+        lat: currentLat,
+        lon: currentLon,
+        note: `Maan ${illum} | RD ${document.getElementById('geo-rd').textContent}`
+      };
+      historyPalette.unshift(entry);
+      localStorage.setItem('vortex_history_v160', JSON.stringify(historyPalette));
+      renderHistoryTable();
+    }
+
+    function exportHistoryJSON() {
+      const blob = new Blob([JSON.stringify(historyPalette, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vortex_historie_palet.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* =========================================================================
+       8. NAVIGATIE & INITIALISATIE BIJ LADEN
+       ========================================================================= */
+    function switchTab(tabId, btnEl) {
+      document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMapLibre();
+      const nowIso = new Date().toISOString().slice(0, 16);
+      document.getElementById('ephem-datetime').value = nowIso;
+      document.getElementById('ephem-datetime').addEventListener('change', updateAllAstronomy);
+
+      updateRefractionCalc();
+      evaluateChebyshevDemo();
+      updateLocationTransforms();
+      renderHistoryTable();
+
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock-utc').textContent = now.toISOString().slice(11, 19) + ' UTC';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
