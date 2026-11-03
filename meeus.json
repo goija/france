@@ -1,0 +1,105 @@
+{
+  "project": "Hemelmechanische & Cartografische Visualisatie",
+  "ephemerides_theorie": {
+    "maan": "ELP-2000/82 (Bureau des Longitudes / Chapront-Touzé & Chapront)",
+    "zon": "VSOP87D (Bretagnon & Francou)",
+    "epoche": "J2000.0",
+    "julian_date_j2000": 2451545.0
+  },
+  "tijdschalen_en_correcties": {
+    "julian_century_formula": "T = (JD - 2451545.0) / 36525",
+    "delta_t_parabool": "Delta_T = -20 + 32 * u^2",
+    "u_parameter_definitie": "u = (jaar - 1820) / 100",
+    "maanversnellingscorrectie_c": "c = -0.000012932 * (jaar - 1955)^2"
+  },
+  "fundamentele_hoekargumenten": {
+    "notitie": "Gebaseerd op lunatie-index k (k=0 op 6 januari 2000)",
+    "nieuwe_maan_jde": {
+      "formule": "JDE = 2451550.09766 + 29.530588861 * k + 0.00015437 * T^2 - 0.000000150 * T^3 + 0.00000000073 * T^4"
+    },
+    "breedte_argument_maan_f": {
+      "formule": "F = 160.7108 + 390.67050284 * k - 0.0016118 * T^2 - 0.00000227 * T^3 + 0.000000011 * T^4",
+      "eenheid": "graden"
+    },
+    "anomalie_zon_m": {
+      "formule": "M = 2.5534 + 29.1053567 * k - 0.0000014 * T^2 - 0.00000011 * T^3",
+      "eenheid": "graden"
+    },
+    "anomalie_maan_m_prime": {
+      "formule": "M_prime = 201.5643 + 385.81693528 * k + 0.0107582 * T^2 + 0.00001238 * T^3 - 0.000000058 * T^4",
+      "eenheid": "graden"
+    },
+    "stijgende_maanknoop_omega": {
+      "formule": "Omega = 124.7746 - 1.56375588 * k + 0.0020672 * T^2 + 0.00000215 * T^3",
+      "eenheid": "graden"
+    },
+    "excentriciteitsfactor_e": {
+      "formule": "E = 1 - 0.002516 * T - 0.0000074 * T^2"
+    }
+  },
+  "maan_afstand_elp2000": {
+    "formule": "d(km) = 385000.5584 - 20905.3550 * cos(M_prime) - 3699.1109 * cos(2*D - M_prime) - 2955.9676 * cos(2*D) - 569.9251 * cos(2*M_prime)",
+    "statistieken": {
+      "gemiddelde_afstand_km": 384399.0,
+      "gemiddelde_afstand_ld": 1.0,
+      "perigeum_gemiddeld_km": 363396.0,
+      "perigeum_minimum_km": 356353.0,
+      "apogeum_gemiddeld_km": 405504.0,
+      "apogeum_maximum_km": 406720.0
+    }
+  },
+  "saros_en_eclips_cycli": {
+    "maand_typen": {
+      "synodische_maand": { "duur_dagen": 29.530589, "beschrijving": "Nieuwe Maan tot Nieuwe Maan" },
+      "anomalistische_maand": { "duur_dagen": 27.554550, "beschrijving": "Perigeum tot Perigeum" },
+      "draconitische_maand": { "duur_dagen": 27.212221, "beschrijving": "Knoop tot Knoop" }
+    },
+    "saros_verhouding": {
+      "synodische_maanden": 223,
+      "anomalistische_maanden": 239,
+      "draconitische_maanden": 242,
+      "duur_dagen": 6585.3223,
+      "duur_tijd_label": "ca. 18 jaar, 11 dagen en 8 uur"
+    },
+    "exeligmos": {
+      "factor": "3 * Saros",
+      "lunaties": 669,
+      "duur_tijd_label": "ca. 54 jaar en 34 dagen"
+    },
+    "inex": {
+      "synodische_maanden": 358,
+      "duur_dagen": 10571.95,
+      "duur_tijd_label": "ca. 388.5 draconistische maanden"
+    },
+    "kluepfel_saros_nummer_formule": {
+      "stappen": [
+        "ND = LN + 105",
+        "NS = 136 + 38 * ND",
+        "NX = -61 * ND",
+        "NC = floor(NX / 358 + 0.5 - ND / (12 * 358 * 358))",
+        "SNS = ((NS + 223 * NC - 1) mod 223) + 1"
+      ]
+    }
+  },
+  "nasa_gsfc_canon_referentie": {
+    "bereik": "-1999 tot +3000 n.Chr.",
+    "zonsverduisteringen": {
+      "totaal": 11898,
+      "partieel": 4200,
+      "ringvormig": 3956,
+      "totaal_zichtbaar": 3173,
+      "hybride": 569
+    },
+    "maansverduisteringen": {
+      "totaal": 12064,
+      "penumbraal": 4378,
+      "partieel": 4207,
+      "totaal_zichtbaar": 3479
+    },
+    "parameters": {
+      "relatieve_maanstraal_k_penumbraal": 0.2724880,
+      "relatieve_maanstraal_k_umbraal": 0.272281,
+      "centrale_eclipsgrens_gamma_limiet": 0.9972
+    }
+  }
+}
