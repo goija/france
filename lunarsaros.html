@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX MOBILE - Astronomische & Eclips Motor</title>
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-panel: #131b2e;
+            --bg-card: #1a233a;
+            --border-color: #2a3a5a;
+            --accent-orange: #f59e0b;
+            --accent-blue: #3b82f6;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--bg-panel);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h2, h3 {
+            margin: 0 0 10px 0;
+            color: var(--accent-orange);
+        }
+
+        .panel {
+            background: var(--bg-card);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        input[type="text"], input[type="number"], select {
+            background: var(--bg-primary);
+            color: #f8fafc;
+            border: 1px solid var(--accent-blue);
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .badge {
+            background: var(--accent-orange);
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .param-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+        }
+
+        .param-row span:last-child {
+            color: var(--accent-orange);
+            font-weight: bold;
+        }
+
+        canvas {
+            background: #070a12;
+            border-radius: 50%;
+            display: block;
+            margin: 10px auto;
+            border: 2px solid var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h2>VORTEX MOBILE v160</h2>
+            <small style="color: var(--text-muted);">Meeus & Kluepfel Eclips- & Geodetic Motor</small>
+        </div>
+        <div>
+            <span id="saros-series-badge" class="badge">SAROS -</span>
+        </div>
+    </header>
+
+    <!-- Tijd & Ephemeride Selector -->
+    <div class="panel">
+        <label for="input-jd"><strong>Juliaanse Dag (JD / UTC):</strong></label><br><br>
+        <input type="text" id="input-jd" value="2434407.4910" style="width: 220px;">
+        <button onclick="recalculateEclipse()">Herbereken Eclips</button>
+        <span style="margin-left: 15px; color: var(--text-muted);">Ref: 29 jan 1953 (Totale Maansverduistering)</span>
+    </div>
+
+    <div class="grid">
+        <!-- Kluepfel / Saros Paneel -->
+        <div class="panel">
+            <h3>Kluepfel Saros Berekening</h3>
+            <div class="param-row"><span>Meeus Lunatie (LN):</span> <span id="input-ln">0</span></div>
+            <div class="param-row"><span>ND Index:</span> <span id="res-nd">0</span></div>
+            <div class="param-row"><span>NS Waarde:</span> <span id="res-ns">0</span></div>
+            <div class="param-row"><span>NX Waarde:</span> <span id="res-nx">0</span></div>
+            <div class="param-row"><span>NC Correctie:</span> <span id="res-nc">0</span></div>
+            <div class="param-row" style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;">
+                <span>Eclips Reeks:</span> <span id="res-sns">Saros # -</span>
+            </div>
+        </div>
+
+        <!-- Geometrie & Type Paneel -->
+        <div class="panel">
+            <h3>Eclips Geometrie & Classificatie</h3>
+            <div class="param-row"><span>Schaduwas-afstand ($\gamma$):</span> <span id="calc-gamma">0.0000</span></div>
+            <div class="param-row"><span>Eclipstype:</span> <strong id="calc-eclipse-type" style="color: var(--accent-orange);">Onbekend</strong></div>
+            <div class="param-row"><span>Type Detectie:</span> <span id="calc-is-lunar">Niet bepaald</span></div>
+        </div>
+    </div>
+
+    <!-- Visualisatie Paneel -->
+    <div class="panel" style="text-align: center;">
+            <h3>Sterrenhemel / Maanfase Visualisatie</h3>
+        <canvas id="starCanvas" width="280" height="280"></canvas>
+    </div>
+</div>
+
+<script>
+    function recalculateEclipse() {
+        const currentJD = parseFloat(document.getElementById('input-jd').value);
+
+        // 1. Exacte Meeus-lunatie k uit currentJD (J2000.0 Nieuwe Maan = JD 2451550.09766)
+        const k_exact = (currentJD - 2451550.09766) / 29.530588861;
+        
+        // Afronden op halve lunaties: 0.0 = Nieuwe Maan (Zon), 0.5 = Volle Maan (Maan)
+        const LN = Math.round(k_exact * 2) / 2;
+        const isLunar = Math.abs(LN - Math.round(LN)) > 0.25;
+
+        // 2. Kluepfel Saros Calculation (Universeel voor Solar én Lunar Saros)
+        const ND = LN + 105;
+        const NS = (isLunar ? 129 : 136) + 38 * ND; 
+        const NX = -61 * ND + (isLunar ? 11.5 : 0);
+        const NC = Math.floor(NX / 358 + 0.5 - ND / (12 * 358 * 358));
+        
+        // Zuivere Euclidische modulo (voorkomt negatieve restwaarden in JS voor vroege eeuwen)
+        const SNS = ((((NS + 223 * NC - 1) % 223) + 223) % 223) + 1;
+
+        // UI Updates voor Saros
+        document.getElementById('input-ln').textContent = LN;
+        document.getElementById('res-nd').textContent = ND;
+        document.getElementById('res-ns').textContent = NS;
+        document.getElementById('res-nx').textContent = NX;
+        document.getElementById('res-nc').textContent = NC;
+        document.getElementById('saros-series-badge').textContent = `${isLunar ? 'LUNAR' : 'SOLAR'} SAROS ${SNS}`;
+        document.getElementById('res-sns').textContent = `${isLunar ? 'Lunar' : 'Solar'} Saros #${SNS}`;
+        document.getElementById('calc-is-lunar').textContent = isLunar ? 'Maansverduistering (Volle Maan)' : 'Zonsverduistering (Nieuwe Maan)';
+
+        // 3. Gamma Berekening op basis van argument F (hier afgeleid uit k_exact voor demonstratie)
+        const F = (k_exact * 390.523) % 360; 
+        const F_rad = F * Math.PI / 180;
+        const gamma = (0.9972 * Math.sin(F_rad) + 0.0049 * Math.sin(2 * F_rad));
+        document.getElementById('calc-gamma').textContent = gamma.toFixed(4);
+
+        // 4. Classificatie op basis van Zons- of Maansverduistering met juiste drempelwaarden
+        const absGamma = Math.abs(gamma);
+        let eclipseType = "Geen Eclips";
+
+        if (isLunar) {
+            // Drempelwaarden voor Maansverduistering
+            if (absGamma <= 0.4620) eclipseType = "Totale Maansverduistering (Umbraal)";
+            else if (absGamma <= 1.0120) eclipseType = "Partiële Maansverduistering (Umbraal)";
+            else if (absGamma <= 1.5570) eclipseType = "Penumbrale Maansverduistering";
+            else eclipseType = "Geen verduistering";
+        } else {
+            // Drempelwaarden voor Zonsverduistering
+            if (absGamma <= 0.9972) eclipseType = "Totaal / Ringvormig (Centraal)";
+            else if (absGamma <= 1.0200) eclipseType = "Niet-centrale Centrale Eclips";
+            else if (absGamma <= 1.5433) eclipseType = "Partiële Zonsverduistering";
+            else eclipseType = "Geen verduistering";
+        }
+        document.getElementById('calc-eclipse-type').textContent = eclipseType;
+
+        // 5. Canvas tekenen
+        drawMoonCanvas(isLunar);
+    }
+
+    function drawMoonCanvas(isLunar) {
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Cirkel achtergrond
+        ctx.strokeStyle = '#2a3a5a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(140, 140, 120, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Maan of Zon object
+        ctx.fillStyle = isLunar ? '#38bdf8' : '#facc15';
+        ctx.beginPath();
+        ctx.arc(140, 140, 35, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Label in canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(isLunar ? 'MOON (GEOCENTRISCH)' : 'SUN', 140, 195);
+    }
+
+    // Automatisch uitvoeren bij laden van de pagina
+    window.onload = recalculateEclipse;
+</script>
+
+</body>
+</html>
