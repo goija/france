@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX OS - Celestial & Saros Pipeline</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        vortex: {
+                            bg: '#07090e',
+                            card: '#0f1420',
+                            border: '#1e293b',
+                            cyan: '#06b6d4',
+                            gold: '#f59e0b',
+                            accent: '#3b82f6',
+                            muted: '#94a3b8',
+                            terminal: '#020617'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for technical icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #07090e;
+            color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1420;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+        }
+        .glow-gold {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+        .scanline {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
+            background-size: 100% 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Navigation / Telemetry Header -->
+    <header class="border-b border-vortex-border bg-vortex-card/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center glow-cyan font-mono font-bold text-black text-xl">
+                    VX
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-mono font-bold tracking-wider text-lg text-white">VORTEX OS</h1>
+                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">v1.0.0-PRO</span>
+                    </div>
+                    <p class="text-xs text-vortex-muted font-mono">Celestial Ephemerides, ELP-2000/82 & Saros Pipeline</p>
+                </div>
+            </div>
+
+            <!-- Live UTC Clock & Status -->
+            <div class="flex items-center space-x-4 font-mono text-xs">
+                <div class="hidden md:flex flex-col items-end">
+                    <span class="text-vortex-muted">JD EPHEMERIS EPOCH</span>
+                    <span id="header-jd" class="text-cyan-400">JD 2451545.0</span>
+                </div>
+                <div class="h-8 w-px bg-vortex-border hidden md:block"></div>
+                <div class="flex flex-col items-end">
+                    <span class="text-vortex-muted">UTC SYSTEM TIME</span>
+                    <span id="header-utc" class="text-white font-bold">2026-11-03 07:39:00</span>
+                </div>
+                <button onclick="resetToCurrentTime()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                    <span>NOW</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+
+        <!-- Left Column: Control Panel & DateTime / Lunation Sliders -->
+        <div class="space-y-6">
+            <!-- Time Control Box -->
+            <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-mono text-sm font-semibold tracking-wide text-cyan-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>TIJD & LUNATIE PARAMETERS</span>
+                    </h2>
+                    <span class="text-xs font-mono text-vortex-muted">Meeus Algoritme</span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-vortex-muted mb-1">SELECTEER DATUM & TIJD</label>
+                        <input type="datetime-local" id="input-datetime" class="w-full bg-vortex-terminal border border-vortex-border rounded px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-1">
+                            <span class="text-vortex-muted">LUNATIE-INDEX (k)</span>
+                            <span id="val-k" class="text-cyan-400 font-bold">326.42</span>
+                        </div>
+                        <input type="range" id="slider-k" min="-500" max="1000" step="0.1" value="326.4" class="w-full accent-cyan-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-1">
+                            <span class="text-vortex-muted">JULIAANSE EEUW (T)</span>
+                            <span id="val-t" class="text-amber-400 font-bold">0.0264</span>
+                        </div>
+                        <input type="range" id="slider-t" min="-1.0" max="1.0" step="0.001" value="0.0264" class="w-full accent-amber-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-vortex-border font-mono text-xs">
+                        <div class="bg-vortex-terminal p-2.5 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">JDE NIEUWE MAAN</span>
+                            <span id="display-jde" class="text-white font-bold text-sm">245...</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-2.5 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">FASE HOEK</span>
+                            <span id="display-phase" class="text-cyan-400 font-bold text-sm">0.00°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module 2 Quick Preview: Saros & Eclipse Summary -->
+            <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-mono text-sm font-semibold tracking-wide text-amber-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-eclipse"></i>
+                        <span>SAROS & ECLIPS STATUS</span>
+                    </h2>
+                    <span id="saros-series-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">SAROS 136</span>
+                </div>
+
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="flex justify-between py-1 border-b border-vortex-border">
+                        <span class="text-vortex-muted">Kluepfel SNS:</span>
+                        <span id="calc-sns" class="text-white font-bold">124</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-vortex-border">
+                        <span class="text-vortex-muted">Eclipscoëfficiënt (\(\gamma\)):</span>
+                        <span id="calc-gamma" class="text-cyan-400 font-bold">0.3421</span>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-vortex-border">
+                        <span class="text-vortex-muted">Eclips Type:</span>
+                        <span id="calc-eclipse-type" class="text-amber-400 font-bold">Totaal (Central)</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-vortex-muted">Exeligmos Cyclus:</span>
+                        <span class="text-white">54j 34d (±120°)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center & Right Columns: Interactive Modules -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Tab Navigation -->
+            <div class="flex flex-wrap gap-2 border-b border-vortex-border pb-3 font-mono text-xs">
+                <button onclick="switchTab('module1')" id="btn-tab-module1" class="px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                    <span>1. Ephemeriden & Hoekargumenten</span>
+                </button>
+                <button onclick="switchTab('module2')" id="btn-tab-module2" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-atom"></i>
+                    <span>2. Saros & Kluepfel</span>
+                </button>
+                <button onclick="switchTab('module3')" id="btn-tab-module3" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>3. Perturbatie Inspector</span>
+                </button>
+            </div>
+
+            <!-- MODULE 1: Ephemeriden & Fundamentele Argumenten -->
+            <div id="tab-module1" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Visual Canvas for Earth-Moon Orbit & Phase -->
+                    <div class="bg-vortex-card border border-vortex-border rounded-xl p-4 flex flex-col items-center justify-center relative">
+                        <div class="absolute top-3 left-3 font-mono text-xs text-vortex-muted flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-dot text-cyan-400"></i>
+                            <span>ORBITALE BAANGEOMETRIE</span>
+                        </div>
+                        <canvas id="moonCanvas" width="300" height="300" class="w-full max-w-[260px] h-auto my-2 rounded-lg border border-vortex-border bg-vortex-terminal"></canvas>
+                        <div id="phase-name" class="font-mono text-sm text-cyan-400 font-bold mt-1">Nieuwe Maan</div>
+                    </div>
+
+                    <!-- Distance & ELP-2000 Calculations -->
+                    <div class="bg-vortex-card border border-vortex-border rounded-xl p-4 flex flex-col justify-between space-y-4">
+                        <div class="font-mono text-xs text-vortex-muted flex items-center space-x-1">
+                            <i class="fa-solid fa-ruler text-amber-400"></i>
+                            <span>ELP-2000 AFSTANDSFORMULE & STATISTIEKEN</span>
+                        </div>
+                        <div class="space-y-3 font-mono">
+                            <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                                <span class="text-vortex-muted text-xs block">FYSIEKE AFSTAND (d)</span>
+                                <div class="flex items-baseline justify-between mt-1">
+                                    <span id="moon-distance-km" class="text-xl font-bold text-white">384,399</span>
+                                    <span class="text-cyan-400 text-sm">km</span>
+                                </div>
+                            </div>
+                            <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                                <span class="text-vortex-muted text-xs block">MAANAFSTAND IN LD</span>
+                                <div class="flex items-baseline justify-between mt-1">
+                                    <span id="moon-distance-ld" class="text-xl font-bold text-amber-400">1.000</span>
+                                    <span class="text-vortex-muted text-sm">LD</span>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-vortex-muted">
+                                Perigeum: <span class="text-white">363,396 km</span> | Apogeum: <span class="text-white">405,504 km</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fundamental Angles Table -->
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <h3 class="font-mono text-xs font-semibold text-cyan-400 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-angles-right"></i>
+                        <span>MEEUS FUNDAMENTELE HOEKARGUMENTEN (GRADEN)</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 font-mono text-xs">
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">L' (Middelbare Lengte Maan)</span>
+                            <span id="arg-l-prime" class="text-white font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">F (Knoopppuntsafstand)</span>
+                            <span id="arg-f" class="text-white font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">D (Elongatie Maan-Zon)</span>
+                            <span id="arg-d" class="text-white font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">M (Anomalie Maan)</span>
+                            <span id="arg-m" class="text-white font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">M_sun (Anomalie Zon)</span>
+                            <span id="arg-msun" class="text-white font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">Ω (Stijgende Knoop)</span>
+                            <span id="arg-omega" class="text-cyan-400 font-bold text-sm">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 2: Saros- & Eclips-cyclus Calculator -->
+            <div id="tab-module2" class="space-y-6 hidden">
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <h3 class="font-mono text-sm font-semibold text-amber-400 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left"><span>KLUEPFEL GESLOTEN SAROS- EN ECLIPSCALCULATOR</span></i>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 font-mono">
+                        <div>
+                            <label class="block text-xs text-vortex-muted mb-1">LUNATIE-INDEX (LN)</label>
+                            <input type="number" id="input-ln" value="326" class="w-full bg-vortex-terminal border border-vortex-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-vortex-muted mb-1">SAROS SERIE (SNS)</label>
+                            <input type="number" id="input-sns" value="136" class="w-full bg-vortex-terminal border border-vortex-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="calculateSarosPipeline()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded transition text-xs shadow-lg">
+                                BEREKEN SAROS
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="saros-results-box" class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border font-mono text-xs space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="bg-vortex-card p-2.5 rounded border border-vortex-border">
+                                <span class="text-vortex-muted block">ND (LN + 105)</span>
+                                <span id="res-nd" class="text-white font-bold text-sm">431</span>
+                            </div>
+                            <div class="bg-vortex-card p-2.5 rounded border border-vortex-border">
+                                <span class="text-vortex-muted block">NS (136 + 38*ND)</span>
+                                <span id="res-ns" class="text-white font-bold text-sm">16514</span>
+                            </div>
+                            <div class="bg-vortex-card p-2.5 rounded border border-vortex-border">
+                                <span class="text-vortex-muted block">NX (-61*ND)</span>
+                                <span id="res-nx" class="text-white font-bold text-sm">-26291</span>
+                            </div>
+                            <div class="bg-vortex-card p-2.5 rounded border border-vortex-border">
+                                <span class="text-vortex-muted block">NC (Floored Term)</span>
+                                <span id="res-nc" class="text-amber-400 font-bold text-sm">-74</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-vortex-border flex justify-between items-center">
+                            <span class="text-vortex-muted">Berekende Saros-Nummer (SNS):</span>
+                            <span id="res-sns" class="text-cyan-400 font-bold text-base">Saros #136 (Totaal zonsverduistering familie)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saros Historical & Future Timeline Card -->
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <h4 class="font-mono text-xs font-semibold text-cyan-400 mb-3 flex items-center space-x-2">
+                        <i class="fa-solid fa-timeline"></i>
+                        <span>SAROS CYCLUS HARMONIEËN & EXELIGMOS TERUGKEER</span>
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">1 Saros (223 Synodisch)</span>
+                            <span class="text-white font-bold text-sm">6,585.32 dagen</span>
+                            <span class="text-[10px] text-vortex-muted block mt-1">18 jr 11 d 8u (+120° geografische verschuiving)</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">1 Exeligmos (3x Saros)</span>
+                            <span class="text-amber-400 font-bold text-sm">19,755.96 dagen</span>
+                            <span class="text-[10px] text-vortex-muted block mt-1">54 jr 34 d (Keert terug op exacte lengtegraad)</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">1 Inex (358 Synodisch)</span>
+                            <span class="text-cyan-400 font-bold text-sm">10,571.95 dagen</span>
+                            <span class="text-[10px] text-vortex-muted block mt-1">~388.5 Draconitische maanden (Tegenoverliggende knoop)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: Perturbatie- en Termen-Inspector -->
+            <div id="tab-module3" class="space-y-6 hidden">
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <h3 class="font-mono text-sm font-semibold text-cyan-400 flex items-center space-x-2">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>ELP-2000 & VSOP87D PERTURBATIE TERMEN INSPECTOR</span>
+                        </h3>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <input type="text" id="term-search" placeholder="Zoek op argument (bijv. 2D-M)..." class="bg-vortex-terminal border border-vortex-border rounded px-3 py-1.5 text-xs font-mono text-white w-full sm:w-64 focus:outline-none focus:border-cyan-500">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[420px] rounded-lg border border-vortex-border">
+                        <table class="w-full text-left font-mono text-xs">
+                            <thead class="bg-vortex-terminal text-vortex-muted sticky top-0 border-b border-vortex-border">
+                                <tr>
+                                    <th class="p-3">Argument</th>
+                                    <th class="p-3">Amplitude</th>
+                                    <th class="p-3">Eenheid</th>
+                                    <th class="p-3">Periode</th>
+                                    <th class="p-3">Domein</th>
+                                </tr>
+                            </thead>
+                            <tbody id="terms-table-body" class="divide-y divide-vortex-border/50 bg-vortex-card/50">
+                                <!-- Populated dynamically by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Status Bar -->
+    <footer class="border-t border-vortex-border bg-vortex-card/80 py-3 px-4 text-xs font-mono text-vortex-muted">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>ELP-2000/82 & VSOP87D Kernel Actief (Double Precision f64)</span>
+            </div>
+            <div>
+                NASA GSFC Canon: 11,898 Zonsverduisteringen | 12,064 Maansverduisteringen
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Embedded JSON Configuration (Lumo v1.0 schema)
+        const CELESTIAL_CONFIG = {
+            "$schema": "https://lumo.proton.me/schemas/celestial-coefficients/v1.0",
+            "metadata": {
+                "version": "1.0.0",
+                "author": "Jean Meeus / ELP-2000/82 / VSOP87D",
+                "reference_epoch": "J2000.0",
+                "julian_epoch": 2451545.0
+            },
+            "fundamental_arguments": {
+                "moon": {
+                    "L_prime": { "coefficients": [{"term": "L0", "value": 218.3164423}, {"term": "L1", "value": 481267.88123421}, {"term": "L2", "value": -0.0001578}, {"term": "L3", "value": 0.0000014}] },
+                    "F": { "coefficients": [{"term": "F0", "value": 93.27191}, {"term": "F1", "value": 483202.0175233}, {"term": "F2", "value": -0.0036539}, {"term": "F3", "value": -0.0000032}] },
+                    "D": { "coefficients": [{"term": "D0", "value": 297.85036}, {"term": "D1", "value": 445267.114803}, {"term": "D2", "value": -0.0015648}, {"term": "D3", "value": 0.0000028}] },
+                    "M": { "coefficients": [{"term": "M0", "value": 134.96298}, {"term": "M1", "value": 477198.8675055}, {"term": "M2", "value": 0.0087414}, {"term": "M3", "value": 0.0000021}] },
+                    "M_sun": { "coefficients": [{"term": "MS0", "value": 357.52911}, {"term": "MS1", "value": 35999.05029}, {"term": "MS2", "value": -0.0001536}, {"term": "MS3", "value": -0.0000012}] }
+                }
+            },
+            "elp_2000_moon_terms": {
+                "longitude_perturbations": [
+                    {"arg": "2D-M", "amplitude": 6288774, "unit": "microarcseconds", "period_days": 14.765},
+                    {"arg": "2D", "amplitude": 1274027, "unit": "microarcseconds", "period_days": 7.383},
+                    {"arg": "2D+M", "amplitude": 658314, "unit": "microarcseconds", "period_days": 224.241},
+                    {"arg": "M", "amplitude": 213607, "unit": "microarcseconds", "period_days": 27.555},
+                    {"arg": "2D-2M", "amplitude": -185116, "unit": "microarcseconds", "period_days": 31.812},
+                    {"arg": "D", "amplitude": -114332, "unit": "microarcseconds", "period_days": 29.531},
+                    {"arg": "2D+M-M_sun", "amplitude": 58793, "unit": "microarcseconds", "period_days": 6.079},
+                    {"arg": "2D-M-M_sun", "amplitude": 57066, "unit": "microarcseconds", "period_days": 179.014},
+                    {"arg": "2D-3M+2M_sun", "amplitude": 53322, "unit": "microarcseconds", "period_days": 108.844},
+                    {"arg": "2D-2M+M_sun", "amplitude": 45758, "unit": "microarcseconds", "period_days": 125.202},
+                    {"arg": "-2D+2M-M_sun", "amplitude": -38684, "unit": "microarcseconds", "period_days": 205.827},
+                    {"arg": "M-M_sun", "amplitude": -30144, "unit": "microarcseconds", "period_days": 1636.103},
+                    {"arg": "2D-M+M_sun", "amplitude": 21681, "unit": "microarcseconds", "period_days": 413.367},
+                    {"arg": "-2M", "amplitude": -15573, "unit": "microarcseconds", "period_days": 137.618},
+                    {"arg": "-M+M_sun", "amplitude": 14758, "unit": "microarcseconds", "period_days": 205.827},
+                    {"arg": "3D-2M", "amplitude": 14656, "unit": "microarcseconds", "period_days": 10.214}
+                ],
+                "latitude_perturbations": [
+                    {"arg": "F", "amplitude": 5128122, "unit": "microarcseconds", "period_days": 27.212},
+                    {"arg": "2D-F", "amplitude": 280602, "unit": "microarcseconds", "period_days": 13.606},
+                    {"arg": "2D+F", "amplitude": 180906, "unit": "microarcseconds", "period_days": 5.023},
+                    {"arg": "F-M", "amplitude": 175583, "unit": "microarcseconds", "period_days": 27.555},
+                    {"arg": "F+M", "amplitude": 92102, "unit": "microarcseconds", "period_days": 13.606},
+                    {"arg": "2D-F-M", "amplitude": 57163, "unit": "microarcseconds", "period_days": 9.121}
+                ]
+            },
+            "vsop87_planetary_terms": {
+                "earth_heliocentric": {
+                    "L": [{"term": 0, "amplitude": 1753409566.92, "frequency": 628307.58, "unit": "centesimal_sec"}],
+                    "R": [{"term": 0, "amplitude": 1000000.0, "frequency": 0.0, "unit": "micro_AU"}, {"term": 1, "amplitude": 1675209.0, "frequency": 6283.076, "unit": "micro_AU"}]
+                }
+            }
+        };
+
+        // Utility: Convert Date to Julian Date
+        function dateToJD(date) {
+            return (date.getTime() / 86400000) + 2440587.5;
+        }
+
+        // Utility: Julian Date to Date
+        function jdToDate(jd) {
+            const utcMillis = (jd - 2440587.5) * 86400000;
+            return new Date(utcMillis);
+        }
+
+        // Normalize angle to [0, 360)
+        function normalizeDeg(deg) {
+            return ((deg % 360) + 360) % 360;
+        }
+
+        // Evaluate polynomial for fundamental argument given T (Julian Century)
+        function evaluatePolynomial(coeffs, T) {
+            let val = 0;
+            let T_pow = 1;
+            for (let i = 0; i < coeffs.length; i++) {
+                val += coeffs[i].value * T_pow;
+                T_pow *= T;
+            }
+            return normalizeDeg(val);
+        }
+
+        // State variables
+        let currentJD = 2451545.0 + 9438.0; // Current approx J2000 + days
+        let currentK = 326.4;
+        let currentT = 0.0264;
+
+        // DOM Elements
+        const inputDatetime = document.getElementById('input-datetime');
+        const sliderK = document.getElementById('slider-k');
+        const sliderT = document.getElementById('slider-t');
+        const valK = document.getElementById('val-k');
+        const valT = document.getElementById('val-t');
+        const displayJde = document.getElementById('display-jde');
+        const displayPhase = document.getElementById('display-phase');
+        const headerJd = document.getElementById('header-jd');
+        const headerUtc = document.getElementById('header-utc');
+
+        // Update state and pipeline from datetime input
+        function updateFromDatetime() {
+            const date = new Date(inputDatetime.value);
+            if (!isNaN(date.getTime())) {
+                currentJD = dateToJD(date);
+                currentT = (currentJD - 2451545.0) / 36525.0;
+                currentK = (currentJD - 2451550.09766) / 29.530588861;
+                syncControls('datetime');
+                runPipeline();
+            }
+        }
+
+        // Initialize UI with current date
+        function resetToCurrentTime() {
+            const now = new Date();
+            inputDatetime.value = now.toISOString().slice(0, 16);
+            updateFromDatetime();
+        }
+
+        inputDatetime.addEventListener('change', updateFromDatetime);
+
+        sliderK.addEventListener('input', () => {
+            currentK = parseFloat(sliderK.value);
+            // JDE formula for New Moon conjunction index k
+            const jde = 2451550.09766 + 29.530588861 * currentK + 0.00015437 * Math.pow(currentT, 2);
+            currentJD = jde;
+            currentT = (currentJD - 2451545.0) / 36525.0;
+            syncControls('k');
+            runPipeline();
+        });
+
+        sliderT.addEventListener('input', () => {
+            currentT = parseFloat(sliderT.value);
+            currentJD = 2451545.0 + currentT * 36525.0;
+            currentK = (currentJD - 2451550.09766) / 29.530588861;
+            syncControls('t');
+            runPipeline();
+        });
+
+        function syncControls(source) {
+            if (source !== 'k') sliderK.value = currentK.toFixed(1);
+            if (source !== 't') sliderT.value = currentT.toFixed(4);
+            valK.textContent = currentK.toFixed(2);
+            valT.textContent = currentT.toFixed(4);
+            
+            const date = jdToDate(currentJD);
+            if (source !== 'datetime') {
+                inputDatetime.value = date.toISOString().slice(0, 16);
+            }
+            headerJd.textContent = `JD ${currentJD.toFixed(4)}`;
+            headerUtc.textContent = date.toISOString().replace('T', ' ').slice(0, 19);
+        }
+
+        // Main Astronomical Calculation Pipeline
+        function runPipeline() {
+            const T = currentT;
+            const k = currentK;
+
+            // 1. Fundamental Angles (Meeus)
+            const fa = CELESTIAL_CONFIG.fundamental_arguments.moon;
+            const L_prime = evaluatePolynomial(fa.L_prime.coefficients, T);
+            const F = evaluatePolynomial(fa.F.coefficients, T);
+            const D = evaluatePolynomial(fa.D.coefficients, T);
+            const M = evaluatePolynomial(fa.M.coefficients, T);
+            const M_sun = evaluatePolynomial(fa.M_sun.coefficients, T);
+            const Omega = normalizeDeg(124.7746 - 1.56375588 * k + 0.0020672 * Math.T_pow2 || 0);
+
+            document.getElementById('arg-l-prime').textContent = L_prime.toFixed(3) + '°';
+            document.getElementById('arg-f').textContent = F.toFixed(3) + '°';
+            document.getElementById('arg-d').textContent = D.toFixed(3) + '°';
+            document.getElementById('arg-m').textContent = M.toFixed(3) + '°';
+            document.getElementById('arg-msun').textContent = M_sun.toFixed(3) + '°';
+            document.getElementById('arg-omega').textContent = Omega.toFixed(3) + '°';
+
+            // JDE Conjunction
+            const jde = 2451550.09766 + 29.530588861 * k + 0.00015437 * Math.pow(T, 2) - 0.000000150 * Math.pow(T, 3);
+            document.getElementById('display-jde').textContent = jde.toFixed(2);
+
+            // Moon Distance ELP-2000 Simplified
+            const M_rad = M * Math.PI / 180;
+            const D_rad = D * Math.PI / 180;
+            const d_km = 385000.5584 - 20905.3550 * Math.cos(M_rad) - 3699.1109 * Math.cos(2*D_rad - M_rad) - 2955.9676 * Math.cos(2*D_rad) - 569.9251 * Math.cos(2*M_rad);
+            const d_ld = d_km / 384399.0;
+
+            document.getElementById('moon-distance-km').textContent = Math.round(d_km).toLocaleString('nl-NL');
+            document.getElementById('moon-distance-ld').textContent = d_ld.toFixed(3);
+
+            // Phase angle & name
+            const phaseAngle = normalizeDeg(L_prime - (L_prime - D)); // elongation approx
+            document.getElementById('display-phase').textContent = (phaseAngle).toFixed(1) + '°';
+
+            let phaseName = "Nieuwe Maan";
+            if (phaseAngle > 15 && phaseAngle < 75) phaseName = "Wassende SIKKEL";
+            else if (phaseAngle >= 75 && phaseAngle <= 105) phaseName = "Eerste Kwartier";
+            else if (phaseAngle > 105 && phaseAngle < 165) phaseName = "Wassende Maan";
+            else if (phaseAngle >= 165 && phaseAngle <= 195) phaseName = "Volle Maan";
+            else if (phaseAngle > 195 && phaseAngle < 255) phaseName = "Afnemende Maan";
+            else if (phaseAngle >= 255 && phaseAngle <= 285) phaseName = "Laatste Kwartier";
+            else if (phaseAngle > 285 && phaseAngle < 345) phaseName = "Asgrauwe Maan (Krimpend)";
+            document.getElementById('phase-name').textContent = phaseName;
+
+            // Saros / Kluepfel Calculation
+            const LN = Math.round(k);
+            const ND = LN + 105;
+            const NS = 136 + 38 * ND;
+            const NX = -61 * ND;
+            const NC = Math.floor(NX / 358 + 0.5 - ND / (12 * 358 * 358));
+            const SNS = ((NS + 223 * NC - 1) % 223) + 1;
+
+            document.getElementById('input-ln').value = LN;
+            document.getElementById('res-nd').textContent = ND;
+            document.getElementById('res-ns').textContent = NS;
+            document.getElementById('res-nx').textContent = NX;
+            document.getElementById('res-nc').textContent = NC;
+            document.getElementById('calc-sns').textContent = SNS;
+            document.getElementById('saros-series-badge').textContent = `SAROS ${SNS}`;
+            document.getElementById('res-sns').textContent = `Saros #${SNS} (Eclips-reeks)`;
+
+            // Gamma Calculation approximation
+            const F_rad = F * Math.PI / 180;
+            const gamma = (0.9972 * Math.sin(F_rad) + 0.0049 * Math.sin(2 * F_rad)) * (1 + 0.004 * Math.cos(M_rad));
+            document.getElementById('calc-gamma').textContent = gamma.toFixed(4);
+
+            let eclipseType = "Geen Centrale Eclips";
+            const absGamma = Math.abs(gamma);
+            if (absGamma <= 0.9972) eclipseType = "Totaal / Ringvormig (Centraal)";
+            else if (absGamma <= 1.02) eclipseType = "Niet-centrale Centrale Eclips";
+            else if (absGamma <= 1.5433) eclipseType = "Partiële Zonsverduistering";
+            document.getElementById('calc-eclipse-type').textContent = eclipseType;
+
+            // Render Canvas Orbit
+            drawMoonCanvas(phaseAngle, d_ld);
+        }
+
+        // Canvas Drawing Function for Moon Orbit & Phase Illumination
+        function drawMoonCanvas(phaseAngle, d_ld) {
+            const canvas = document.getElementById('moonCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Background grid circle
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 110, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Earth (Center)
+            ctx.fillStyle = '#06b6d4';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '9px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('AARDE', cx, cy - 16);
+
+            // Moon position based on angle
+            const angleRad = (phaseAngle - 90) * Math.PI / 180;
+            const orbitRadius = 90 * (d_ld); // scale distance slightly
+            const mx = cx + orbitRadius * Math.cos(angleRad);
+            const my = cy + orbitRadius * Math.sin(angleRad);
+
+            // Moon Orbit trajectory
+            ctx.strokeStyle = '#334155';
+            ctx.setLineDash([2, 4]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, 90, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Moon body
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.arc(mx, my, 14, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Simple phase shadow overlay
+            ctx.fillStyle = '#07090e';
+            const shadowOffset = 14 * Math.cos(angleRad);
+            ctx.beginPath();
+            ctx.arc(mx + shadowOffset * 0.5, my, 14, 0.5 * Math.PI, 1.5 * Math.PI, false);
+            if (phaseAngle > 180) {
+                ctx.arc(mx, my, 14, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            } else {
+                ctx.arc(mx, my, 14, 1.5 * Math.PI, 0.5 * Math.PI, true);
+            }
+            ctx.fill();
+        }
+
+        // Populate Perturbation Terms Table (Module 3)
+        function populateTermsTable() {
+            const tbody = document.getElementById('terms-table-body');
+            tbody.innerHTML = '';
+            
+            const allTerms = [
+                ...CELESTIAL_CONFIG.elp_2000_moon_terms.longitude_perturbations.map(t => ({...t, domain: 'ELP Longitude'})),
+                ...CELESTIAL_CONFIG.elp_2000_moon_terms.latitude_perturbations.map(t => ({...t, domain: 'ELP Latitude'}))
+            ];
+
+            allTerms.forEach(term => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition border-b border-vortex-border/30';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-cyan-400">${term.arg}</td>
+                    <td class="p-3 text-white">${term.amplitude.toLocaleString()}</td>
+                    <td class="p-3 text-vortex-muted">${term.unit}</td>
+                    <td class="p-3 text-amber-400">${term.period_days ? term.period_days + ' d' : '---'}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">${term.domain}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Search filter for terms
+        document.getElementById('term-search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#terms-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            ['module1', 'module2', 'module3'].forEach(id => {
+                document.getElementById(`tab-${id}`).classList.add('hidden');
+                document.getElementById(`btn-tab-${id}`).className = 'px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition';
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`btn-tab-${tabId}`).className = 'px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg';
+        }
+
+        // Saros Manual Calculation Button trigger
+        function calculateSarosPipeline() {
+            const lnInput = parseInt(document.getElementById('input-ln').value) || 326;
+            currentK = lnInput;
+            syncControls('k');
+            runPipeline();
+        }
+
+        // Window Load Initialization
+        window.onload = function() {
+            resetToCurrentTime();
+            populateTermsTable();
+            runPipeline();
+        };
+    </script>
+</body>
+</html>
