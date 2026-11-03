@@ -361,6 +361,44 @@
     color: #fff;
     box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
   }
+
+  /* ON-SCREEN HUD CONTROLLER PAD (MOUSE & KEYBOARD DUAL CONTROL) */
+  #hud-controller {
+    position: fixed;
+    bottom: 54px;
+    right: 12px;
+    z-index: 92;
+    background: rgba(6, 10, 19, 0.90);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 9px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.75);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 225px;
+    font-size: 10px;
+  }
+  .hud-title {
+    color: var(--gold-light);
+    font-weight: 700;
+    font-size: 9.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(212,175,55,0.25);
+    padding-bottom: 3px;
+  }
+  .kbd-tag {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(212,175,55,0.4);
+    color: var(--cyan);
+    padding: 0 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+  }
 </style>
 </head>
 <body>
@@ -417,6 +455,33 @@
   <div class="layer-chip" id="chip-geoCoast" onclick="toggleLayer('geoCoast')">🗺️ Zeeland / Lodijke Kust</div>
   <div class="layer-chip" id="chip-flagsLayer" onclick="toggleLayer('flagsLayer')">🚩 Vlaggen & Ankers</div>
   <div class="layer-chip" id="chip-procrustesLayer" onclick="toggleLayer('procrustesLayer')">🧬 Procrustes & Helmert</div>
+</div>
+
+<!-- ON-SCREEN DUAL MOUSE / KEYBOARD HUD CONTROLLER -->
+<div id="hud-controller">
+  <div class="hud-title">
+    <span>🎮 MUIS & KEYBOARD CONTROLLER</span>
+    <span class="kbd-tag">WASD / Pijlen</span>
+  </div>
+  <div class="grid-3">
+    <button onclick="nudgeOttTracer(0, -10)" title="Sneltoets: W">⬆️ Loupe (W)</button>
+    <button onclick="zoomTableau(1.15)" title="Sneltoets: + of Muiswiel">🔍 Zoom +</button>
+    <button onclick="rotateTableau(-15)" title="Sneltoets: Q">↺ Rot -15° (Q)</button>
+  </div>
+  <div class="grid-3">
+    <button onclick="nudgeOttTracer(-10, 0)" title="Sneltoets: A">⬅️ Loupe (A)</button>
+    <button onclick="nudgeOttTracer(0, 10)" title="Sneltoets: S">⬇️ Loupe (S)</button>
+    <button onclick="nudgeOttTracer(10, 0)" title="Sneltoets: D">➡️ Loupe (D)</button>
+  </div>
+  <div class="grid-4">
+    <button onclick="toggleOttTracking()" title="Sneltoets: T">⏺ Trace (T)</button>
+    <button onclick="closeAndIntegratePolygon()" title="Sneltoets: G">📐 Green (G)</button>
+    <button onclick="toggleWebRTCCameraShortcut()" title="Sneltoets: C">📹 Cam (C)</button>
+    <button onclick="resetAllTransforms()" title="Sneltoets: 0 of R">⟳ Reset (0)</button>
+  </div>
+  <div style="color:var(--muted); font-size:9px; line-height:1.25;">
+    <span class="kbd-tag">Shift+WASD</span> Pool P | <span class="kbd-tag">Pijlen</span> Pan | <span class="kbd-tag">H/V</span> Spiegel | <span class="kbd-tag">1-7</span> Vensters
+  </div>
 </div>
 
 <!-- ===================================================================== -->
@@ -1366,6 +1431,63 @@ function screenToTableauCoords(sx, sy) {
   const rx = dx * cosR - dy * sinR;
   const ry = dx * sinR + dy * cosR;
   return { x: rx + w * 0.5, y: ry + h * 0.5 };
+}
+
+function worldToScreenCoords(wx, wy) {
+  const w = uiCanvas.width, h = uiCanvas.height;
+  const v = STATE.view;
+  const dx = wx - w * 0.5;
+  const dy = wy - h * 0.5;
+  const cosR = Math.cos(v.rotation * DEG);
+  const sinR = Math.sin(v.rotation * DEG);
+  let rx = dx * cosR - dy * sinR;
+  let ry = dx * sinR + dy * cosR;
+  rx *= v.scale * (v.flipX ? -1 : 1);
+  ry *= v.scale * (v.flipY ? -1 : 1);
+  return { x: rx + w * 0.5 + v.panX, y: ry + h * 0.5 + v.panY };
+}
+
+function nudgeOttTracer(dx, dy) {
+  const p = STATE.planimeter;
+  p.tracerX += dx;
+  p.tracerY += dy;
+  solvePlanimeterKinematics();
+  if (p.isTracing) {
+    p.tracePath.push({ x: p.tracerX, y: p.tracerY });
+    computeGreensTheoremArea();
+  }
+  renderAll();
+}
+
+function nudgeOttPole(dx, dy) {
+  const p = STATE.planimeter;
+  p.poleX += dx;
+  p.poleY += dy;
+  solvePlanimeterKinematics();
+  renderAll();
+}
+
+function toggleWebRTCCameraShortcut() {
+  if (STATE.webrtc.active) stopWebRTCCamera();
+  else startWebRTCCamera();
+}
+
+function resetAllTransforms() {
+  recordHistoryStep('Reset Tableau & Cam Transformaties');
+  STATE.view.scale = 1.0;
+  STATE.view.rotation = 0.0;
+  STATE.view.flipX = false;
+  STATE.view.flipY = false;
+  STATE.view.panX = 0.0;
+  STATE.view.panY = 0.0;
+  STATE.bgMedia.scale = 1.0;
+  STATE.bgMedia.rotation = 0.0;
+  STATE.bgMedia.flipX = false;
+  STATE.bgMedia.flipY = false;
+  STATE.bgMedia.panX = 0.0;
+  STATE.bgMedia.panY = 0.0;
+  updateTransformReadouts();
+  renderAll();
 }
 
 function zoomTableau(factor) {
@@ -2413,6 +2535,16 @@ function renderDrawingLayer() {
     drawCtx.save();
     applyViewTransformToContext(drawCtx, w, h);
     drawCtx.drawImage(paintBuffer, 0, 0);
+    if (STATE.draw.isDrawing && STATE.draw.tool === 'line' && STATE.draw.currentX !== undefined) {
+      drawCtx.strokeStyle = document.getElementById('brush-color')?.value || '#d4af37';
+      drawCtx.lineWidth = parseFloat(document.getElementById('brush-size')?.value || '3');
+      drawCtx.setLineDash([5, 4]);
+      drawCtx.beginPath();
+      drawCtx.moveTo(STATE.draw.startX, STATE.draw.startY);
+      drawCtx.lineTo(STATE.draw.currentX, STATE.draw.currentY);
+      drawCtx.stroke();
+      drawCtx.setLineDash([]);
+    }
     drawCtx.restore();
   }
 }
@@ -2798,20 +2930,42 @@ function render20xMagnifierLoupe() {
   if (paintBuffer.width > 0 && paintBuffer.height > 0) {
     loupeCtx.drawImage(paintBuffer, 0, 0);
   }
+
+  // 3. Teken ook geplaatste teksten en VORTEX-ankers in de 20x loupe indien actief
+  if (STATE.layers.geoCoast) {
+    loupeCtx.strokeStyle = 'rgba(0, 230, 118, 0.7)';
+    loupeCtx.lineWidth = 1.2;
+    loupeCtx.beginPath();
+    VORTEX_NODES.forEach((nd, idx) => {
+      const pt = geoToCanvas(nd.lat, nd.lon, w, h);
+      if (idx === 0) loupeCtx.moveTo(pt.x, pt.y);
+      else loupeCtx.lineTo(pt.x, pt.y);
+    });
+    loupeCtx.stroke();
+  }
+  if (STATE.draw.placedTexts.length > 0) {
+    loupeCtx.font = 'bold 12px Segoe UI';
+    loupeCtx.fillStyle = '#f9e29c';
+    for (const t of STATE.draw.placedTexts) {
+      loupeCtx.fillText(t.text, t.x, t.y);
+    }
+  }
   loupeCtx.restore();
 
-  // 3. Fraunhofer 589nm kruisdraad en micrometerschaal
+  // 4. Fraunhofer 589nm kruisdraad en micrometerschaal
   loupeCtx.save();
-  loupeCtx.strokeStyle = 'rgba(255, 193, 7, 0.82)';
+  loupeCtx.strokeStyle = 'rgba(255, 193, 7, 0.85)';
   loupeCtx.lineWidth = 1;
   loupeCtx.beginPath();
   loupeCtx.moveTo(0, lh/2); loupeCtx.lineTo(lw, lh/2);
   loupeCtx.moveTo(lw/2, 0); loupeCtx.lineTo(lw/2, lh);
   loupeCtx.stroke();
 
-  loupeCtx.beginPath();
-  loupeCtx.arc(lw/2, lh/2, 18, 0, Math.PI * 2);
-  loupeCtx.stroke();
+  for (let rStep = 14; rStep <= 56; rStep += 14) {
+    loupeCtx.beginPath();
+    loupeCtx.arc(lw/2, lh/2, rStep, 0, Math.PI * 2);
+    loupeCtx.stroke();
+  }
   loupeCtx.restore();
 }
 
@@ -3272,13 +3426,25 @@ function exportFullSnapshot() {
 /* ----------------------------------------------------------------------------
  * MUIS-, WIEL- & TOETSENBORD-INTERACTIE OP HET TABLEAU
  * ---------------------------------------------------------------------------- */
+let isSpacePressed = false;
+drawCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
 drawCanvas.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.10 : 0.90;
+  const rect = drawCanvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.12 : 0.89;
+
   if (e.shiftKey) {
     STATE.bgMedia.scale = Math.max(0.20, Math.min(8.0, STATE.bgMedia.scale * factor));
   } else {
+    // Zoom exact rond de huidige muispositie zodat het aangewezen punt onder de cursor blijft
+    const beforeTab = screenToTableauCoords(sx, sy);
     STATE.view.scale = Math.max(0.20, Math.min(8.0, STATE.view.scale * factor));
+    const afterScreen = worldToScreenCoords(beforeTab.x, beforeTab.y);
+    STATE.view.panX += (sx - afterScreen.x);
+    STATE.view.panY += (sy - afterScreen.y);
   }
   updateTransformReadouts();
   renderAll();
@@ -3290,6 +3456,14 @@ drawCanvas.addEventListener('pointerdown', (e) => {
   const sy = e.clientY - rect.top;
   const tabPt = screenToTableauCoords(sx, sy);
   const p = STATE.planimeter;
+
+  // Middenklik, rechterklik of Spatiebalk+sleep pant altijd het tableau
+  if (e.button === 1 || e.button === 2 || isSpacePressed) {
+    STATE.view.isPanning = true;
+    STATE.view.panStartX = sx - STATE.view.panX;
+    STATE.view.panStartY = sy - STATE.view.panY;
+    return;
+  }
 
   if (p.visibleOnCanvas) {
     if (Math.hypot(tabPt.x - p.tracerX, tabPt.y - p.tracerY) <= 32) {
@@ -3306,7 +3480,7 @@ drawCanvas.addEventListener('pointerdown', (e) => {
   }
 
   if (STATE.draw.tool === 'nav') {
-    if (e.shiftKey || e.button === 1 || !p.visibleOnCanvas) {
+    if (e.shiftKey || !p.visibleOnCanvas) {
       STATE.view.isPanning = true;
       STATE.view.panStartX = sx - STATE.view.panX;
       STATE.view.panStartY = sy - STATE.view.panY;
@@ -3327,6 +3501,8 @@ drawCanvas.addEventListener('pointerdown', (e) => {
   STATE.draw.isDrawing = true;
   STATE.draw.startX = tabPt.x;
   STATE.draw.startY = tabPt.y;
+  STATE.draw.currentX = tabPt.x;
+  STATE.draw.currentY = tabPt.y;
   if (STATE.draw.tool === 'brush' || STATE.draw.tool === 'eraser') {
     paintCtx.beginPath();
     paintCtx.moveTo(tabPt.x, tabPt.y);
@@ -3386,6 +3562,11 @@ window.addEventListener('pointermove', (e) => {
     paintCtx.globalCompositeOperation = 'source-over';
     renderDrawingLayer();
     render20xMagnifierLoupe();
+  } else if (STATE.draw.tool === 'line') {
+    STATE.draw.currentX = tabPt.x;
+    STATE.draw.currentY = tabPt.y;
+    renderDrawingLayer();
+    render20xMagnifierLoupe();
   }
 });
 
@@ -3397,22 +3578,34 @@ window.addEventListener('pointerup', (e) => {
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
     const tabPt = screenToTableauCoords(sx, sy);
+    paintCtx.globalCompositeOperation = 'source-over';
     paintCtx.strokeStyle = document.getElementById('brush-color')?.value || '#d4af37';
     paintCtx.lineWidth = parseFloat(document.getElementById('brush-size')?.value || '3');
     paintCtx.beginPath();
     paintCtx.moveTo(STATE.draw.startX, STATE.draw.startY);
     paintCtx.lineTo(tabPt.x, tabPt.y);
     paintCtx.stroke();
+    STATE.draw.isDrawing = false;
     renderDrawingLayer();
     render20xMagnifierLoupe();
   }
   STATE.draw.isDrawing = false;
 });
 
-/* TOETSENBORD-BEDIENING (PLANIMETER AAN/UIT, ZOOM, ROTEREN, SPIEGELEN, PAN, UNDO/REDO) */
+/* TOETSENBORD-BEDIENING (VOLLEDIGE DUAL CONTROL ZONDER INPUT-CONFLICTEN) */
+window.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') isSpacePressed = false;
+});
+
 window.addEventListener('keydown', (e) => {
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.target?.isContentEditable) return;
+
+  if (e.code === 'Space') {
+    isSpacePressed = true;
+    e.preventDefault();
+    return;
+  }
 
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
@@ -3427,11 +3620,72 @@ window.addEventListener('keydown', (e) => {
   }
 
   switch (e.key) {
+    // 1..7: Open/Sluit Zwevende Vensters 1 t/m 7
+    case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+      e.preventDefault();
+      toggleWindow('win-' + e.key);
+      break;
+    // W/A/S/D: Beweeg A. Ott Nr. 573 Loupe (of Poolgewicht met Shift)
+    case 'w':
+    case 'W':
+      e.preventDefault();
+      if (e.shiftKey) nudgeOttPole(0, -8);
+      else nudgeOttTracer(0, -8);
+      break;
+    case 's':
+    case 'S':
+      e.preventDefault();
+      if (e.shiftKey) nudgeOttPole(0, 8);
+      else nudgeOttTracer(0, 8);
+      break;
+    case 'a':
+    case 'A':
+      e.preventDefault();
+      if (e.shiftKey) nudgeOttPole(-8, 0);
+      else nudgeOttTracer(-8, 0);
+      break;
+    case 'd':
+    case 'D':
+      e.preventDefault();
+      if (e.shiftKey) nudgeOttPole(8, 0);
+      else nudgeOttTracer(8, 0);
+      break;
+    // P: Planimeter Layer Aan/Uit
     case 'p':
     case 'P':
       e.preventDefault();
       toggleOttCanvas();
       break;
+    // T: Start/Stop Contour-Integraal (Tracing)
+    case 't':
+    case 'T':
+      e.preventDefault();
+      toggleOttTracking();
+      break;
+    // G: Sluit Kringintegraal & Bereken Green's Oppervlak
+    case 'g':
+    case 'G':
+      e.preventDefault();
+      closeAndIntegratePolygon();
+      break;
+    // C: Start/Stop WebRTC Live Camera
+    case 'c':
+    case 'C':
+      e.preventDefault();
+      toggleWebRTCCameraShortcut();
+      break;
+    // Z / Y zonder Ctrl voor snelle Undo / Redo
+    case 'z':
+    case 'Z':
+      e.preventDefault();
+      undoStep();
+      break;
+    case 'y':
+    case 'Y':
+      e.preventDefault();
+      redoStep();
+      break;
+    // + / - : Zoom Tableau (of WebRTC Camera met Shift)
     case '+':
     case '=':
       e.preventDefault();
@@ -3444,6 +3698,7 @@ window.addEventListener('keydown', (e) => {
       if (e.shiftKey) zoomBgMedia(0.88);
       else zoomTableau(0.88);
       break;
+    // Q / E of [ / ] : Roteer Tableau (of WebRTC Camera met Shift)
     case 'q':
     case 'Q':
     case '[':
@@ -3458,6 +3713,7 @@ window.addEventListener('keydown', (e) => {
       if (e.shiftKey) rotateBgMedia(5);
       else rotateTableau(5);
       break;
+    // H / V : Spiegel Tableau X / Y (of WebRTC Camera met Shift)
     case 'h':
     case 'H':
       e.preventDefault();
@@ -3470,11 +3726,14 @@ window.addEventListener('keydown', (e) => {
       if (e.shiftKey) toggleBgMediaFlip('y');
       else toggleTableauFlip('y');
       break;
+    // 0 of R : Reset alle Tableau & Camera transformaties
     case '0':
+    case 'r':
+    case 'R':
       e.preventDefault();
-      if (e.shiftKey) resetBgMediaTransform();
-      else resetTableauTransform();
+      resetAllTransforms();
       break;
+    // Pijltjestoetsen: Pan het Tableau vloeiend
     case 'ArrowUp':
       e.preventDefault();
       STATE.view.panY += 24;
