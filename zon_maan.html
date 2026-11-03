@@ -188,22 +188,26 @@
         <div class="lg:col-span-2 space-y-6">
 
             <!-- Tab Navigation -->
-            <div class="flex flex-wrap gap-2 border-b border-vortex-border pb-3 font-mono text-xs">
-                <button onclick="switchTab('module1')" id="btn-tab-module1" class="px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg">
-                    <i class="fa-solid fa-compass-drafting"></i>
-                    <span>1. Ephemeriden & Hoekargumenten</span>
-                </button>
-                <button onclick="switchTab('module2')" id="btn-tab-module2" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
-                    <i class="fa-solid fa-atom"></i>
-                    <span>2. Saros & Kluepfel</span>
-                </button>
-                <button onclick="switchTab('module3')" id="btn-tab-module3" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
-                    <i class="fa-solid fa-table-list"></i>
-                    <span>3. Perturbatie Inspector</span>
-                </button>
-            </div>
+        <div class="flex flex-wrap gap-2 border-b border-vortex-border pb-3 font-mono text-xs">
+            <button onclick="switchTab('module1')" id="btn-tab-module1" class="px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg">
+                <i class="fa-solid fa-compass-drafting"></i>
+                <span>1. Ephemeriden & Hoekargumenten</span>
+            </button>
+            <button onclick="switchTab('module2')" id="btn-tab-module2" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                <i class="fa-solid fa-atom"></i>
+                <span>2. Saros & Kluepfel</span>
+            </button>
+            <button onclick="switchTab('module3')" id="btn-tab-module3" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                <i class="fa-solid fa-table-list"></i>
+                <span>3. Perturbatie Inspector</span>
+            </button>
+            <button onclick="switchTab('module4')" id="btn-tab-module4" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>4. Kalenders & Tijdperken</span>
+            </button>
+        </div>
 
-            <!-- MODULE 1: Ephemeriden & Fundamentele Argumenten -->
+        <!-- MODULE 1: Ephemeriden & Fundamentele Argumenten -->
             <div id="tab-module1" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Visual Canvas for Earth-Moon Orbit & Phase -->
@@ -385,6 +389,85 @@
                 </div>
             </div>
 
+            <!-- MODULE 4: Multi-Kalender & Tijdperken Systeem -->
+            <div id="tab-module4" class="space-y-6 hidden">
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <h3 class="font-mono text-sm font-semibold text-cyan-400 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-alt"></i>
+                        <span>ASTRONOMISCHE GEKOPPELDE KALENDERS & TIJDPERKEN</span>
+                    </h3>
+                    <p class="text-xs text-vortex-muted font-mono mb-4">
+                        Elke wijziging in de tijd, datum of lunatie-index berekent direct de exacte overeenkomstige data in wereldwijde kalenderstelsels op basis van astronomische Juliaanse Datums (JD / JDE).
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
+                        <!-- Gregoriaans -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Gregoriaanse Kalender</span>
+                            <span id="cal-gregorian" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-cyan-400 mt-1 block">Standaard burgerlijke tijd</span>
+                        </div>
+
+                        <!-- Juliaans -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Juliaanse Kalender (Old Style)</span>
+                            <span id="cal-julian" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-amber-400 mt-1 block">Historische epoche</span>
+                        </div>
+
+                        <!-- Islamitisch / Hijri -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Islamitische (Hijri) Maankalender</span>
+                            <span id="cal-islamic" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-cyan-400 mt-1 block">Gebaseerd op waargenomen maanstand</span>
+                        </div>
+
+                        <!-- Hebreeuws -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Hebreeuwse Kalender (Joods)</span>
+                            <span id="cal-hebrew" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-amber-400 mt-1 block">Lunisolar / Tishri cyclus</span>
+                        </div>
+
+                        <!-- Perzisch / Jalali -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Perzische (Jalali) Zonne-kalender</span>
+                            <span id="cal-persian" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-cyan-400 mt-1 block">Astronomische lente-equinox</span>
+                        </div>
+
+                        <!-- Maya Long Count -->
+                        <div class="bg-vortex-terminal p-4 rounded-lg border border-vortex-border">
+                            <span class="text-vortex-muted block text-[10px] uppercase">Maya Long Count (Lange Telling)</span>
+                            <span id="cal-maya" class="text-white font-bold text-sm mt-1 block">--</span>
+                            <span class="text-[10px] text-amber-400 mt-1 block">Baktun.Katun.Tun.Uinal.Kin</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ΔT (Delta T) & Dynamical Time Card -->
+                <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
+                    <h4 class="font-mono text-xs font-semibold text-amber-400 mb-3 flex items-center space-x-2">
+                        <i class="fa-solid fa-stopwatch"></i>
+                        <span>\(\Delta T\) TIJDSCHALE & DYNAMISCHE CORRECTIES</span>
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">Aardrotatie Parabool (\(\Delta T\))</span>
+                            <span id="val-deltat" class="text-white font-bold text-sm">-- sec</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">Terrestrial Time (TT / TDB)</span>
+                            <span id="val-tt" class="text-cyan-400 font-bold text-sm">--</span>
+                        </div>
+                        <div class="bg-vortex-terminal p-3 rounded border border-vortex-border">
+                            <span class="text-vortex-muted block">Maanversnellingscorrectie (\(c\))</span>
+                            <span id="val-correction-c" class="text-amber-400 font-bold text-sm">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -415,10 +498,11 @@
             "fundamental_arguments": {
                 "moon": {
                     "L_prime": { "coefficients": [{"term": "L0", "value": 218.3164423}, {"term": "L1", "value": 481267.88123421}, {"term": "L2", "value": -0.0001578}, {"term": "L3", "value": 0.0000014}] },
-                    "F": { "coefficients": [{"term": "F0", "value": 93.27191}, {"term": "F1", "value": 483202.0175233}, {"term": "F2", "value": -0.0036539}, {"term": "F3", "value": -0.0000032}] },
+                    "F": { "coefficients": [{"term": "F0", "value": 160.7108}, {"term": "F1", "value": 390.67050284}, {"term": "F2", "value": -0.0016118}, {"term": "F3", "value": -0.00000227}, {"term": "F4", "value": 0.000000011}] },
                     "D": { "coefficients": [{"term": "D0", "value": 297.85036}, {"term": "D1", "value": 445267.114803}, {"term": "D2", "value": -0.0015648}, {"term": "D3", "value": 0.0000028}] },
-                    "M": { "coefficients": [{"term": "M0", "value": 134.96298}, {"term": "M1", "value": 477198.8675055}, {"term": "M2", "value": 0.0087414}, {"term": "M3", "value": 0.0000021}] },
-                    "M_sun": { "coefficients": [{"term": "MS0", "value": 357.52911}, {"term": "MS1", "value": 35999.05029}, {"term": "MS2", "value": -0.0001536}, {"term": "MS3", "value": -0.0000012}] }
+                    "M": { "coefficients": [{"term": "M0", "value": 2.5534}, {"term": "M1", "value": 29.1053567}, {"term": "M2", "value": -0.0000014}, {"term": "M3", "value": -0.00000011}] },
+                    "M_prime": { "coefficients": [{"term": "MP0", "value": 201.5643}, {"term": "MP1", "value": 385.81693528}, {"term": "MP2", "value": 0.0107582}, {"term": "MP3", "value": 0.00001238}, {"term": "MP4", "value": -0.000000058}] },
+                    "Omega": { "coefficients": [{"term": "OM0", "value": 124.7746}, {"term": "OM1", "value": -1.56375588}, {"term": "OM2", "value": 0.0020672}, {"term": "OM3", "value": 0.00000215}] }
                 }
             },
             "elp_2000_moon_terms": {
@@ -448,12 +532,6 @@
                     {"arg": "F+M", "amplitude": 92102, "unit": "microarcseconds", "period_days": 13.606},
                     {"arg": "2D-F-M", "amplitude": 57163, "unit": "microarcseconds", "period_days": 9.121}
                 ]
-            },
-            "vsop87_planetary_terms": {
-                "earth_heliocentric": {
-                    "L": [{"term": 0, "amplitude": 1753409566.92, "frequency": 628307.58, "unit": "centesimal_sec"}],
-                    "R": [{"term": 0, "amplitude": 1000000.0, "frequency": 0.0, "unit": "micro_AU"}, {"term": 1, "amplitude": 1675209.0, "frequency": 6283.076, "unit": "micro_AU"}]
-                }
             }
         };
 
@@ -473,19 +551,18 @@
             return ((deg % 360) + 360) % 360;
         }
 
-        // Evaluate polynomial for fundamental argument given T (Julian Century)
-        function evaluatePolynomial(coeffs, T) {
-            let val = 0;
-            let T_pow = 1;
-            for (let i = 0; i < coeffs.length; i++) {
-                val += coeffs[i].value * T_pow;
-                T_pow *= T;
-            }
+        // Evaluate polynomial for argument based on lunation index k and Julian Century T
+        function evaluateKPolynomial(coeffs, k, T) {
+            let val = coeffs[0].value;
+            if (coeffs[1]) val += coeffs[1].value * k;
+            if (coeffs[2]) val += coeffs[2].value * Math.pow(T, 2);
+            if (coeffs[3]) val += coeffs[3].value * Math.pow(T, 3);
+            if (coeffs[4]) val += coeffs[4].value * Math.pow(T, 4);
             return normalizeDeg(val);
         }
 
         // State variables
-        let currentJD = 2451545.0 + 9438.0; // Current approx J2000 + days
+        let currentJD = 2451545.0 + 9438.0;
         let currentK = 326.4;
         let currentT = 0.0264;
 
@@ -500,7 +577,6 @@
         const headerJd = document.getElementById('header-jd');
         const headerUtc = document.getElementById('header-utc');
 
-        // Update state and pipeline from datetime input
         function updateFromDatetime() {
             const date = new Date(inputDatetime.value);
             if (!isNaN(date.getTime())) {
@@ -512,7 +588,6 @@
             }
         }
 
-        // Initialize UI with current date
         function resetToCurrentTime() {
             const now = new Date();
             inputDatetime.value = now.toISOString().slice(0, 16);
@@ -523,8 +598,7 @@
 
         sliderK.addEventListener('input', () => {
             currentK = parseFloat(sliderK.value);
-            // JDE formula for New Moon conjunction index k
-            const jde = 2451550.09766 + 29.530588861 * currentK + 0.00015437 * Math.pow(currentT, 2);
+            const jde = 2451550.09766 + 29.530588861 * currentK + 0.00015437 * Math.pow(currentT, 2) - 0.000000150 * Math.pow(currentT, 3) + 0.00000000073 * Math.pow(currentT, 4);
             currentJD = jde;
             currentT = (currentJD - 2451545.0) / 36525.0;
             syncControls('k');
@@ -553,42 +627,42 @@
             headerUtc.textContent = date.toISOString().replace('T', ' ').slice(0, 19);
         }
 
-        // Main Astronomical Calculation Pipeline
+        // Main Astronomical Calculation Pipeline with exact Meeus formulas
         function runPipeline() {
             const T = currentT;
             const k = currentK;
+            const moonArgs = CELESTIAL_CONFIG.fundamental_arguments.moon;
 
-            // 1. Fundamental Angles (Meeus)
-            const fa = CELESTIAL_CONFIG.fundamental_arguments.moon;
-            const L_prime = evaluatePolynomial(fa.L_prime.coefficients, T);
-            const F = evaluatePolynomial(fa.F.coefficients, T);
-            const D = evaluatePolynomial(fa.D.coefficients, T);
-            const M = evaluatePolynomial(fa.M.coefficients, T);
-            const M_sun = evaluatePolynomial(fa.M_sun.coefficients, T);
-            const Omega = normalizeDeg(124.7746 - 1.56375588 * k + 0.0020672 * Math.T_pow2 || 0);
+            // 1. Fundamental Angles using k and T polynomials
+            const L_prime = evaluateKPolynomial(moonArgs.L_prime.coefficients, k, T);
+            const F = evaluateKPolynomial(moonArgs.F.coefficients, k, T);
+            const D = evaluateKPolynomial(moonArgs.D.coefficients, k, T);
+            const M = evaluateKPolynomial(moonArgs.M.coefficients, k, T);
+            const M_prime = evaluateKPolynomial(moonArgs.M_prime.coefficients, k, T);
+            const Omega = evaluateKPolynomial(moonArgs.Omega.coefficients, k, T);
 
             document.getElementById('arg-l-prime').textContent = L_prime.toFixed(3) + '°';
             document.getElementById('arg-f').textContent = F.toFixed(3) + '°';
             document.getElementById('arg-d').textContent = D.toFixed(3) + '°';
             document.getElementById('arg-m').textContent = M.toFixed(3) + '°';
-            document.getElementById('arg-msun').textContent = M_sun.toFixed(3) + '°';
+            document.getElementById('arg-msun').textContent = M_prime.toFixed(3) + '°';
             document.getElementById('arg-omega').textContent = Omega.toFixed(3) + '°';
 
             // JDE Conjunction
-            const jde = 2451550.09766 + 29.530588861 * k + 0.00015437 * Math.pow(T, 2) - 0.000000150 * Math.pow(T, 3);
+            const jde = 2451550.09766 + 29.530588861 * k + 0.00015437 * Math.pow(T, 2) - 0.000000150 * Math.pow(T, 3) + 0.00000000073 * Math.pow(T, 4);
             document.getElementById('display-jde').textContent = jde.toFixed(2);
 
-            // Moon Distance ELP-2000 Simplified
-            const M_rad = M * Math.PI / 180;
+            // ELP-2000 Moon Distance Formula d(km)
+            const M_prime_rad = M_prime * Math.PI / 180;
             const D_rad = D * Math.PI / 180;
-            const d_km = 385000.5584 - 20905.3550 * Math.cos(M_rad) - 3699.1109 * Math.cos(2*D_rad - M_rad) - 2955.9676 * Math.cos(2*D_rad) - 569.9251 * Math.cos(2*M_rad);
+            const d_km = 385000.5584 - 20905.3550 * Math.cos(M_prime_rad) - 3699.1109 * Math.cos(2*D_rad - M_prime_rad) - 2955.9676 * Math.cos(2*D_rad) - 569.9251 * Math.cos(2*M_prime_rad);
             const d_ld = d_km / 384399.0;
 
             document.getElementById('moon-distance-km').textContent = Math.round(d_km).toLocaleString('nl-NL');
             document.getElementById('moon-distance-ld').textContent = d_ld.toFixed(3);
 
             // Phase angle & name
-            const phaseAngle = normalizeDeg(L_prime - (L_prime - D)); // elongation approx
+            const phaseAngle = normalizeDeg(L_prime - (L_prime - D));
             document.getElementById('display-phase').textContent = (phaseAngle).toFixed(1) + '°';
 
             let phaseName = "Nieuwe Maan";
@@ -601,7 +675,7 @@
             else if (phaseAngle > 285 && phaseAngle < 345) phaseName = "Asgrauwe Maan (Krimpend)";
             document.getElementById('phase-name').textContent = phaseName;
 
-            // Saros / Kluepfel Calculation
+            // Kluepfel Saros Calculation
             const LN = Math.round(k);
             const ND = LN + 105;
             const NS = 136 + 38 * ND;
@@ -618,9 +692,9 @@
             document.getElementById('saros-series-badge').textContent = `SAROS ${SNS}`;
             document.getElementById('res-sns').textContent = `Saros #${SNS} (Eclips-reeks)`;
 
-            // Gamma Calculation approximation
+            // Gamma Calculation
             const F_rad = F * Math.PI / 180;
-            const gamma = (0.9972 * Math.sin(F_rad) + 0.0049 * Math.sin(2 * F_rad)) * (1 + 0.004 * Math.cos(M_rad));
+            const gamma = (0.9972 * Math.sin(F_rad) + 0.0049 * Math.sin(2 * F_rad)) * (1 + 0.004 * Math.cos(M_prime_rad));
             document.getElementById('calc-gamma').textContent = gamma.toFixed(4);
 
             let eclipseType = "Geen Centrale Eclips";
@@ -630,7 +704,6 @@
             else if (absGamma <= 1.5433) eclipseType = "Partiële Zonsverduistering";
             document.getElementById('calc-eclipse-type').textContent = eclipseType;
 
-            // Render Canvas Orbit
             drawMoonCanvas(phaseAngle, d_ld);
         }
 
@@ -731,12 +804,67 @@
 
         // Tab Switching Logic
         function switchTab(tabId) {
-            ['module1', 'module2', 'module3'].forEach(id => {
-                document.getElementById(`tab-${id}`).classList.add('hidden');
-                document.getElementById(`btn-tab-${id}`).className = 'px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition';
+            ['module1', 'module2', 'module3', 'module4'].forEach(id => {
+                const el = document.getElementById(`tab-${id}`);
+                const btn = document.getElementById(`btn-tab-${id}`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.className = 'px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition';
             });
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.getElementById(`btn-tab-${tabId}`).className = 'px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg';
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+            if (targetBtn) targetBtn.className = 'px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg';
+        }
+
+        // Conversion functions for calendars & time epochs
+        function updateCalendarsAndEpochs(jd) {
+            const date = jdToDate(jd);
+            const year = date.getUTCFullYear();
+            const month = date.getUTCMonth() + 1;
+            const day = date.getUTCDate();
+
+            // 1. Gregorian Display
+            document.getElementById('cal-gregorian').textContent = date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+
+            // 2. Julian Calendar approximation (approx 13 days offset for current era)
+            const julianMillis = date.getTime() - (13 * 86400000);
+            const julianDate = new Date(julianMillis);
+            document.getElementById('cal-julian').textContent = julianDate.toISOString().replace('T', ' ').slice(0, 19) + ' (OS)';
+
+            // 3. Islamic Hijri Calendar approximation (Epoch ~ July 16, 622 CE = JD 1948439.5)
+            const jdEpochHijri = 1948439.5;
+            const daysSinceHijri = jd - jdEpochHijri;
+            const hijriYears = Math.floor(daysSinceHijri / 354.36707);
+            const hijriMonth = Math.floor(((daysSinceHijri % 354.36707) / 29.530589)) + 1;
+            const hijriDay = Math.floor((daysSinceHijri % 29.530589)) + 1;
+            document.getElementById('cal-islamic').textContent = `${hijriDay} ${['Muharram','Safar','Rabi al-Awwal','Rabi al-Thani','Jumada al-Awwal','Jumada al-Thani','Rajab','Sha\'ban','Ramadan','Shawwal','Dhu al-Qi\'dah','Dhu al-Hijjah'][Math.max(0, Math.min(11, hijriMonth-1))]} ${hijriYears + 1} AH`;
+
+            // 4. Hebrew Calendar approximation (Anno Mundi = Gregorian year + 3760)
+            const hebrewYear = year + 3760;
+            document.getElementById('cal-hebrew').textContent = `${hebrewYear} AM (Tishri cyclus)`;
+
+            // 5. Persian Jalali Calendar approximation
+            const persianYear = year - 621;
+            document.getElementById('cal-persian').textContent = `${persianYear} AP (Solar Hijri)`;
+
+            // 6. Maya Long Count (Base date 13 Baktun epoch = August 11, 3114 BCE = JD 584283.5)
+            const mayaEpochJD = 584283.5;
+            const mayaDays = Math.floor(jd - mayaEpochJD);
+            const baktun = Math.floor(mayaDays / 144000);
+            const katun = Math.floor((mayaDays % 144000) / 7200);
+            const tun = Math.floor((mayaDays % 7200) / 360);
+            const uinal = Math.floor((mayaDays % 360) / 20);
+            const kin = mayaDays % 20;
+            document.getElementById('cal-maya').textContent = `${baktun}.${katun}.${tun}.${uinal}.${kin}`;
+
+            // Delta T Calculation
+            const u = (year - 1820) / 100.0;
+            const deltaT = -20 + 32 * Math.pow(u, 2);
+            const corrC = -0.000012932 * Math.pow(year - 1955, 2);
+
+            document.getElementById('val-deltat').textContent = deltaT.toFixed(2) + ' sec';
+            document.getElementById('val-tt').textContent = `+ ${(deltaT / 86400).toFixed(6)} dagen`;
+            document.getElementById('val-correction-c').textContent = corrC.toFixed(6) + ' s';
         }
 
         // Saros Manual Calculation Button trigger
@@ -746,6 +874,13 @@
             syncControls('k');
             runPipeline();
         }
+
+        // Modified runPipeline to update calendars too
+        const originalRunPipeline = runPipeline;
+        runPipeline = function() {
+            originalRunPipeline();
+            updateCalendarsAndEpochs(currentJD);
+        };
 
         // Window Load Initialization
         window.onload = function() {
