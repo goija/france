@@ -58,10 +58,6 @@
         .glow-gold {
             box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
         }
-        .scanline {
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.3) 50%, rgba(0, 0, 0, 0.3));
-            background-size: 100% 4px;
-        }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
@@ -78,7 +74,7 @@
                         <h1 class="font-mono font-bold tracking-wider text-lg text-white">VORTEX OS</h1>
                         <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">v1.0.0-PRO</span>
                     </div>
-                    <p class="text-xs text-vortex-muted font-mono">Celestial Ephemerides, ELP-2000/82 & Saros Pipeline</p>
+                    <p class="text-xs text-vortex-muted font-mono">Celestial Ephemerides, ELP-2000/82 & Multi-Calendar Pipeline</p>
                 </div>
             </div>
 
@@ -188,26 +184,26 @@
         <div class="lg:col-span-2 space-y-6">
 
             <!-- Tab Navigation -->
-        <div class="flex flex-wrap gap-2 border-b border-vortex-border pb-3 font-mono text-xs">
-            <button onclick="switchTab('module1')" id="btn-tab-module1" class="px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg">
-                <i class="fa-solid fa-compass-drafting"></i>
-                <span>1. Ephemeriden & Hoekargumenten</span>
-            </button>
-            <button onclick="switchTab('module2')" id="btn-tab-module2" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
-                <i class="fa-solid fa-atom"></i>
-                <span>2. Saros & Kluepfel</span>
-            </button>
-            <button onclick="switchTab('module3')" id="btn-tab-module3" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
-                <i class="fa-solid fa-table-list"></i>
-                <span>3. Perturbatie Inspector</span>
-            </button>
-            <button onclick="switchTab('module4')" id="btn-tab-module4" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
-                <i class="fa-solid fa-calendar-days"></i>
-                <span>4. Kalenders & Tijdperken</span>
-            </button>
-        </div>
+            <div class="flex flex-wrap gap-2 border-b border-vortex-border pb-3 font-mono text-xs">
+                <button onclick="switchTab('module1')" id="btn-tab-module1" class="px-4 py-2 rounded-lg bg-cyan-500 text-black font-bold flex items-center space-x-2 transition shadow-lg">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                    <span>1. Ephemeriden & Hoekargumenten</span>
+                </button>
+                <button onclick="switchTab('module2')" id="btn-tab-module2" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-atom"></i>
+                    <span>2. Saros & Kluepfel</span>
+                </button>
+                <button onclick="switchTab('module3')" id="btn-tab-module3" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-table-list"></i>
+                    <span>3. Perturbatie Inspector</span>
+                </button>
+                <button onclick="switchTab('module4')" id="btn-tab-module4" class="px-4 py-2 rounded-lg bg-vortex-card text-vortex-muted hover:text-white border border-vortex-border flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>4. Kalenders & Tijdperken</span>
+                </button>
+            </div>
 
-        <!-- MODULE 1: Ephemeriden & Fundamentele Argumenten -->
+            <!-- MODULE 1: Ephemeriden & Fundamentele Argumenten -->
             <div id="tab-module1" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Visual Canvas for Earth-Moon Orbit & Phase -->
@@ -287,7 +283,8 @@
             <div id="tab-module2" class="space-y-6 hidden">
                 <div class="bg-vortex-card border border-vortex-border rounded-xl p-5 shadow-lg">
                     <h3 class="font-mono text-sm font-semibold text-amber-400 mb-4 flex items-center space-x-2">
-                        <i class="fa-solid fa-clock-rotate-left"><span>KLUEPFEL GESLOTEN SAROS- EN ECLIPSCALCULATOR</span></i>
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>KLUEPFEL GESLOTEN SAROS- EN ECLIPSCALCULATOR</span>
                     </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 font-mono">
                         <div>
@@ -705,6 +702,7 @@
             document.getElementById('calc-eclipse-type').textContent = eclipseType;
 
             drawMoonCanvas(phaseAngle, d_ld);
+            updateCalendarsAndEpochs(currentJD);
         }
 
         // Canvas Drawing Function for Moon Orbit & Phase Illumination
@@ -737,7 +735,7 @@
 
             // Moon position based on angle
             const angleRad = (phaseAngle - 90) * Math.PI / 180;
-            const orbitRadius = 90 * (d_ld); // scale distance slightly
+            const orbitRadius = 90 * (d_ld);
             const mx = cx + orbitRadius * Math.cos(angleRad);
             const my = cy + orbitRadius * Math.sin(angleRad);
 
@@ -820,8 +818,6 @@
         function updateCalendarsAndEpochs(jd) {
             const date = jdToDate(jd);
             const year = date.getUTCFullYear();
-            const month = date.getUTCMonth() + 1;
-            const day = date.getUTCDate();
 
             // 1. Gregorian Display
             document.getElementById('cal-gregorian').textContent = date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
@@ -874,13 +870,6 @@
             syncControls('k');
             runPipeline();
         }
-
-        // Modified runPipeline to update calendars too
-        const originalRunPipeline = runPipeline;
-        runPipeline = function() {
-            originalRunPipeline();
-            updateCalendarsAndEpochs(currentJD);
-        };
 
         // Window Load Initialization
         window.onload = function() {
