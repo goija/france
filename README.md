@@ -1,3 +1,44 @@
+Stack 
+
+
+geocentrum/
+├── Cargo.toml
+├── Makefile
+├── README.md
+├── include/
+│   └── lfsr_kernel.h
+├── src/
+│   ├── main.rs
+│   ├── astrometry/
+│   │   ├── mod.rs
+│   │   ├── precession.rs
+│   │   ├── procrustes.rs
+│   │   └── spherical.rs
+│   ├── cartography/
+│   │   ├── mod.rs
+│   │   ├── maplibre_bridge.rs
+│   │   └── planimeter.rs
+│   └── server/
+│       ├── mod.rs
+│       └── axum_router.rs
+├── web/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.vue
+│       ├── components/
+│       │   ├── StarryNightCanvas.vue
+│       │   └── PlanimeterTool.vue
+│       └── shaders/
+│           ├── vertex.glsl
+│           └── fragment.glsl
+├── scripts/
+│   ├── ephemeris_parser.py
+│   └── procrustes_analysis.R
+└── tests/
+    └── astrometry_tests.rs
+
 # Analyse van VORTEX OS – Celestial & Saros Pipeline v1.1.0-PRO
 
 ## 1. Algemene beoordeling
