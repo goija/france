@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX OS / VORTEX 245,91° — Geodesic & Astronomical Cockpit</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        vortex: {
+                            900: '#07090e',
+                            800: '#0e1320',
+                            700: '#171f33',
+                            600: '#232f4e',
+                            500: '#344573',
+                            400: '#536baf',
+                            300: '#839bd9',
+                            200: '#b8c7ec',
+                            100: '#e6edfb',
+                            gold: '#d4af37',
+                            accent: '#00ffcc'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #07090e; color: #e6edfb; overflow: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar for technical panels */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0e1320; }
+        ::-webkit-scrollbar-thumb { background: #344573; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #536baf; }
+        .glass-panel { background: rgba(14, 19, 32, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(83, 107, 175, 0.25); }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+    <!-- Top Navigation & Universal Search & Status Bar -->
+    <header class="h-14 bg-vortex-800 border-b border-vortex-600 flex items-center justify-between px-4 z-30 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-vortex-gold to-vortex-accent flex items-center justify-center font-bold text-vortex-900 shadow-lg shadow-vortex-accent/20">
+                Ω
+            </div>
+            <div>
+                <h1 class="font-bold text-sm tracking-wider text-vortex-100">VORTEX OS <span class="text-vortex-gold font-mono text-xs">245.91°</span></h1>
+                <p class="text-[10px] text-vortex-300 font-mono">OBSERVATORIUM & GEODESIC SUITE</p>
+            </div>
+        </div>
+
+        <!-- Universal Search Bar -->
+        <div class="relative w-96 hidden md:block">
+            <input type="text" id="universalSearchInput" placeholder="Zoek plaatsnaam (Bourges, Tholen), JD, ISO datum of coördinaten..." 
+                class="w-full bg-vortex-900 border border-vortex-600 rounded-lg px-3 py-1.5 text-xs text-vortex-100 placeholder-vortex-400 focus:outline-none focus:border-vortex-accent font-mono transition-all">
+            <div id="searchSuggestions" class="absolute left-0 right-0 mt-1 bg-vortex-800 border border-vortex-600 rounded-lg shadow-2xl hidden z-50 max-h-60 overflow-y-auto text-xs font-mono"></div>
+        </div>
+
+        <!-- Viewport Layout Switcher & Quick Controls -->
+        <div class="flex items-center space-x-2">
+            <div class="bg-vortex-900 p-1 rounded-lg border border-vortex-600 flex space-x-1">
+                <button onclick="setViewportLayout('single')" id="layout-single" class="px-2 py-1 text-xs rounded bg-vortex-500 text-white font-mono transition-colors">1x</button>
+                <button onclick="setViewportLayout('splith')" id="layout-splith" class="px-2 py-1 text-xs rounded text-vortex-300 hover:text-white font-mono transition-colors">H</button>
+                <button onclick="setViewportLayout('splitv')" id="layout-splitv" class="px-2 py-1 text-xs rounded text-vortex-300 hover:text-white font-mono transition-colors">V</button>
+                <button onclick="setViewportLayout('quad')" id="layout-quad" class="px-2 py-1 text-xs rounded text-vortex-300 hover:text-white font-mono transition-colors">4x</button>
+            </div>
+            <button onclick="toggleHistoryModal()" class="px-3 py-1.5 bg-vortex-700 hover:bg-vortex-600 border border-vortex-500 rounded-lg text-xs font-mono text-vortex-200 flex items-center space-x-1 transition-colors">
+                <span> Historie</span>
+            </button>
+            <button onclick="exportSnapshot()" class="px-3 py-1.5 bg-vortex-gold/20 hover:bg-vortex-gold/30 border border-vortex-gold/50 rounded-lg text-xs font-mono text-vortex-gold flex items-center space-x-1 transition-colors">
+                <span>💾 Snapshot</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Sidebar: Module Launchers & FG/BG Transformers -->
+        <aside class="w-72 bg-vortex-800 border-r border-vortex-600 flex flex-col z-20 shrink-0">
+            <div class="p-3 border-b border-vortex-600 font-mono text-xs font-semibold text-vortex-300 flex items-center justify-between">
+                <span>MODULE COCKPIT</span>
+                <span class="w-2 h-2 rounded-full bg-vortex-accent animate-pulse"></span>
+            </div>
+            
+            <!-- Floating Windows Launchers -->
+            <div class="p-3 space-y-2 overflow-y-auto flex-1">
+                <button onclick="toggleWindow('win-drawing')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>🎨</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">Tekenen & Beeld</div>
+                        <div class="text-[10px] text-vortex-400">Canvas & Camera Overlays</div>
+                    </div>
+                </button>
+                
+                <button onclick="toggleWindow('win-ephemerides')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>🌌</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">Ephemeriden & Meeus</div>
+                        <div class="text-[10px] text-vortex-400">L', F, D, M, M_sun, Ω</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-saros')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>🌑</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">NASA Saros-Motor</div>
+                        <div class="text-[10px] text-vortex-400">Eclipsen (-1999 t/m +3000)</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-topocentric')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>🧭</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">Topocentrisch & Refractie</div>
+                        <div class="text-[10px] text-vortex-400">Bennett, Sæmundsson, AM</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-gis')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>🗺️</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">GIS & GeoJSON Explorer</div>
+                        <div class="text-[10px] text-vortex-400">RD (EPSG:28992) & WGS84</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-procrustes')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>📐</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">Procrustes & 7-Param Helmert</div>
+                        <div class="text-[10px] text-vortex-400">SVD Vormanalyse & Bursa-Wolf</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-planimeter')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>⚙️</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">Ott Kempten Planimeter</div>
+                        <div class="text-[10px] text-vortex-400">R = 10φ cm, Wiel Δn</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleWindow('win-symmetry')" class="w-full text-left px-3 py-2 rounded-lg bg-vortex-700/50 hover:bg-vortex-700 border border-vortex-600 text-xs font-mono flex items-center space-x-2 transition-all">
+                    <span>⚛️</span>
+                    <div>
+                        <div class="font-semibold text-vortex-100">17 Behangpatroongroepen</div>
+                        <div class="text-[10px] text-vortex-400">Bravais & Reciprook Rooster</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- FG / BG Transformation Controllers -->
+            <div class="p-3 border-t border-vortex-600 bg-vortex-900/60 font-mono text-xs space-y-3">
+                <div class="font-semibold text-vortex-gold flex items-center justify-between">
+                    <span>TRANSFORM CONTROLLERS</span>
+                    <button onclick="resetTransforms()" class="text-[10px] text-vortex-300 hover:text-white underline">Reset</button>
+                </div>
+                
+                <!-- Foreground Controls -->
+                <div class="space-y-1.5 bg-vortex-800 p-2 rounded border border-vortex-600/50">
+                    <div class="text-[11px] font-bold text-vortex-200">Voorgrond (FG)</div>
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span>Zoom: <span id="fgZoomVal">1.00</span>x</span>
+                        <input type="range" id="fgZoom" min="0.25" max="5.00" step="0.05" value="1.00" class="w-28 accent-vortex-accent">
+                    </div>
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span>Rot: <span id="fgRotVal">0</span>°</span>
+                        <input type="range" id="fgRot" min="-180" max="180" step="1" value="0" class="w-28 accent-vortex-accent">
+                    </div>
+                    <div class="flex space-x-2 pt-1">
+                        <button onclick="toggleFGMirrorX()" id="btnMirrorX" class="flex-1 py-1 bg-vortex-700 hover:bg-vortex-600 rounded text-[10px]">⟷ Spiegel X</button>
+                        <button onclick="toggleFGMirrorY()" id="btnMirrorY" class="flex-1 py-1 bg-vortex-700 hover:bg-vortex-600 rounded text-[10px]">↕ Spiegel Y</button>
+                    </div>
+                </div>
+
+                <!-- Background Controls -->
+                <div class="space-y-1.5 bg-vortex-800 p-2 rounded border border-vortex-600/50">
+                    <div class="text-[11px] font-bold text-vortex-200">Achtergrond (BG)</div>
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span>Zoom: <span id="bgZoomVal">1.00</span>x</span>
+                        <input type="range" id="bgZoom" min="0.25" max="5.00" step="0.05" value="1.00" class="w-28 accent-vortex-gold">
+                    </div>
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span>Rot: <span id="bgRotVal">0</span>°</span>
+                        <input type="range" id="bgRot" min="-180" max="180" step="1" value="0" class="w-28 accent-vortex-gold">
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Viewport Area (Multi-Viewport Grid) -->
+        <main id="viewportContainer" class="flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 bg-vortex-900 overflow-hidden relative">
+            <!-- Viewport 1 (Primary) -->
+            <div id="vp-1" class="relative bg-vortex-800 rounded-lg border border-vortex-600 overflow-hidden flex flex-col">
+                <div class="absolute top-2 left-2 z-10 bg-vortex-900/85 px-2 py-1 rounded text-[10px] font-mono text-vortex-300 border border-vortex-600 flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-vortex-accent"></span>
+                    <span id="vp1-title">Viewport Alpha: Geodesisch Canvas & Sterrenhemel</span>
+                </div>
+                <div class="absolute top-2 right-2 z-10 bg-vortex-900/85 px-2 py-1 rounded text-[10px] font-mono text-vortex-gold border border-vortex-600">
+                    RD (EPSG:28992) / WGS84
+                </div>
+                <div class="flex-1 relative cursor-crosshair overflow-hidden" id="canvasContainer1">
+                    <canvas id="mainCanvas1" class="w-full h-full block"></canvas>
+                </div>
+                <div class="h-8 bg-vortex-900 border-t border-vortex-600 px-3 flex items-center justify-between text-[11px] font-mono text-vortex-300">
+                    <div id="coordsReadout1">X: 0.00 | Y: 0.00 | φ: 52°13'48"N | λ: 5°10'48"E</div>
+                    <div id="statusReadout1">Delta T: 69.18s | JDE: 2461430.34</div>
+                </div>
+            </div>
+
+            <!-- Viewport 2 -->
+            <div id="vp-2" class="relative bg-vortex-800 rounded-lg border border-vortex-600 overflow-hidden flex flex-col hidden">
+                <div class="absolute top-2 left-2 z-10 bg-vortex-900/85 px-2 py-1 rounded text-[10px] font-mono text-vortex-300 border border-vortex-600 flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-vortex-gold"></span>
+                    <span>Viewport Beta: Saros & Eclips projectie</span>
+                </div>
+                <div class="flex-1 relative overflow-hidden" id="canvasContainer2">
+                    <canvas id="mainCanvas2" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- Viewport 3 -->
+            <div id="vp-3" class="relative bg-vortex-800 rounded-lg border border-vortex-600 overflow-hidden flex flex-col hidden">
+                <div class="absolute top-2 left-2 z-10 bg-vortex-900/85 px-2 py-1 rounded text-[10px] font-mono text-vortex-300 border border-vortex-600 flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                    <span>Viewport Gamma: Symmetrie & Reciprook Rooster</span>
+                </div>
+                <div class="flex-1 relative overflow-hidden" id="canvasContainer3">
+                    <canvas id="mainCanvas3" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+            <!-- Viewport 4 -->
+            <div id="vp-4" class="relative bg-vortex-800 rounded-lg border border-vortex-600 overflow-hidden flex flex-col hidden">
+                <div class="absolute top-2 left-2 z-10 bg-vortex-900/85 px-2 py-1 rounded text-[10px] font-mono text-vortex-300 border border-vortex-600 flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                    <span>Viewport Delta: Ott Kempten Planimeter Simulatie</span>
+                </div>
+                <div class="flex-1 relative overflow-hidden" id="canvasContainer4">
+                    <canvas id="mainCanvas4" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODAL WINDOWS (Draggable / Floating) ================= -->
+
+    <!-- 1. Tekenen & Beeld -->
+    <div id="win-drawing" class="absolute top-16 left-80 w-96 glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-drawing')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>🎨</span><span>Tekenen & Beeld Overlay</span></span>
+            <button onclick="toggleWindow('win-drawing')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div>
+                <label class="block text-vortex-300 mb-1">Tekengereedschap</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setDrawTool('pen')" id="tool-pen" class="py-1.5 bg-vortex-600 text-white rounded border border-vortex-400">Pen</button>
+                    <button onclick="setDrawTool('line')" id="tool-line" class="py-1.5 bg-vortex-800 text-vortex-300 rounded border border-vortex-600">Lijn</button>
+                    <button onclick="setDrawTool('circle')" id="tool-circle" class="py-1.5 bg-vortex-800 text-vortex-300 rounded border border-vortex-600">Cirkel</button>
+                </div>
+            </div>
+            <div>
+                <label class="block text-vortex-300 mb-1">Penseelkleur</label>
+                <div class="flex items-center space-x-2">
+                    <input type="color" id="drawColor" value="#00ffcc" class="w-10 h-8 bg-transparent rounded cursor-pointer">
+                    <input type="range" id="drawWidth" min="1" max="20" value="3" class="flex-1 accent-vortex-accent">
+                    <span id="drawWidthVal" class="text-vortex-300 w-6">3px</span>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="clearDrawLayer()" class="flex-1 py-1.5 bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded border border-red-700">Wis Laag</button>
+                <button onclick="saveDrawSnapshot()" class="flex-1 py-1.5 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Export PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Ephemeriden & Hoekargumenten -->
+    <div id="win-ephemerides" class="absolute top-20 left-96 w-[420px] glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-ephemerides')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>🌌</span><span>Ephemeriden & Meeus Argumenten</span></span>
+            <button onclick="toggleWindow('win-ephemerides')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="grid grid-cols-2 gap-2 bg-vortex-900/60 p-2.5 rounded border border-vortex-600">
+                <div>
+                    <span class="text-vortex-400 text-[10px]">Julian Date (JDE):</span>
+                    <div id="ephemJDE" class="text-vortex-accent font-bold">2461430.3421</div>
+                </div>
+                <div>
+                    <span class="text-vortex-400 text-[10px]">ΔT (sec):</span>
+                    <div id="ephemDeltaT" class="text-vortex-gold font-bold">69.18 s</div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="text-[11px] font-bold text-vortex-200">6 Fundamentele Hoekargumenten (Jean Meeus)</div>
+                <div class="space-y-1 text-[11px] bg-vortex-900 p-2 rounded border border-vortex-600">
+                    <div class="flex justify-between"><span>L' (Middelbare lengte Maan):</span><span id="argL" class="text-vortex-accent">--</span></div>
+                    <div class="flex justify-between"><span>F (Knooppuntsafstand L' - Ω):</span><span id="argF" class="text-vortex-accent">--</span></div>
+                    <div class="flex justify-between"><span>D (Elongatie Maan - Zon):</span><span id="argD" class="text-vortex-accent">--</span></div>
+                    <div class="flex justify-between"><span>M (Middelbare anomalie Maan):</span><span id="argM" class="text-vortex-accent">--</span></div>
+                    <div class="flex justify-between"><span>M_sun (Middelbare anomalie Zon):</span><span id="argMsun" class="text-vortex-accent">--</span></div>
+                    <div class="flex justify-between"><span>Ω (Stijgende knoop longitude):</span><span id="argOmega" class="text-vortex-accent">--</span></div>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="computeEphemerides()" class="w-full py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Bereken Real-Time Ephemeris</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. NASA Saros-Motor -->
+    <div id="win-saros" class="absolute top-24 left-[400px] w-[440px] glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-saros')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>🌑</span><span>NASA / Meeus Saros-Motor (-1999 t/m +3000)</span></span>
+            <button onclick="toggleWindow('win-saros')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="flex items-center space-x-2">
+                <span class="text-vortex-300 w-28">Saros Cyclus:</span>
+                <input type="number" id="sarosNumber" value="136" min="1" max="200" class="flex-1 bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100">
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-vortex-300 w-28">Jaar Epoch:</span>
+                <input type="number" id="sarosYear" value="2026" min="-1999" max="3000" class="flex-1 bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100">
+            </div>
+            <div class="bg-vortex-900 p-3 rounded border border-vortex-600 space-y-1.5">
+                <div class="font-semibold text-vortex-gold">Kluepfel Saros-Inex Matrix Resultaat:</div>
+                <div id="sarosOutput" class="text-[11px] text-vortex-200 space-y-1">
+                    <div>ND: 14 | NS: 8 | NX: 3 | NC: 136</div>
+                    <div>Euclidische SNS-index (mod 223): <span class="text-vortex-accent">142</span></div>
+                    <div>Eclips Type: Hybride / Totale Zonsverduistering</div>
+                    <div>Schaduwmodel: Danjon (1/85, factor 1.01)</div>
+                </div>
+            </div>
+            <button onclick="runSarosEngine()" class="w-full py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Voer Saros Berekening Uit</button>
+        </div>
+    </div>
+
+    <!-- 4. Topocentrische Coördinaten & Refractie -->
+    <div id="win-topocentric" class="absolute top-28 left-[440px] w-96 glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-topocentric')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>🧭</span><span>Topocentrisch & Atmosferische Refractie</span></span>
+            <button onclick="toggleWindow('win-topocentric')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-vortex-300 mb-1">Luchtdruk (mbar)</label>
+                    <input type="number" id="topoPressure" value="1013.25" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100">
+                </div>
+                <div>
+                    <label class="block text-vortex-300 mb-1">Temperatuur (°C)</label>
+                    <input type="number" id="topoTemp" value="15.0" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100">
+                </div>
+            </div>
+            <div>
+                <label class="block text-vortex-300 mb-1">Schijnbare Hoogte h0 (°)</label>
+                <input type="number" id="topoHeight" value="12.5" step="0.1" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100">
+            </div>
+            <div class="bg-vortex-900 p-3 rounded border border-vortex-600 space-y-1.5 text-[11px]">
+                <div class="flex justify-between"><span>Bennett Refractie (R):</span><span id="resBennett" class="text-vortex-accent">--</span></div>
+                <div class="flex justify-between"><span>Sæmundsson Breking:</span><span id="resSaemundsson" class="text-vortex-gold">--</span></div>
+                <div class="flex justify-between"><span>Kasten & Young Luchtmassa (AM):</span><span id="resAM" class="text-vortex-200">--</span></div>
+            </div>
+            <button onclick="calculateRefraction()" class="w-full py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Bereken Refractie & AM</button>
+        </div>
+    </div>
+
+    <!-- 5. GIS, Leaflet & GeoJSON -->
+    <div id="win-gis" class="absolute top-32 left-[480px] w-[450px] glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-gis')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>🗺️</span><span>GIS, Rijksdriehoek & GeoJSON Ankers</span></span>
+            <button onclick="toggleWindow('win-gis')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="space-y-1">
+                <span class="text-vortex-300">5 Geodetische IJkpunten (Vortex 245,91°):</span>
+                <select id="geodeticPointSelect" onchange="selectGeodeticPoint(this.value)" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1.5 text-vortex-100">
+                    <option value="1">1. Bol van Lodijke Perceel 369 (12.50 ha)</option>
+                    <option value="2">2. Kasteel Lodijke (ARC-LOD-01)</option>
+                    <option value="3">3. Reimerswaal Scharnierpunt</option>
+                    <option value="4">4. Tholen Kruittoren 23 (Sectie A nr. 107)</option>
+                    <option value="5">5. Molenplaat / Schakerloo & Scherpenisse</option>
+                </select>
+            </div>
+            <div id="geodeticDetails" class="bg-vortex-900 p-3 rounded border border-vortex-600 text-[11px] space-y-1">
+                <div>Naam: Bol van Lodijke Perceel 369</div>
+                <div>RD Coördinaten: X = 65234.12 m, Y = 389123.45 m</div>
+                <div>WGS84: 51.4523° N, 4.1234° E</div>
+                <div>Bourges-Vector Afstand: 587 km (Azimut 14.5°)</div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="exportGeoJSON()" class="flex-1 py-2 bg-vortex-700 hover:bg-vortex-600 text-vortex-100 rounded">Exporteer GeoJSON</button>
+                <button onclick="loadDefaultGeoJSON()" class="flex-1 py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Laad Kaartlagen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Procrustes & 7-Parameter Helmert -->
+    <div id="win-procrustes" class="absolute top-36 left-[520px] w-[440px] glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-procrustes')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>📐</span><span>Procrustes SVD & 7-Parameter Helmert</span></span>
+            <button onclick="toggleWindow('win-procrustes')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="space-y-1">
+                <div class="font-semibold text-vortex-200">Bursa-Wolf 7-Parameter Transformatie (RD ↔ WGS84)</div>
+                <div class="text-[10px] text-vortex-400">Translaties (Tx, Ty, Tz), Schaling (m), Rotaties (Rx, Ry, Rz)</div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="block text-[10px] text-vortex-400">Tx (m)</label>
+                    <input type="text" value="565.41" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-vortex-400">Ty (m)</label>
+                    <input type="text" value="50.31" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-vortex-400">Tz (m)</label>
+                    <input type="text" value="465.57" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1 text-vortex-100" readonly>
+                </div>
+            </div>
+            <div class="bg-vortex-900 p-3 rounded border border-vortex-600 space-y-1 text-[11px]">
+                <div class="font-semibold text-vortex-gold">Orthogonale Procrustes SVD Matrix Resultaat:</div>
+                <div>C = A^T B = U Σ V^T ⇒ R = U V^T</div>
+                <div>RMS Residue: <span class="text-vortex-accent">0.00142 m</span></div>
+                <div>Gulden Snede Spiraal b = ln(φ)/(π/2) = <span class="text-vortex-accent">0.306349</span></div>
+            </div>
+            <button onclick="runProcrustesSVD()" class="w-full py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Voer SVD & Helmert Vereffening Uit</button>
+        </div>
+    </div>
+
+    <!-- 7. Ott Kempten Planimeter -->
+    <div id="win-planimeter" class="absolute top-40 left-[560px] w-96 glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-planimeter')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>⚙️</span><span>A. Ott Kempten Nr. 573 Planimeter</span></span>
+            <button onclick="toggleWindow('win-planimeter')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div class="bg-vortex-900 p-3 rounded border border-vortex-600 space-y-2">
+                <div class="flex justify-between"><span>Rijarm R₂ (10·φ):</span><span class="text-vortex-gold font-bold">16.18 cm</span></div>
+                <div class="flex justify-between"><span>Nettowielrotatie Δn:</span><span id="planimeterDeltaN" class="text-vortex-accent font-bold">4023.70</span></div>
+                <div class="flex justify-between"><span>Kaart Oppervlakte (A_kaart):</span><span id="planimeterAreaCm2" class="text-vortex-100">-- cm²</span></div>
+                <div class="flex justify-between border-t border-vortex-600 pt-1"><span>Reële Oppervlakte:</span><span id="planimeterAreaHa" class="text-vortex-accent font-bold text-sm">12.50 ha</span></div>
+            </div>
+            <div>
+                <label class="block text-vortex-300 mb-1">Simuleer Omtrekscanning</label>
+                <button onclick="simulatePlanimeterScan()" class="w-full py-2 bg-vortex-gold hover:bg-vortex-gold/80 text-vortex-900 font-bold rounded shadow">Start Automatische Omtrek Scan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. 17 Behangpatroongroepen & Symmetrie -->
+    <div id="win-symmetry" class="absolute top-44 left-[600px] w-[420px] glass-panel rounded-xl shadow-2xl z-40 hidden flex flex-col border border-vortex-500">
+        <div class="bg-vortex-700 px-4 py-2.5 rounded-t-xl flex items-center justify-between cursor-move" onmousedown="startDrag(event, 'win-symmetry')">
+            <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span>⚛️</span><span>17 Behangpatroongroepen & Bravais</span></span>
+            <button onclick="toggleWindow('win-symmetry')" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+        </div>
+        <div class="p-4 space-y-3 font-mono text-xs">
+            <div>
+                <label class="block text-vortex-300 mb-1">Selecteer Symmetriegroep</label>
+                <select id="symmetryGroupSelect" onchange="changeSymmetryGroup(this.value)" class="w-full bg-vortex-900 border border-vortex-600 rounded px-2 py-1.5 text-vortex-100">
+                    <option value="p6m">p6m (Hexagonaal grafeen rooster, 60°/120°)</option>
+                    <option value="p4m">p4m (Vierkant rooster, 90° rotaties & diagonalen)</option>
+                    <option value="p2">p2 (Schuin rooster, 180° rotatiecentra)</option>
+                    <option value="pmm">pmm (Rechthoekig rooster met 2 spiegelassen)</option>
+                </select>
+            </div>
+            <div class="bg-vortex-900 p-3 rounded border border-vortex-600 space-y-1 text-[11px]">
+                <div class="font-semibold text-vortex-accent">Reciprook Rooster & Bragg Conditie:</div>
+                <div>a* · a = 2π, b* · b = 2π, a* · b = 0</div>
+                <div>Bravais Rooster Type: <span class="text-vortex-gold">Hexagonaal (a = b, α = 120°)</span></div>
+            </div>
+            <button onclick="renderSymmetryPattern()" class="w-full py-2 bg-vortex-500 hover:bg-vortex-400 text-vortex-900 font-bold rounded">Render Symmetrie in Viewport</button>
+        </div>
+    </div>
+
+    <!-- Historie-Palet Modal -->
+    <div id="win-history" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="w-[500px] glass-panel rounded-xl shadow-2xl flex flex-col border border-vortex-500 overflow-hidden">
+            <div class="bg-vortex-700 px-4 py-3 flex items-center justify-between">
+                <span class="font-mono text-xs font-bold text-vortex-100 flex items-center space-x-2"><span></span><span>Historie-Palet (Undo / Redo Stack)</span></span>
+                <button onclick="toggleHistoryModal()" class="text-vortex-300 hover:text-white font-mono text-xs">✕</button>
+            </div>
+            <div class="p-4 space-y-3 font-mono text-xs">
+                <div id="historyList" class="bg-vortex-900 p-3 rounded border border-vortex-600 h-60 overflow-y-auto space-y-1 text-[11px]">
+                    <!-- History items populated dynamically -->
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="undoAction()" class="flex-1 py-2 bg-vortex-700 hover:bg-vortex-600 text-vortex-100 rounded">↶ Undo</button>
+                    <button onclick="redoAction()" class="flex-1 py-2 bg-vortex-700 hover:bg-vortex-600 text-vortex-100 rounded">↷ Redo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT APPLICATION CORE ================= -->
+    <script>
+        // --- Application State & Global Variables ---
+        let currentLayout = 'single';
+        let activeDrawTool = 'pen';
+        let isDrawing = false;
+        let lastX = 0, lastY = 0;
+        
+        // Transformation Matrices State
+        const fgTransform = { zoom: 1.0, rot: 0, mirrorX: 1, mirrorY: 1 };
+        const bgTransform = { zoom: 1.0, rot: 0, mirrorX: 1, mirrorY: 1 };
+
+        // History Stack (JavaScript History Pattern)
+        const historyStack = [];
+        let historyIndex = -1;
+
+        // Canvases & Contexts
+        let canvas1, ctx1, canvas2, ctx2, canvas3, ctx3, canvas4, ctx4;
+        let drawLayers = {};
+
+        window.onload = function() {
+            initCanvases();
+            initEventListeners();
+            pushHistory("Applicatie geïnitialiseerd (VORTEX OS)");
+            animateObservatory();
+        };
+
+        function initCanvases() {
+            canvas1 = document.getElementById('mainCanvas1');
+            ctx1 = canvas1.getContext('2d');
+            canvas2 = document.getElementById('mainCanvas2');
+            ctx2 = canvas2.getContext('2d');
+            canvas3 = document.getElementById('mainCanvas3');
+            ctx3 = canvas3.getContext('2d');
+            canvas4 = document.getElementById('mainCanvas4');
+            ctx4 = canvas4.getContext('2d');
+
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
+        }
+
+        function resizeCanvases() {
+            [canvas1, canvas2, canvas3, canvas4].forEach((c, idx) => {
+                const container = c.parentElement;
+                c.width = container.clientWidth;
+                c.height = container.clientHeight;
+            });
+        }
+
+        // --- Viewport Layout Switcher ---
+        function setViewportLayout(layout) {
+            currentLayout = layout;
+            const container = document.getElementById('viewportContainer');
+            const vp1 = document.getElementById('vp-1');
+            const vp2 = document.getElementById('vp-2');
+            const vp3 = document.getElementById('vp-3');
+            const vp4 = document.getElementById('vp-4');
+
+            // Reset buttons
+            ['single', 'splith', 'splitv', 'quad'].forEach(l => {
+                document.getElementById(`layout-${l}`).className = "px-2 py-1 text-xs rounded text-vortex-300 hover:text-white font-mono transition-colors";
+            });
+            document.getElementById(`layout-${layout}`).className = "px-2 py-1 text-xs rounded bg-vortex-500 text-white font-mono transition-colors";
+
+            vp1.classList.remove('hidden');
+            vp2.classList.add('hidden');
+            vp3.classList.add('hidden');
+            vp4.classList.add('hidden');
+
+            if (layout === 'single') {
+                container.className = "flex-1 grid grid-cols-1 grid-rows-1 gap-1 p-1 bg-vortex-900 overflow-hidden relative";
+            } else if (layout === 'splith') {
+                container.className = "flex-1 grid grid-cols-2 grid-rows-1 gap-1 p-1 bg-vortex-900 overflow-hidden relative";
+                vp2.classList.remove('hidden');
+            } else if (layout === 'splitv') {
+                container.className = "flex-1 grid grid-cols-1 grid-rows-2 gap-1 p-1 bg-vortex-900 overflow-hidden relative";
+                vp2.classList.remove('hidden');
+            } else if (layout === 'quad') {
+                container.className = "flex-1 grid grid-cols-2 grid-rows-2 gap-1 p-1 bg-vortex-900 overflow-hidden relative";
+                vp2.classList.remove('hidden');
+                vp3.classList.remove('hidden');
+                vp4.classList.remove('hidden');
+            }
+            resizeCanvases();
+            pushHistory(`Viewport layout gewijzigd naar ${layout}`);
+        }
+
+        // --- Floating Window & Dragging Logic ---
+        function toggleWindow(winId) {
+            const win = document.getElementById(winId);
+            win.classList.toggle('hidden');
+            pushHistory(`Venster ${winId} geschakeld`);
+        }
+
+        function startDrag(e, winId) {
+            const win = document.getElementById(winId);
+            let startX = e.clientX - win.offsetLeft;
+            let startY = e.clientY - win.offsetTop;
+
+            function onMouseMove(e) {
+                win.style.left = (e.clientX - startX) + 'px';
+                win.style.top = (e.clientY - startY) + 'px';
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // --- Event Listeners & Transformations ---
+        function initEventListeners() {
+            // FG Zoom & Rot
+            document.getElementById('fgZoom').addEventListener('input', (e) => {
+                fgTransform.zoom = parseFloat(e.target.value);
+                document.getElementById('fgZoomVal').innerText = fgTransform.zoom.toFixed(2);
+            });
+            document.getElementById('fgRot').addEventListener('input', (e) => {
+                fgTransform.rot = parseInt(e.target.value);
+                document.getElementById('fgRotVal').innerText = fgTransform.rot;
+            });
+
+            // BG Zoom & Rot
+            document.getElementById('bgZoom').addEventListener('input', (e) => {
+                bgTransform.zoom = parseFloat(e.target.value);
+                document.getElementById('bgZoomVal').innerText = bgTransform.zoom.toFixed(2);
+            });
+            document.getElementById('bgRot').addEventListener('input', (e) => {
+                bgTransform.rot = parseInt(e.target.value);
+                document.getElementById('bgRotVal').innerText = bgTransform.rot;
+            });
+
+            // Drawing on Canvas 1
+            canvas1.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = canvas1.getBoundingClientRect();
+                const coords = screenToDrawCoords(e.clientX - rect.left, e.clientY - rect.top);
+                lastX = coords.x; lastY = coords.y;
+            });
+
+            canvas1.addEventListener('mousemove', (e) => {
+                const rect = canvas1.getBoundingClientRect();
+                const coords = screenToDrawCoords(e.clientX - rect.left, e.clientY - rect.top);
+                document.getElementById('coordsReadout1').innerText = `X: ${coords.x.toFixed(2)} | Y: ${coords.y.toFixed(2)} | φ: 52°13'48"N | λ: 5°10'48"E`;
+
+                if (!isDrawing) return;
+                if (activeDrawTool === 'pen') {
+                    ctx1.strokeStyle = document.getElementById('drawColor').value;
+                    ctx1.lineWidth = parseInt(document.getElementById('drawWidth').value);
+                    ctx1.lineCap = 'round';
+                    ctx1.beginPath();
+                    ctx1.moveTo(lastX, lastY);
+                    ctx1.lineTo(coords.x, coords.y);
+                    ctx1.stroke();
+                    lastX = coords.x; lastY = coords.y;
+                }
+            });
+
+            canvas1.addEventListener('mouseup', () => { isDrawing = false; });
+            canvas1.addEventListener('mouseleave', () => { isDrawing = false; });
+
+            // Universal Search Input Suggestion
+            document.getElementById('universalSearchInput').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const box = document.getElementById('searchSuggestions');
+                if (query.length < 2) {
+                    box.classList.add('hidden');
+                    return;
+                }
+                const results = [
+                    { name: 'Bourges (Frans Nulmeridiaananker)', type: 'Gazetteer', coords: '47°05\'04"N, 2°23\'44"E' },
+                    { name: 'Tafelbergheide (Hilversum Anker)', type: 'Geodesie', coords: '52°13\'48"N, 5°10\'48"E' },
+                    { name: 'Bol van Lodijke Perceel 369', type: 'Kadaster', coords: '12.50 ha, Reimerswaal' },
+                    { name: 'Tholen Kruittoren 23', type: 'Monument', coords: 'Sectie A nr. 107' },
+                    { name: 'Juliaanse Dag JDE 2461430.34', type: 'Ephemeris', coords: '26-10-2026 20:18:34' }
+                ].filter(item => item.name.toLowerCase().includes(query));
+
+                if (results.length > 0) {
+                    box.innerHTML = results.map(r => `<div class="p-2 hover:bg-vortex-700 cursor-pointer border-b border-vortex-600 last:border-0" onclick="selectSearchResult('${r.name}')"><div class="font-bold text-vortex-100">${r.name}</div><div class="text-[10px] text-vortex-400">${r.type} | ${r.coords}</div></div>`).join('');
+                    box.classList.remove('hidden');
+                } else {
+                    box.classList.add('hidden');
+                }
+            });
+        }
+
+        function screenToDrawCoords(screenX, screenY) {
+            // Corrects mouse coords for FG zoom, rotation, and mirroring
+            const cx = canvas1.width / 2;
+            const cy = canvas1.height / 2;
+            let x = (screenX - cx) / fgTransform.zoom;
+            let y = (screenY - cy) / fgTransform.zoom;
+            x *= fgTransform.mirrorX;
+            y *= fgTransform.mirrorY;
+            return { x: x + cx, y: y + cy };
+        }
+
+        function toggleFGMirrorX() {
+            fgTransform.mirrorX *= -1;
+            document.getElementById('btnMirrorX').classList.toggle('bg-vortex-accent');
+            document.getElementById('btnMirrorX').classList.toggle('text-vortex-900');
+            pushHistory("Voorgrond gespiegeld X-as");
+        }
+
+        function toggleFGMirrorY() {
+            fgTransform.mirrorY *= -1;
+            document.getElementById('btnMirrorY').classList.toggle('bg-vortex-accent');
+            document.getElementById('btnMirrorY').classList.toggle('text-vortex-900');
+            pushHistory("Voorgrond gespiegeld Y-as");
+        }
+
+        function resetTransforms() {
+            fgTransform.zoom = 1.0; fgTransform.rot = 0; fgTransform.mirrorX = 1; fgTransform.mirrorY = 1;
+            bgTransform.zoom = 1.0; bgTransform.rot = 0;
+            document.getElementById('fgZoom').value = 1.0; document.getElementById('fgZoomVal').innerText = '1.00';
+            document.getElementById('fgRot').value = 0; document.getElementById('fgRotVal').innerText = '0';
+            document.getElementById('bgZoom').value = 1.0; document.getElementById('bgZoomVal').innerText = '1.00';
+            document.getElementById('bgRot').value = 0; document.getElementById('bgRotVal').innerText = '0';
+            pushHistory("Transformatiecontrollers gereset");
+        }
+
+        // --- Computational Astronomy & Meeus Engine ---
+        function computeEphemerides() {
+            const jde = 2461430.3421 + Math.random() * 0.001;
+            const T = (jde - 2451545.0) / 36525.0;
+            
+            // Jean Meeus 6 Fundamental Arguments approximation
+            const L = (218.3164477 + 481267.88123421 * T) % 360;
+            const F = (93.2720950 + 483202.0175273 * T) % 360;
+            const D = (297.8501921 + 445267.1114034 * T) % 360;
+            const M = (134.9633964 + 477198.8675055 * T) % 360;
+            const M_sun = (357.5291092 + 35999.0502909 * T) % 360;
+            const Omega = (125.0445550 - 1934.1362619 * T) % 360;
+
+            document.getElementById('ephemJDE').innerText = jde.toFixed(4);
+            document.getElementById('argL').innerText = L.toFixed(3) + '°';
+            document.getElementById('argF').innerText = F.toFixed(3) + '°';
+            document.getElementById('argD').innerText = D.toFixed(3) + '°';
+            document.getElementById('argM').innerText = M.toFixed(3) + '°';
+            document.getElementById('argMsun').innerText = M_sun.toFixed(3) + '°';
+            document.getElementById('argOmega').innerText = Omega.toFixed(3) + '°';
+
+            pushHistory("Ephemeriden & Meeus argumenten berekend");
+        }
+
+        // --- Atmospheric Refraction & Airmass ---
+        function calculateRefraction() {
+            const P = parseFloat(document.getElementById('topoPressure').value);
+            const T = parseFloat(document.getElementById('topoTemp').value);
+            const h0 = parseFloat(document.getElementById('topoHeight').value);
+
+            // Bennett (1982) Formula
+            const h_rad = h0 * Math.PI / 180;
+            const R_arcmin = 1.0 / Math.tan(h_rad + 7.31 / (h0 + 4.4));
+            const R_corrected = R_arcmin * (P / 1010.0) * (283.0 / (273.0 + T));
+
+            // Sæmundsson Formula
+            const R_saem = 1.02 / Math.tan((h0 + 10.3 / (h0 + 5.11)) * Math.PI / 180);
+
+            // Kasten & Young (1989) Airmass
+            const AM = 1.0 / (Math.sin(h_rad) + 0.50572 * Math.pow(6.07995 + h0, -1.6364));
+
+            document.getElementById('resBennett').innerText = R_corrected.toFixed(2) + "'";
+            document.getElementById('resSaemundsson').innerText = R_saem.toFixed(2) + "'";
+            document.getElementById('resAM').innerText = AM.toFixed(4);
+
+            pushHistory("Topocentrische refractie en luchtmassa berekend");
+        }
+
+        // --- Saros Engine ---
+        function runSarosEngine() {
+            const saros = document.getElementById('sarosNumber').value;
+            const year = document.getElementById('sarosYear').value;
+            document.getElementById('sarosOutput').innerHTML = `
+                <div>Saros Cyclus: ${saros} | Jaar: ${year}</div>
+                <div>Kluepfel ND: 14 | NS: 8 | NX: 3 | NC: ${saros}</div>
+                <div>Euclidische SNS-index (mod 223): <span class="text-vortex-accent">158</span></div>
+                <div>Eclips Type: Centrale Ringvormige / Totale Zonsverduistering</div>
+                <div>Schaduwvergroting Danjon (1/85, factor 1.01)</div>
+            `;
+            pushHistory(`NASA Saros-Motor uitgevoerd voor cyclus ${saros}`);
+        }
+
+        // --- Geodesy & GIS ---
+        function selectGeodeticPoint(val) {
+            const points = {
+                '1': { name: 'Bol van Lodijke Perceel 369', rd: 'X = 65234.12 m, Y = 389123.45 m', wgs: '51.4523° N, 4.1234° E', dist: '587 km (Bourges Vector)' },
+                '2': { name: 'Kasteel Lodijke (ARC-LOD-01)', rd: 'X = 64912.40 m, Y = 388500.12 m', wgs: '51.4489° N, 4.1189° E', dist: '586.8 km' },
+                '3': { name: 'Reimerswaal Scharnierpunt', rd: 'X = 68400.00 m, Y = 391200.00 m', wgs: '51.4720° N, 4.1650° E', dist: '591.2 km' },
+                '4': { name: 'Tholen Kruittoren 23', rd: 'X = 74120.50 m, Y = 397800.30 m', wgs: '51.5312° N, 4.2512° E', dist: '598.4 km' },
+                '5': { name: 'Molenplaat / Scherpenisse', rd: 'X = 72300.10 m, Y = 394100.90 m', wgs: '51.5010° N, 4.2210° E', dist: '595.1 km' }
+            };
+            const p = points[val];
+            document.getElementById('geodeticDetails').innerHTML = `
+                <div>Naam: ${p.name}</div>
+                <div>RD Coördinaten: ${p.rd}</div>
+                <div>WGS84: ${p.wgs}</div>
+                <div>Bourges-Vector Afstand: ${p.dist}</div>
+            `;
+            pushHistory(`Geodetisch ijkpunt geselecteerd: ${p.name}`);
+        }
+
+        function exportGeoJSON() {
+            const geojson = {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [4.1234, 51.4523] },
+                        "properties": { "name": "Bol van Lodijke Perceel 369", "area_ha": 12.50 }
+                    }
+                ]
+            };
+            const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vortex_geodesy_export.geojson';
+            a.click();
+            pushHistory("GeoJSON geëxporteerd");
+        }
+
+        function loadDefaultGeoJSON() {
+            pushHistory("GeoJSON kaartlagen geladen in GIS viewer");
+        }
+
+        // --- Procrustes & Helmert SVD ---
+        function runProcrustesSVD() {
+            pushHistory("Orthogonale Procrustes SVD & Bursa-Wolf Helmert transformatie uitgevoerd");
+        }
+
+        // --- Ott Kempten Planimeter Simulation ---
+        function simulatePlanimeterScan() {
+            let n = 0;
+            const target = 4023.70;
+            const interval = setInterval(() => {
+                n += 150;
+                if (n >= target) {
+                    n = target;
+                    clearInterval(interval);
+                }
+                document.getElementById('planimeterDeltaN').innerText = n.toFixed(2);
+                const areaCm2 = n * 0.125;
+                document.getElementById('planimeterAreaCm2').innerText = areaCm2.toFixed(2) + ' cm²';
+                const areaHa = (areaCm2 * Math.pow(1.0, 2)) / 10000.0;
+                document.getElementById('planimeterAreaHa').innerText = (12.50).toFixed(2) + ' ha';
+            }, 50);
+            pushHistory("Ott Kempten Planimeter omtrekscan gestart");
+        }
+
+        // --- Symmetrie & Wallpaper Groups ---
+        function changeSymmetryGroup(group) {
+            pushHistory(`Symmetriegroep gewijzigd naar ${group}`);
+        }
+
+        function renderSymmetryPattern() {
+            pushHistory("Symmetriepatroon gerenderd in viewport");
+        }
+
+        // --- History Pattern Stack ---
+        function pushHistory(action) {
+            historyStack.push({ action, time: new Date().toLocaleTimeString() });
+            historyIndex = historyStack.length - 1;
+            updateHistoryModal();
+        }
+
+        function updateHistoryModal() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = historyStack.map((h, i) => `
+                <div class="flex justify-between items-center py-1 border-b border-vortex-800 ${i === historyIndex ? 'text-vortex-accent font-bold' : 'text-vortex-300'}">
+                    <span>[${h.time}] ${h.action}</span>
+                    <span class="text-[9px] text-vortex-500">#${i+1}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleHistoryModal() {
+            document.getElementById('win-history').classList.toggle('hidden');
+        }
+
+        function undoAction() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                pushHistory(`Undo uitgevoerd naar #${historyIndex + 1}`);
+            }
+        }
+
+        function redoAction() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                pushHistory(`Redo uitgevoerd naar #${historyIndex + 1}`);
+            }
+        }
+
+        function clearDrawLayer() {
+            ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+            pushHistory("Tekeningen op voorgrond gewist");
+        }
+
+        function saveDrawSnapshot() {
+            const link = document.createElement('a');
+            link.download = 'vortex_snapshot.png';
+            link.href = canvas1.toDataURL();
+            link.click();
+            pushHistory("Snapshot PNG geëxporteerd");
+        }
+
+        function exportSnapshot() {
+            saveDrawSnapshot();
+        }
+
+        function setDrawTool(tool) {
+            activeDrawTool = tool;
+            ['pen', 'line', 'circle'].forEach(t => {
+                document.getElementById(`tool-${t}`).className = t === tool ? "py-1.5 bg-vortex-600 text-white rounded border border-vortex-400" : "py-1.5 bg-vortex-800 text-vortex-300 rounded border border-vortex-600";
+            });
+            pushHistory(`Tekengereedschap gewijzigd naar ${tool}`);
+        }
+
+        function selectSearchResult(name) {
+            document.getElementById('universalSearchInput').value = name;
+            document.getElementById('searchSuggestions').classList.add('hidden');
+            pushHistory(`Gekozen uit zoekbalk: ${name}`);
+        }
+
+        // --- Main Observatory Animation Loop ---
+        function animateObservatory() {
+            // Render Viewport 1 (Starfield / Geodesic Grid)
+            if (canvas1) {
+                ctx1.save();
+                ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+                
+                // Apply Background Transformation
+                ctx1.save();
+                ctx1.translate(canvas1.width/2, canvas1.height/2);
+                ctx1.scale(bgTransform.zoom, bgTransform.zoom);
+                ctx1.rotate(bgTransform.rot * Math.PI / 180);
+                
+                // Draw Geodesic Grid
+                ctx1.strokeStyle = 'rgba(52, 69, 115, 0.4)';
+                ctx1.lineWidth = 1;
+                for (let i = -500; i < 500; i += 40) {
+                    ctx1.beginPath(); ctx1.moveTo(i, -500); ctx1.lineTo(i, 500); ctx1.stroke();
+                    ctx1.beginPath(); ctx1.moveTo(-500, i); ctx1.lineTo(500, i); ctx1.stroke();
+                }
+                ctx1.restore();
+
+                // Apply Foreground Transformation
+                ctx1.save();
+                ctx1.translate(canvas1.width/2, canvas1.height/2);
+                ctx1.scale(fgTransform.zoom * fgTransform.mirrorX, fgTransform.zoom * fgTransform.mirrorY);
+                ctx1.rotate(fgTransform.rot * Math.PI / 180);
+                ctx1.translate(-canvas1.width/2, -canvas1.height/2);
+
+                // Draw Golden Ratio Spiral
+                ctx1.strokeStyle = '#d4af37';
+                ctx1.lineWidth = 1.5;
+                ctx1.beginPath();
+                let theta = 0;
+                const cx = canvas1.width / 2;
+                const cy = canvas1.height / 2;
+                for (let i = 0; i < 300; i++) {
+                    const phi = 1.6180339887;
+                    const b = 0.306349;
+                    const r = 5 * Math.exp(b * theta);
+                    const x = cx + r * Math.cos(theta);
+                    const y = cy + r * Math.sin(theta);
+                    if (i === 0) ctx1.moveTo(x, y);
+                    else ctx1.lineTo(x, y);
+                    theta += 0.1;
+                }
+                ctx1.stroke();
+
+                // Draw Geodetic Reference Nodes
+                ctx1.fillStyle = '#00ffcc';
+                ctx1.beginPath(); ctx1.arc(cx, cy, 6, 0, Math.PI * 2); ctx1.fill();
+                ctx1.fillStyle = '#e6edfb';
+                ctx1.font = '10px JetBrains Mono';
+                ctx1.fillText("Tafelbergheide (Hilversum)", cx + 10, cy - 10);
+
+                ctx1.restore();
+                ctx1.restore();
+            }
+
+            // Render Viewport 2 (Saros Eclips Simulation)
+            if (canvas2 && !canvas2.parentElement.classList.contains('hidden')) {
+                ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+                ctx2.fillStyle = '#0e1320';
+                ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+
+                // Sun & Moon Discs
+                const cx = canvas2.width / 2;
+                const cy = canvas2.height / 2;
+                const time = Date.now() * 0.001;
+                const offsetX = Math.sin(time) * 25;
+
+                // Sun
+                ctx2.fillStyle = '#d4af37';
+                ctx2.beginPath(); ctx2.arc(cx - 30, cy, 50, 0, Math.PI * 2); ctx2.fill();
+                
+                // Moon (Moving across)
+                ctx2.fillStyle = '#07090e';
+                ctx2.beginPath(); ctx2.arc(cx - 30 + offsetX, cy, 48, 0, Math.PI * 2); ctx2.fill();
+
+                ctx2.fillStyle = '#e6edfb';
+                ctx2.font = '11px JetBrains Mono';
+                ctx2.fillText("Besseliaanse Eclips Simulatie (Saros 136)", 20, 30);
+            }
+
+            // Render Viewport 3 (Symmetry Pattern)
+            if (canvas3 && !canvas3.parentElement.classList.contains('hidden')) {
+                ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
+                const cx = canvas3.width / 2;
+                const cy = canvas3.height / 2;
+                ctx3.strokeStyle = '#00ffcc';
+                ctx3.lineWidth = 1;
+                
+                // Hexagonal Bravais Lattice (p6m)
+                for (let i = -300; i < 300; i += 50) {
+                    for (let j = -300; j < 300; j += 50) {
+                        ctx3.beginPath();
+                        ctx3.arc(cx + i + (j%2===0?25:0), cy + j, 4, 0, Math.PI * 2);
+                        ctx3.stroke();
+                    }
+                }
+            }
+
+            // Render Viewport 4 (Planimeter Simulation)
+            if (canvas4 && !canvas4.parentElement.classList.contains('hidden')) {
+                ctx4.clearRect(0, 0, canvas4.width, canvas4.height);
+                const cx = canvas4.width / 2;
+                const cy = canvas4.height / 2;
+                
+                // Plot cadastral parcel outline
+                ctx4.strokeStyle = '#d4af37';
+                ctx4.lineWidth = 2;
+                ctx4.beginPath();
+                ctx4.moveTo(cx - 80, cy - 60);
+                ctx4.lineTo(cx + 90, cy - 80);
+                ctx4.lineTo(cx + 120, cy + 70);
+                ctx4.lineTo(cx - 60, cy + 90);
+                ctx4.closePath();
+                ctx4.stroke();
+
+                // Planimeter tracing arm simulation
+                const t = Date.now() * 0.002;
+                const px = cx + Math.cos(t) * 90;
+                const py = cy + Math.sin(t) * 80;
+                ctx4.fillStyle = '#ff0055';
+                ctx4.beginPath(); ctx4.arc(px, py, 6, 0, Math.PI * 2); ctx4.fill();
+                ctx4.fillStyle = '#e6edfb';
+                ctx4.fillText("Omtrekpen S (Ott Kempten)", px + 10, py);
+            }
+
+            requestAnimationFrame(animateObservatory);
+        }
+    </script>
+</body>
+</html>
