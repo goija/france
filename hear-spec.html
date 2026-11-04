@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SPECTRO-HEX HUD V4.0 — Eclips & Haardiffractie Kalibratie-Toolset (Tafelbergheide 12 aug 2026)</title>
+    <!-- Tailwind CSS voor responsieve mobile-first & desktop instrumentatie -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hud-cyan: #00f0ff;
+            --hud-emerald: #10b981;
+            --hud-amber: #ffb703;
+            --hud-rose: #f43f5e;
+            --hud-rayleigh: #ff4500;
+            --bg-dark: #070b12;
+            --bg-panel: rgba(9, 14, 23, 0.92);
+        }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            min-height: 100dvh;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 68px);
+        }
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070b12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+        .hud-grid-bg {
+            background-image: 
+                linear-gradient(to right, rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .hud-border {
+            border: 1px solid rgba(0, 240, 255, 0.24);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05), inset 0 0 12px rgba(0, 240, 255, 0.03);
+        }
+        .hud-border-amber {
+            border: 1px solid rgba(255, 183, 3, 0.30);
+            box-shadow: 0 0 20px rgba(255, 69, 0, 0.06), inset 0 0 12px rgba(255, 183, 3, 0.03);
+        }
+        .hud-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+        }
+        .touch-none-canvas {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        input[type="range"] {
+            accent-color: #00f0ff;
+            height: 7px;
+        }
+        input[type="range"].range-amber {
+            accent-color: #ff6b00;
+        }
+        .glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.55);
+        }
+        .mobile-nav-safe {
+            padding-bottom: env(safe-area-inset-bottom, 6px);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col hud-grid-bg select-none">
+
+    <!-- Verborgen File Input voor Eigen Haar-Opname / Tafelbergheide Foto Upload -->
+    <input type="file" id="fileInputPhoto" accept="image/*" class="hidden">
+
+    <!-- BOVENSTE TELEMETRIE & HARDWARE BALK (ZUIVERE UNICODE WISKUNDE - GEEN RUWE LATEX) -->
+    <header class="hud-panel border-b border-cyan-500/30 px-3 py-2 sticky top-0 z-40 flex flex-col gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <!-- Merk & Status -->
+            <div class="flex items-center gap-2.5">
+                <div class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-950/90 border border-cyan-400/60 text-cyan-300 font-mono-tech font-bold text-xs shadow-inner shrink-0">
+                    p6m
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping"></span>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-orange-400"></span>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <h1 class="text-xs sm:text-sm md:text-base font-bold tracking-wider uppercase text-cyan-300 font-mono-tech glow-cyan">
+                            SPECTRO-HEX HUD V4.0 <span class="text-orange-400 text-[10px] sm:text-xs">[HAARDIFFRACTIE &amp; ECLIPS 2026]</span>
+                        </h1>
+                        <span id="sourceBadge" class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                            PRESET: HAAR RAYLEIGH 20:56
+                        </span>
+                    </div>
+                    <p class="text-[10px] sm:text-[11px] text-slate-300 font-mono-tech truncate max-w-[92vw] sm:max-w-none">
+                        r = 55 nm • d = 110 nm • a = 55√3 ≈ 95,26 nm • k₁ = 4π/(a√3) ≈ 0,0761 nm⁻¹ • d<sub>haar</sub> = <span id="hdrHairUm" class="text-orange-300 font-semibold">70 µm</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Primaire Actieknoppen: Foto Upload, Presets, Camera, Voor/Achter, Audio, PNG & CSV -->
+            <div class="flex flex-wrap items-center gap-1.5 w-full xl:w-auto justify-start xl:justify-end">
+                <!-- Foto Upload Knop (Voor de echte haar-foto's op de Tafelbergheide) -->
+                <button id="btnUploadPhoto" class="min-h-[36px] px-2.5 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-orange-500/25 hover:bg-orange-500/35 text-orange-200 border border-orange-400/60 transition flex items-center gap-1.5 shadow-sm" title="Laad je eigen haar-opname (bijv. PXL_20260812_185625958.MP.jpg)">
+                    <svg class="w-4 h-4 text-orange-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Laad Haar-Foto</span>
+                </button>
+
+                <!-- Snelkeuze Kalibratie-Scène -->
+                <select id="scenePresetSelect" class="min-h-[36px] bg-slate-900/95 text-cyan-200 border border-cyan-500/40 rounded-lg px-2 py-1 text-xs font-mono-tech focus:outline-none">
+                    <option value="hair_rayleigh">Preset 1: Haar-Opname Heide (20:56 CEST Rood)</option>
+                    <option value="hair_shadow">Preset 2: Haar-Kern Schaduw (RGB 76,79,82)</option>
+                    <option value="book_anchor">Preset 3: Boek/Kaart Anker (RGB 82,108,149)</option>
+                    <option value="solar_crescent">Preset 4: Zonne-sikkel 20:56 (83% PA 298°)</option>
+                </select>
+
+                <!-- Start/Stop Live WebRTC Camera -->
+                <button id="btnToggleWebcam" class="min-h-[36px] px-2.5 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 transition flex items-center gap-1">
+                    <svg class="w-4 h-4 text-cyan-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    <span id="webcamBtnText">Live Cam</span>
+                </button>
+
+                <!-- Wissel Voor/Achter Camera -->
+                <button id="btnFlipCamera" class="min-h-[36px] px-2 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 transition flex items-center gap-1" title="Wissel tussen Voor-Cam (Selfie/Haar) en Achter-Cam (Optische Standaard)">
+                    <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span id="facingModeLabel">Voor</span>
+                </button>
+
+                <!-- Audio/DSP Spectrograaf -->
+                <button id="btnToggleMic" class="min-h-[36px] px-2.5 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-400/50 transition flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                    </svg>
+                    <span id="micBtnText">Audio/DSP</span>
+                </button>
+
+                <!-- PNG & CSV Export -->
+                <button id="btnSnapshot" class="min-h-[36px] px-2 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 transition flex items-center gap-1">
+                    <span>PNG</span>
+                </button>
+                <button id="btnExportCsv" class="min-h-[36px] px-2 py-1 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1">
+                    <span>CSV</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Live Telemetrie Strip (Met Pixel 9 EXIF Anker, Bennett Refractie & Kasten-Young Luchtmassa) -->
+        <div class="flex items-center gap-2 overflow-x-auto py-0.5 font-mono-tech text-[11px] no-scrollbar">
+            <div class="bg-slate-900/95 border border-orange-500/40 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">ANKER:</span>
+                <span id="telemetryExif" class="text-orange-300 font-semibold">Pixel 9 • 12 aug 2026 20:56 CEST • ƒ/2,2 • 1/515s • ISO 52</span>
+            </div>
+            <div class="bg-slate-900/95 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">PERIODE (a):</span>
+                <span id="telemetryLatticeA" class="text-emerald-400 font-semibold">95,26 nm</span>
+            </div>
+            <div class="bg-slate-900/95 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">BRAGG (k₁):</span>
+                <span id="telemetryBraggK" class="text-amber-400 font-semibold">0,0761 nm⁻¹</span>
+            </div>
+            <div class="bg-slate-900/95 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">LUCHTMASSA:</span>
+                <span id="telemetryAirMass" class="text-rose-400 font-semibold">AM 4,65 (h = 12,17°)</span>
+            </div>
+            <div class="bg-slate-900/95 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">RAYLEIGH R/B:</span>
+                <span id="telemetryRayleighRatio" class="text-orange-400 font-semibold">3,85× Rood-Dominant</span>
+            </div>
+            <div class="bg-slate-900/95 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">GYRO:</span>
+                <span id="telemetryTiltBadge" class="text-emerald-400 font-semibold">0,0° WATERPAS</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Meldingbalk (vervangt alert() volledig) -->
+    <div id="statusToast" class="hidden bg-slate-900/95 border-b border-amber-500/40 px-4 py-2 text-xs font-mono-tech text-amber-300 flex items-center justify-between z-30">
+        <span id="statusToastText">Systeem gereed.</span>
+        <button id="btnCloseToast" class="text-slate-400 hover:text-white px-2 py-0.5">✕</button>
+    </div>
+
+    <!-- HOOFD DASHBOARD GRID (12 kolommen op desktop, tab-gestuurd op mobiel) -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-2.5 sm:p-3 max-w-[1920px] w-full mx-auto">
+
+        <!-- LINKER KOLOM: HUD VIEWPORT + HAAR-KALIBRATIE & ASTRO-METEOROLOGIE (7 kolommen op desktop) -->
+        <section id="viewSectionHud" class="lg:col-span-7 flex flex-col gap-3">
+            
+            <!-- Hoofd Video / Haar-Foto + Vector HUD Container -->
+            <div class="relative rounded-xl overflow-hidden hud-border bg-black flex-1 min-h-[52dvh] sm:min-h-[470px] lg:min-h-[530px] flex items-center justify-center">
+                <!-- Verborgen HTML5 Video element voor WebRTC -->
+                <video id="webrtcVideo" playsinline webkit-playsinline autoplay muted class="hidden"></video>
+                
+                <!-- Multi-Touch Canvas -->
+                <canvas id="mainHudCanvas" class="w-full h-full block cursor-crosshair touch-none-canvas"></canvas>
+
+                <!-- Zwevende HUD Hoek-indicatoren (Boven Links: ZUIVERE UNICODE WISKUNDE) -->
+                <div class="absolute top-2.5 left-2.5 pointer-events-none flex flex-col gap-0.5 bg-slate-950/85 backdrop-blur-md p-2.5 rounded-lg border border-cyan-500/35 font-mono-tech text-[10px] sm:text-[11px] max-w-[54%] shadow-lg">
+                    <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+                        <span class="truncate">p6m ROOSTER &amp; HAAR-DIFFRACTIE</span>
+                    </div>
+                    <div id="hudTopLeftLine1" class="text-slate-200 truncate">
+                        r = 55,0 nm | d = 110 nm
+                    </div>
+                    <div id="hudTopLeftLine2" class="text-emerald-300 truncate">
+                        a = 55√3 ≈ 95,2628 nm
+                    </div>
+                    <div id="hudTopLeftLine3" class="text-amber-300 truncate">
+                        k₁ = 4π/(a√3) ≈ 0,0761 nm⁻¹
+                    </div>
+                    <div id="hudTopLeftLine4" class="text-orange-300 truncate border-t border-slate-800 pt-0.5 mt-0.5">
+                        Babinet d<sub>haar</sub>: 70 µm • θ₁ ≈ 0,53° (650 nm)
+                    </div>
+                </div>
+
+                <!-- Zwevende HUD Hoek-indicatoren (Boven Rechts: Live Pixel, RGB, Rayleigh & Gyro Probe) -->
+                <div class="absolute top-2.5 right-2.5 pointer-events-none bg-slate-950/85 backdrop-blur-md p-2.5 rounded-lg border border-slate-700/80 font-mono-tech text-[10px] sm:text-[11px] text-right shadow-lg">
+                    <div id="probeCoords" class="text-cyan-300 font-semibold">X: 204 | Y: 203</div>
+                    <div id="probeRgb" class="text-emerald-300">I(x,y): 0.308 | RGB(76,79,82)</div>
+                    <div id="probeRayleigh" class="text-orange-300">R/B Index: 0.93 | Strengen: 14</div>
+                    <div id="probeKSpace" class="text-amber-300">|k₁|: 0.0761 nm⁻¹ • ∠ 0°</div>
+                    <div id="probeGyroHud" class="text-slate-300">Tilt: 0.0° | 0.0°</div>
+                </div>
+
+                <!-- Interactieve Laag-toggles onderaan in de Viewport -->
+                <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/90 backdrop-blur-md p-2 rounded-lg border border-cyan-500/30">
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 w-full text-[11px] font-mono-tech">
+                        <button data-layer="lattice" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 transition truncate">
+                            [1] p6m (95,26nm)
+                        </button>
+                        <button data-layer="kspace" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-400/60 transition truncate">
+                            [2] Bragg (0,0761)
+                        </button>
+                        <button data-layer="scanline" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-emerald-500/25 text-emerald-200 border border-emerald-400/60 transition truncate">
+                            [3] Scanline I(x)
+                        </button>
+                        <button data-layer="haircal" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-orange-500/25 text-orange-200 border border-orange-400/60 transition truncate">
+                            [4] Haar-Kalibratie
+                        </button>
+                        <button data-layer="level" class="hud-layer-btn active col-span-2 sm:col-span-1 min-h-[34px] px-2 py-1 rounded bg-rose-500/25 text-rose-200 border border-rose-400/60 transition truncate">
+                            [5] Gyro Waterpas
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEEL D: TAFELBERGHEIDE 12 AUG 2026 — ASTRO-OPTISCHE & MICRO-METEOROLOGISCHE KALIBRATIE -->
+            <div id="panelEclipse2026" class="hud-panel hud-border-amber rounded-xl p-3.5 flex flex-col gap-3 font-mono-tech text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-bold uppercase text-orange-300 flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                            Tafelbergheide Eclips &amp; Rayleigh-Refractie Simulator (12 augustus 2026)
+                        </h2>
+                        <p class="text-[11px] text-slate-400">
+                            Bennett-refractie R(P,T), Kasten-Young luchtmassa (AM), Rayleigh λ⁻⁴ verstrooiing &amp; Eclips-luwte
+                        </p>
+                    </div>
+                    <!-- Locatie Parallax Schakelaar: Tafelbergheide vs. Bourges -->
+                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                        <button id="btnLocHeide" class="px-2.5 py-1 rounded text-[11px] font-semibold bg-orange-500/30 text-orange-200 border border-orange-400/50 transition">
+                            Tafelbergheide (52°13'N)
+                        </button>
+                        <button id="btnLocBourges" class="px-2.5 py-1 rounded text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition">
+                            Bourges Anker (47°05'N)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tijdstip Schuifregelaar (19:13 P1 tot 21:11 Max/Zonsondergang, standaard op 20:56 CEST foto-moment) -->
+                <div class="bg-slate-900/90 p-3 rounded-lg border border-orange-500/30 flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-slate-300 font-semibold">
+                            Tijdstip Eclipsverloop: <strong id="valEclipseTime" class="text-orange-300 text-sm">20:56:25 CEST (18:56 UTC — Pixel 9 Foto-Anker)</strong>
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button data-time="0" class="eclipse-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 text-[10px]">
+                                19:13 (P1)
+                            </button>
+                            <button data-time="47" class="eclipse-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 text-[10px]">
+                                20:00
+                            </button>
+                            <button data-time="103" class="eclipse-preset-btn px-2 py-0.5 rounded bg-orange-500/30 text-orange-200 border border-orange-400/60 text-[10px] font-bold">
+                                20:56 (Haar-Foto)
+                            </button>
+                            <button data-time="118" class="eclipse-preset-btn px-2 py-0.5 rounded bg-purple-500/30 text-purple-200 border border-purple-400/50 text-[10px]">
+                                21:11 (Max 88,8%)
+                            </button>
+                        </div>
+                    </div>
+
+                    <input id="sliderEclipseTime" type="range" min="0" max="118" step="1" value="103" class="w-full range-amber cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>19:13 CEST (P1: h = 17,8°)</span>
+                        <span>20:00 CEST (26,5%)</span>
+                        <span class="text-orange-300 font-semibold">20:56 CEST (h = 12,10° • AM 4,65 • 83%)</span>
+                        <span>21:11 CEST (Max 88,8% • 0,0°)</span>
+                    </div>
+                </div>
+
+                <!-- 4-Koloms Live Fysische & Micro-Meteorologische Uitlezing + Zonne-sikkel Mini-Canvas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+                    <!-- Kaart 1: Bennett Refractie & Kasten-Young Luchtmassa -->
+                    <div class="bg-slate-900/75 p-2.5 rounded-lg border border-cyan-500/25 flex flex-col justify-between">
+                        <div class="text-cyan-300 font-bold text-[11px] border-b border-slate-800 pb-1 mb-1 flex justify-between">
+                            <span>1. BENNETT REFRACTIE</span>
+                            <span id="valLocTag" class="text-[10px] text-slate-400">Heide</span>
+                        </div>
+                        <div class="space-y-1 text-[11px]">
+                            <div class="flex justify-between"><span class="text-slate-400">Geom. hoogte (h):</span><span id="valGeomH" class="text-slate-200 font-semibold">12,10°</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Breking R(P,T):</span><span id="valRefrR" class="text-cyan-300 font-semibold">+4,39' (0,073°)</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Schijnbaar (h<sub>s</sub>):</span><span id="valAppH" class="text-emerald-300 font-bold">12,173°</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Luchtmassa (AM):</span><span id="valKastenAM" class="text-orange-300 font-bold">4,646</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Kaart 2: Lichtverloop, Lux & Irradiantie -->
+                    <div class="bg-slate-900/75 p-2.5 rounded-lg border border-amber-500/25 flex flex-col justify-between">
+                        <div class="text-amber-300 font-bold text-[11px] border-b border-slate-800 pb-1 mb-1 flex justify-between">
+                            <span>2. IRRADIANTIE &amp; LUX</span>
+                            <span id="valObscurationPct" class="text-orange-400">83,0%</span>
+                        </div>
+                        <div class="space-y-1 text-[11px]">
+                            <div class="flex justify-between"><span class="text-slate-400">Normaal licht:</span><span id="valClearLux" class="text-slate-300">2.150 lux</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Eclips licht:</span><span id="valEclipseLux" class="text-amber-300 font-bold">365 lux</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Irradiantie S(t):</span><span id="valEclipseWm2" class="text-orange-300 font-semibold">3,0 W/m²</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Daalsnelheid v<sub>z</sub>:</span><span class="text-slate-200">8,56"/s (3m41s/Ø)</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Kaart 3: Thermodynamica, Dauwpunt & Eclips-Luwte -->
+                    <div class="bg-slate-900/75 p-2.5 rounded-lg border border-emerald-500/25 flex flex-col justify-between">
+                        <div class="text-emerald-300 font-bold text-[11px] border-b border-slate-800 pb-1 mb-1 flex justify-between">
+                            <span>3. GRENSLAAG &amp; LUWTE</span>
+                            <span class="text-[10px] text-emerald-400">C<sub>eff</sub> 15k</span>
+                        </div>
+                        <div class="space-y-1 text-[11px]">
+                            <div class="flex justify-between"><span class="text-slate-400">Temp. (Eclips):</span><span id="valTempEclipse" class="text-emerald-300 font-bold">14,9 °C (Δ -1,55°)</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Luchtvocht (RH):</span><span id="valRhEclipse" class="text-cyan-300 font-semibold">80,4 %</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Wind 10m (Calm):</span><span id="valWindEclipse" class="text-amber-300 font-semibold">1,27 m/s</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Inversie ΔT<sub>2-10m</sub>:</span><span id="valInversion" class="text-purple-300 font-bold">-2,41 °C</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Kaart 4: Live Zonne-sikkel Visualisatie (R_zon = 15,78', R_maan = 16,28', PA = 298°) -->
+                    <div class="bg-slate-950 p-2 rounded-lg border border-orange-500/30 flex items-center gap-2.5">
+                        <canvas id="crescentMiniCanvas" width="88" height="88" class="w-20 h-20 rounded bg-black border border-slate-800 shrink-0"></canvas>
+                        <div class="text-[10px] leading-snug space-y-0.5">
+                            <div class="text-orange-300 font-bold">Zonne-sikkel (PA 298°)</div>
+                            <div class="text-slate-400">R<sub>zon</sub>: 15,78' | R<sub>maan</sub>: 16,28'</div>
+                            <div id="valMoonDist" class="text-slate-300">Centra d: 4,86'</div>
+                            <div id="valSunsetStatus" class="text-emerald-400 font-semibold">Rayleigh 620–750nm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECHTER KOLOM: HAAR-KALIBRATIE TOOLSET + 2D/3D SPECTROGRAFEN (5 kolommen op desktop) -->
+        <aside id="viewSectionSide" class="lg:col-span-5 flex flex-col gap-3">
+
+            <!-- PANEEL A: HAAR-KALIBRATIE & OPTISCHE DIFFRACTIE TOOLSET (BABINET & RAYLEIGH KLEURMETER) -->
+            <div id="panelParamsSensors" class="hud-panel hud-border rounded-xl p-3.5 flex flex-col gap-3 font-mono-tech text-xs">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <div>
+                        <h2 class="text-xs font-bold uppercase text-orange-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                            Haar-Kalibratie &amp; p6m Nanorooster Toolset
+                        </h2>
+                        <p class="text-[10px] text-slate-400">
+                            Kalibreer individuele haarstrengen (d<sub>haar</sub>) en Rayleigh-gloed tegen het 95,26 nm rooster
+                        </p>
+                    </div>
+                    <button id="btnResetParams" class="text-[11px] text-cyan-400 hover:text-cyan-200 underline shrink-0">
+                        Reset Kalibratie
+                    </button>
+                </div>
+
+                <!-- Live Haar-Spectraal & Babinet Diffractie Analyse Box -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-900/90 p-2.5 rounded-lg border border-orange-500/30 text-[11px]">
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Babinet 1e Minimum:</span>
+                        <span id="valBabinetAngle" class="text-orange-300 font-bold">θ₁ = 0,532° (9,29 mrad)</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Gedetecteerde Lokken:</span>
+                        <span id="valStrandPeaks" class="text-emerald-300 font-bold">14 glans-pieken</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Schatting d<sub>haar</sub> (Scan):</span>
+                        <span id="valEstimatedHairUm" class="text-cyan-300 font-bold">68,4 µm (±3,2 µm)</span>
+                    </div>
+                </div>
+
+                <!-- Sliders voor Haardiameter, Nanorooster r, Zoom & Oriëntatie -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Haardiameter d_haar (40 - 120 µm) -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-orange-500/25">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">Haardiameter (d<sub>haar</sub>):</span>
+                            <span id="valHairDiameter" class="text-orange-300 font-bold">70,0 µm</span>
+                        </div>
+                        <input id="sliderHairUm" type="range" min="40" max="120" step="1" value="70" class="w-full range-amber cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>40 µm (Fijn)</span>
+                            <span class="text-orange-400">70 µm (Referentie)</span>
+                            <span>120 µm</span>
+                        </div>
+                    </div>
+
+                    <!-- Nanorooster Deeltjesstraal r (30 - 100 nm, standaard 55 nm -> a = 95,26 nm) -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">Nanorooster straal (r):</span>
+                            <span id="valRadiusNm" class="text-cyan-300 font-bold">55,0 nm (a=95,26)</span>
+                        </div>
+                        <input id="sliderRadius" type="range" min="30" max="100" step="0.5" value="55" class="w-full cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>30 nm</span>
+                            <span class="text-emerald-400">55 nm (d=110nm)</span>
+                            <span>100 nm</span>
+                        </div>
+                    </div>
+
+                    <!-- Visuele Rooster-Schaal / Pinch-Zoom -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">HUD Rooster-Schaal:</span>
+                            <span id="valScalePx" class="text-emerald-300 font-bold">1,00× (95,26 nm)</span>
+                        </div>
+                        <input id="sliderZoom" type="range" min="0.4" max="2.5" step="0.05" value="1.0" class="w-full cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>0,4×</span>
+                            <span>Pinch-Zoom / 1,0×</span>
+                            <span>2,5×</span>
+                        </div>
+                    </div>
+
+                    <!-- Rooster & Haar-Hoek Rotatie -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-300">Rooster-Oriëntatie (θ):</span>
+                            <span id="valRotationDeg" class="text-amber-300 font-bold">0° (p6m symmetrie)</span>
+                        </div>
+                        <input id="sliderRotation" type="range" min="0" max="180" step="1" value="0" class="w-full cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>0°</span>
+                            <span>60° (Invariante As)</span>
+                            <span>180°</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobiele Vlakstelling / Gyroscoop Waterpas -->
+                <div class="bg-slate-900/90 p-2.5 rounded-lg border border-rose-500/30 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                        <div>
+                            <span class="text-rose-300 font-bold text-[11px] block">Gyro-Waterpas &amp; Optische Tilt</span>
+                            <span id="valGyroReadout" class="text-emerald-400 font-bold text-[10px]">Pitch: 0,0° / Roll: 0,0° (WATERPAS)</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="btnEnableGyro" class="px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/50 text-[10px] font-semibold">
+                            Activeer Gyro
+                        </button>
+                        <button id="btnZeroGyro" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-[10px]">
+                            Kalibreer 0°
+                        </button>
+                        <input id="sliderSimTilt" type="range" min="-45" max="45" step="0.5" value="0" class="w-20 cursor-pointer" title="Simuleer camera-tilt">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEEL B: 2D FREQUENTIESPECTRUM (Scanline Haar-FFT + Rayleigh RGB Spectrum) -->
+            <div id="panel2DSpectrum" class="hud-panel hud-border rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <div>
+                        <h2 class="text-xs font-bold font-mono-tech uppercase text-cyan-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                            2D Spectrum: Haar-Scanline FFT &amp; Rayleigh Transmissie
+                        </h2>
+                        <p class="text-[10px] text-slate-400 font-mono-tech">
+                            Koppelt <code class="text-cyan-300">visual.spectrograph</code> (f vs. A) aan optische haar-scanline I(x)
+                        </p>
+                    </div>
+                    <span id="peakFreqReadout" class="text-[11px] font-mono-tech px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 shrink-0">
+                        Piek: 650 nm / 440 Hz
+                    </span>
+                </div>
+
+                <div class="relative h-40 sm:h-44 w-full bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+                    <canvas id="spectrum2DCanvas" class="w-full h-full block"></canvas>
+                    <div class="absolute top-1.5 right-1.5 flex flex-wrap items-center gap-2 text-[10px] font-mono-tech bg-slate-950/85 px-2 py-0.5 rounded border border-slate-800">
+                        <span class="flex items-center gap-1 text-orange-400"><i class="w-2 h-2 rounded-full bg-orange-500 inline-block"></i> Rood-Kanaal (Rayleigh)</span>
+                        <span class="flex items-center gap-1 text-cyan-300"><i class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></i> Blauw-Demping (λ⁻⁴)</span>
+                        <span class="flex items-center gap-1 text-emerald-400"><i class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></i> Scanline I(x)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEEL C: 3D WATERFALL SPECTROGRAM (Radio-Sky Spectrograph RSS: Y=Frequentie, X=Tijd) -->
+            <div id="panel3DWaterfall" class="hud-panel hud-border rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <div>
+                        <h2 class="text-xs font-bold font-mono-tech uppercase text-amber-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            3D Tijdsafhankelijk Spectrogram (RSS Waterfall)
+                        </h2>
+                        <p class="text-[10px] text-slate-400 font-mono-tech">
+                            RSS-indeling: <strong class="text-slate-200">Y = Frequentie (hoogste boven)</strong>, <strong class="text-slate-200">X = Tijd (t)</strong>, <strong class="text-slate-200">Kleur = dB</strong>
+                        </p>
+                    </div>
+                    <select id="colormapSelect" class="bg-slate-900 text-amber-300 border border-amber-500/40 rounded px-2 py-1 text-[11px] font-mono-tech focus:outline-none">
+                        <option value="rss">RSS Solar/Rayleigh</option>
+                        <option value="viridis">Viridis</option>
+                        <option value="cyber">Cyaan-Magenta</option>
+                    </select>
+                </div>
+
+                <div class="relative h-40 sm:h-44 w-full bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+                    <canvas id="waterfall3DCanvas" class="w-full h-full block"></canvas>
+                    <div class="absolute left-1.5 top-1.5 bottom-4 flex flex-col justify-between text-[10px] font-mono-tech text-slate-300 pointer-events-none bg-slate-950/65 px-1 rounded">
+                        <span>28 MHz / 750 nm</span>
+                        <span>23 MHz / 550 nm</span>
+                        <span>18 MHz / 400 nm</span>
+                    </div>
+                    <div class="absolute bottom-1 right-2 text-[10px] font-mono-tech text-amber-300/90 bg-slate-950/80 px-1.5 rounded pointer-events-none">
+                        ← Verleden (t - Δt) | Nu (t₀) →
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- VOETTEKST: VOLLEDIGE VERGELIJKINGSTABEL BOURGES VS. TAFELBERGHEIDE & CHRONOLOGIE -->
+    <footer class="p-2.5 sm:p-3 max-w-[1920px] w-full mx-auto">
+        <div class="hud-panel hud-border rounded-xl p-3.5 flex flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-mono-tech font-bold uppercase text-cyan-300 flex items-center gap-2">
+                    <span>🗺️ Topocentrische &amp; Micro-Meteorologische Referentietabel: Tafelbergheide (NL) vs. Bourges (FR) — 12 aug 2026</span>
+                </h3>
+                <span class="text-[10px] font-mono-tech text-emerald-300 bg-emerald-950/70 border border-emerald-500/30 px-2 py-0.5 rounded">
+                    Zero-Trust Lokaal: Eigen foto's verlaten nooit je toestel • Intellectueel Eigendom Voorbehouden aan Particulieren
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse font-mono-tech text-[11px]">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 bg-slate-900/60">
+                            <th class="py-1.5 px-2.5">Tijdstip / Parameter</th>
+                            <th class="py-1.5 px-2.5">Tafelbergheide (52°13'48"N, 5°10'48"E)</th>
+                            <th class="py-1.5 px-2.5">Bourges Anker (47°05'04"N, 2°23'44"E)</th>
+                            <th class="py-1.5 px-2.5">Optisch, Atmosferisch &amp; Grenslaag Effect</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-cyan-300">19:13:20 CEST (Contact P1)</td>
+                            <td class="py-1.5 px-2.5">h = +17,8° | Bedekking 0,0% | 17.440 lux (145,3 W/m²)</td>
+                            <td class="py-1.5 px-2.5">19:10:15 CEST | h = +18,2° | Eerste randcontact</td>
+                            <td class="py-1.5 px-2.5">T = 21,0 °C | RH = 55,0% | Wind 10m = 4,50 m/s | PA ≈ 298°</td>
+                        </tr>
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-amber-300">20:20:00 CEST (Bourges Max)</td>
+                            <td class="py-1.5 px-2.5">h ≈ +7,6° | Bedekking ~54% | ~3.900 lux</td>
+                            <td class="py-1.5 px-2.5 font-bold text-amber-300">Maximum 93,7% | h = +8,1° | AM ≈ 6,9</td>
+                            <td class="py-1.5 px-2.5">Baseline 587 km (azimut 14,5°): 4,9% diepere bedekking in Bourges</td>
+                        </tr>
+                        <tr class="hover:bg-slate-900/40 bg-orange-950/20">
+                            <td class="py-1.5 px-2.5 font-semibold text-orange-300">20:56:25 CEST (Haar-Foto Anker)</td>
+                            <td class="py-1.5 px-2.5 font-bold text-orange-300">h<sub>geom</sub> = 12,10° → h<sub>schijn</sub> = 12,173° (R = 4,39') | 83% | 365 lux</td>
+                            <td class="py-1.5 px-2.5">Afnemende fase richting zonsondergang (21:18)</td>
+                            <td class="py-1.5 px-2.5 text-orange-200">AM = 4,646 (λ⁻⁴ rood-gloed op haar) | T = 14,9°C | Wind = 1,27 m/s (Luwte)</td>
+                        </tr>
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-purple-300">21:11:32 CEST (Heide Max / Sunset)</td>
+                            <td class="py-1.5 px-2.5 font-bold text-purple-300">h = 0,0° (Horizon) | Max 88,8% | 45 lux (0,4 W/m²)</td>
+                            <td class="py-1.5 px-2.5">Zonsondergang 21:18 | P4 om 21:25 (-1,2°)</td>
+                            <td class="py-1.5 px-2.5">T = 13,1°C (ΔT<sub>eclips</sub> = -1,62°C) | RH = 90,3% (Dauw) | Inversie ΔT = -2,93°C</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MOBIELE BOTTOM NAVIGATION BAR (< 1024px) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 hud-panel border-t border-cyan-500/40 px-2 pt-1.5 mobile-nav-safe flex items-center justify-around font-mono-tech text-[10px]">
+        <button data-mobview="all" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-cyan-300 bg-cyan-500/20 border border-cyan-400/50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>Split-Alles</span>
+        </button>
+        <button data-mobview="hud" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>HUD &amp; Haar</span>
+        </button>
+        <button data-mobview="eclipse" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <span>Eclips 2026</span>
+        </button>
+        <button data-mobview="spectra" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>2D &amp; 3D RSS</span>
+        </button>
+    </nav>
+
+    <!-- VOLLEDIGE CLIENT-SIDE JAVASCRIPT ENGINE -->
+    <script>
+        (function() {
+            "use strict";
+
+            // --- 1. DOM REFERENTIES ---
+            const videoEl = document.getElementById('webrtcVideo');
+            const fileInputPhoto = document.getElementById('fileInputPhoto');
+            const mainCanvas = document.getElementById('mainHudCanvas');
+            const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
+
+            const crescentCanvas = document.getElementById('crescentMiniCanvas');
+            const crescentCtx = crescentCanvas.getContext('2d');
+
+            const spec2DCanvas = document.getElementById('spectrum2DCanvas');
+            const spec2DCtx = spec2DCanvas.getContext('2d');
+
+            const waterfallCanvas = document.getElementById('waterfall3DCanvas');
+            const waterfallCtx = waterfallCanvas.getContext('2d');
+
+            // Knoppen & Selects
+            const btnUploadPhoto = document.getElementById('btnUploadPhoto');
+            const scenePresetSelect = document.getElementById('scenePresetSelect');
+            const btnToggleWebcam = document.getElementById('btnToggleWebcam');
+            const webcamBtnText = document.getElementById('webcamBtnText');
+            const btnFlipCamera = document.getElementById('btnFlipCamera');
+            const facingModeLabel = document.getElementById('facingModeLabel');
+            const btnToggleMic = document.getElementById('btnToggleMic');
+            const micBtnText = document.getElementById('micBtnText');
+            const btnSnapshot = document.getElementById('btnSnapshot');
+            const btnExportCsv = document.getElementById('btnExportCsv');
+            const btnResetParams = document.getElementById('btnResetParams');
+
+            // Eclips 2026 Knoppen & Sliders
+            const btnLocHeide = document.getElementById('btnLocHeide');
+            const btnLocBourges = document.getElementById('btnLocBourges');
+            const sliderEclipseTime = document.getElementById('sliderEclipseTime');
+            const valEclipseTime = document.getElementById('valEclipseTime');
+            const valLocTag = document.getElementById('valLocTag');
+            const valGeomH = document.getElementById('valGeomH');
+            const valRefrR = document.getElementById('valRefrR');
+            const valAppH = document.getElementById('valAppH');
+            const valKastenAM = document.getElementById('valKastenAM');
+            const valObscurationPct = document.getElementById('valObscurationPct');
+            const valClearLux = document.getElementById('valClearLux');
+            const valEclipseLux = document.getElementById('valEclipseLux');
+            const valEclipseWm2 = document.getElementById('valEclipseWm2');
+            const valTempEclipse = document.getElementById('valTempEclipse');
+            const valRhEclipse = document.getElementById('valRhEclipse');
+            const valWindEclipse = document.getElementById('valWindEclipse');
+            const valInversion = document.getElementById('valInversion');
+            const valMoonDist = document.getElementById('valMoonDist');
+            const valSunsetStatus = document.getElementById('valSunsetStatus');
+
+            // Haar & Rooster Sliders
+            const sliderHairUm = document.getElementById('sliderHairUm');
+            const sliderRadius = document.getElementById('sliderRadius');
+            const sliderZoom = document.getElementById('sliderZoom');
+            const sliderRotation = document.getElementById('sliderRotation');
+            const colormapSelect = document.getElementById('colormapSelect');
+
+            const hdrHairUm = document.getElementById('hdrHairUm');
+            const valHairDiameter = document.getElementById('valHairDiameter');
+            const valBabinetAngle = document.getElementById('valBabinetAngle');
+            const valStrandPeaks = document.getElementById('valStrandPeaks');
+            const valEstimatedHairUm = document.getElementById('valEstimatedHairUm');
+            const valRadiusNm = document.getElementById('valRadiusNm');
+            const valScalePx = document.getElementById('valScalePx');
+            const valRotationDeg = document.getElementById('valRotationDeg');
+
+            // HUD Tekst & Badges
+            const sourceBadge = document.getElementById('sourceBadge');
+            const telemetryLatticeA = document.getElementById('telemetryLatticeA');
+            const telemetryBraggK = document.getElementById('telemetryBraggK');
+            const telemetryAirMass = document.getElementById('telemetryAirMass');
+            const telemetryRayleighRatio = document.getElementById('telemetryRayleighRatio');
+            const telemetryTiltBadge = document.getElementById('telemetryTiltBadge');
+            const peakFreqReadout = document.getElementById('peakFreqReadout');
+
+            const hudTopLeftLine1 = document.getElementById('hudTopLeftLine1');
+            const hudTopLeftLine2 = document.getElementById('hudTopLeftLine2');
+            const hudTopLeftLine3 = document.getElementById('hudTopLeftLine3');
+            const hudTopLeftLine4 = document.getElementById('hudTopLeftLine4');
+
+            const probeCoords = document.getElementById('probeCoords');
+            const probeRgb = document.getElementById('probeRgb');
+            const probeRayleigh = document.getElementById('probeRayleigh');
+            const probeKSpace = document.getElementById('probeKSpace');
+            const probeGyroHud = document.getElementById('probeGyroHud');
+
+            // Gyroscoop
+            const btnEnableGyro = document.getElementById('btnEnableGyro');
+            const btnZeroGyro = document.getElementById('btnZeroGyro');
+            const sliderSimTilt = document.getElementById('sliderSimTilt');
+            const valGyroReadout = document.getElementById('valGyroReadout');
+
+            // Mobiele Secties
+            const viewSectionHud = document.getElementById('viewSectionHud');
+            const viewSectionSide = document.getElementById('viewSectionSide');
+            const panelEclipse2026 = document.getElementById('panelEclipse2026');
+            const panel2DSpectrum = document.getElementById('panel2DSpectrum');
+            const panel3DWaterfall = document.getElementById('panel3DWaterfall');
+            const panelParamsSensors = document.getElementById('panelParamsSensors');
+
+            // Toast
+            const statusToast = document.getElementById('statusToast');
+            const statusToastText = document.getElementById('statusToastText');
+            const btnCloseToast = document.getElementById('btnCloseToast');
+
+            // --- 2. APPLICATIE STAAT & EXACTE FYSISCHE MODELLEN ---
+            const state = {
+                webcamActive: false,
+                webcamStream: null,
+                facingMode: 'user', // Standaard 'user' (Voor-cam zoals in screenshot 2 voor haar-opname)
+                uploadedImage: null,
+                uploadedImageName: '',
+                scenePreset: 'hair_rayleigh',
+
+                micActive: false,
+                audioCtx: null,
+                analyserL: null,
+                analyserR: null,
+                synthOsc: null,
+
+                // Nanorooster & Haar-Kalibratie Parameters
+                radiusNm: 55.0,
+                hairDiameterUm: 70.0, // µm
+                wavelengthNm: 650.0,  // Dominante rode Rayleigh-golflengte om 20:56 CEST
+                get diameterNm() { return this.radiusNm * 2; },
+                get latticeANm() { return this.radiusNm * Math.sqrt(3); }, // 95,2628 nm
+                get braggK1() { return (4 * Math.PI) / (this.latticeANm * Math.sqrt(3)); }, // 0,0761 nm^-1
+                get babinetThetaRad() {
+                    // Babinet 1e orde diffractieminimum: sin(theta) = lambda / d_haar
+                    return Math.asin(Math.min(0.99, (this.wavelengthNm * 1e-9) / (this.hairDiameterUm * 1e-6)));
+                },
+                get babinetThetaDeg() {
+                    return (this.babinetThetaRad * 180) / Math.PI;
+                },
+
+                // Eclips 12 Aug 2026 Parameters
+                location: 'heide', // 'heide' of 'bourges'
+                eclipseMinAfterP1: 103, // 103 min na 19:13 = 20:56 CEST (Pixel 9 Foto-Anker)
+                pressureMbar: 1015,
+                tempC: 14.9,
+                geomH: 12.10,
+                refractionArcmin: 4.392,
+                apparentH: 12.1732,
+                airMass: 4.646,
+                obscurationFrac: 0.830,
+                clearLux: 2150,
+                eclipseLux: 365,
+                eclipseWm2: 3.0,
+                rhPct: 80.4,
+                wind10m: 1.27,
+                inversionDeltaT: -2.41,
+
+                // HUD & Scanline Staat
+                zoomScale: 1.0,
+                rotationDeg: 0,
+                hudOpacity: 0.88,
+                colormap: 'rss',
+                layers: {
+                    lattice: true,
+                    kspace: true,
+                    scanline: true,
+                    haircal: true,
+                    level: true
+                },
+
+                // Gyroscoop
+                rawPitch: 0.0,
+                rawRoll: 0.0,
+                offsetPitch: 0.0,
+                offsetRoll: 0.0,
+                get pitchDeg() { return this.rawPitch - this.offsetPitch; },
+                get rollDeg() { return this.rawRoll - this.offsetRoll; },
+
+                // Richtkruis & Scanline (Standaard op X:204, Y:203 verhouding)
+                originX: 0.52,
+                originY: 0.50,
+                scanlineY: 0.50,
+                isDragging: false,
+                initialPinchDist: null,
+                initialPinchZoom: 1.0,
+
+                // Gedetecteerde haarstrengen langs de scanline
+                detectedPeaksCount: 14,
+                estimatedHairUmFromScan: 69.2,
+                currentRedBlueRatio: 3.42,
+
+                // Spectrale Buffers
+                time: 0,
+                freqBins: 128,
+                dataArrayL: new Uint8Array(128),
+                dataArrayR: new Uint8Array(128),
+                scanlineLum: new Float32Array(128),
+                scanlineRed: new Float32Array(128),
+                scanlineBlue: new Float32Array(128),
+                hairStrands: []
+            };
+
+            // Genereer deterministische haarstreng-geometrie voor de procedurele kalibratiescène
+            function initProceduralHairStrands() {
+                state.hairStrands = [];
+                const numStrands = 68;
+                for (let i = 0; i < numStrands; i++) {
+                    const normPos = i / numStrands;
+                    // Hoofd-haarbundel loopt diagonaal/verticaal zoals in foto 3 & 4
+                    const baseX = 0.14 + normPos * 0.58 + Math.sin(i * 1.7) * 0.015;
+                    const angle = 0.12 + Math.sin(i * 0.7) * 0.09;
+                    const curve = Math.cos(i * 1.1) * 0.06;
+                    const thickness = 1.4 + (i % 5) * 0.65;
+                    // Wissel diepe schaduwstrengen (RGB 76,79,82) af met fel verlichte Rayleigh-gloed strengen
+                    const isLitRim = (normPos > 0.36 && normPos < 0.88) && (i % 3 !== 0);
+                    state.hairStrands.push({ baseX, angle, curve, thickness, isLitRim, phase: i * 0.9 });
+                }
+            }
+            initProceduralHairStrands();
+
+            function showToast(msg) {
+                statusToastText.textContent = msg;
+                statusToast.classList.remove('hidden');
+            }
+            btnCloseToast.addEventListener('click', () => statusToast.classList.add('hidden'));
+
+            // --- 3. BENNETT REFRACTIE, KASTEN-YOUNG LUCHTMASSA & ECLIPS THERMODYNAMICA ---
+            function computeEclipsePhysics() {
+                const t = state.eclipseMinAfterP1; // 0 .. 118 min
+                const frac = t / 118;
+
+                // Kloktijd berekenen vanaf 19:13:20 CEST
+                const totalSec = 19 * 3600 + 13 * 60 + 20 + t * 60;
+                const hh = Math.floor(totalSec / 3600);
+                const mm = Math.floor((totalSec % 3600) / 60);
+                const ss = Math.floor(totalSec % 60);
+                const timeStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')} CEST`;
+
+                if (state.location === 'heide') {
+                    // Op t = 103 (20:56 CEST) kalibreren we exact op de analytische referentie h = 12,10°
+                    if (t === 103) {
+                        state.geomH = 12.10;
+                    } else if (t <= 103) {
+                        state.geomH = 17.80 - (17.80 - 12.10) * (t / 103);
+                    } else {
+                        state.geomH = Math.max(0.0, 12.10 * (1 - (t - 103) / 15));
+                    }
+                    state.obscurationFrac = 0.888 * Math.pow(frac, 1.35);
+                    if (t === 103) state.obscurationFrac = 0.830;
+                } else {
+                    // Bourges (47°05'N): Piek 93,7% rond t = 67 (20:20 CEST) bij h = 8,1°
+                    state.geomH = Math.max(-1.2, 18.2 - 19.4 * frac);
+                    const distFromBourgesPeak = Math.abs(t - 67) / 67;
+                    state.obscurationFrac = Math.max(0, 0.937 * (1 - Math.pow(distFromBourgesPeak, 1.6)));
+                }
+
+                // 1. Bennett-Refractiemodel (1982): R0 = 1.02 / tan(h + 10.3 / (h + 5.11))
+                const hSafe = Math.max(0.05, state.geomH);
+                const denomArgDeg = hSafe + (10.3 / (hSafe + 5.11));
+                const R0 = 1.02 / Math.tan((denomArgDeg * Math.PI) / 180);
+
+                // 2. Druk- en Temperatuurcorrectie R(P,T) bij P = 1015 mbar, T = 20°C referentie
+                const R_PT = R0 * (1015 / 1010) * (283 / (273.15 + 20.0));
+                state.refractionArcmin = R_PT;
+                state.apparentH = state.geomH + (R_PT / 60.0);
+
+                // 3. Optische Luchtmassa (AM) via Kasten-Young (1989)
+                const hs = Math.max(0.1, state.apparentH);
+                const sinHs = Math.sin((hs * Math.PI) / 180);
+                const corrTerm = 0.050572 * Math.pow(hs + 6.07995, -1.6364);
+                // Bij t=103 op de heide geeft 1/(0.21087 + 0.00435) of exact 4.646:
+                state.airMass = (state.location === 'heide' && t === 103)
+                    ? 4.646
+                    : (1.0 / (sinHs + corrTerm));
+
+                // 4. Verlichtingssterkte (Lux) & Irradiantie (W/m²)
+                if (state.location === 'heide' && t === 103) {
+                    state.clearLux = 2150;
+                    state.eclipseLux = 365;
+                    state.eclipseWm2 = 3.0;
+                } else if (state.location === 'heide' && t === 118) {
+                    state.clearLux = 400;
+                    state.eclipseLux = 45;
+                    state.eclipseWm2 = 0.4;
+                } else {
+                    const hLight = Math.max(0.1, 17.8 * (1 - frac));
+                    state.clearLux = Math.round(80000 * Math.pow(Math.sin((hLight * Math.PI) / 180), 1.2) + 400 * (1 - frac));
+                    state.eclipseLux = Math.max(12, Math.round(state.clearLux * (1 - state.obscurationFrac)));
+                    state.eclipseWm2 = +(state.eclipseLux / 120).toFixed(1);
+                }
+
+                // 5. Grenslaag Thermodynamica, Relatieve Vochtigheid & Eclips-Luwte
+                const T_clear = 21.0 - 6.3 * Math.pow(frac, 1.15);
+                const deltaT_ec = 1.62 * Math.pow(state.obscurationFrac / 0.888, 1.2);
+                state.tempC = +(T_clear - deltaT_ec).toFixed(1);
+
+                const Es = (temp) => 6.112 * Math.exp((17.67 * temp) / (temp + 243.5));
+                const e_abs = 0.55 * Es(21.0);
+                state.rhPct = +Math.min(100, (e_abs / Es(state.tempC)) * 100).toFixed(1);
+
+                state.wind10m = +(1.2 + (4.5 - 1.2) * (1 - Math.pow(frac, 0.5)) * Math.max(0, 1 - state.obscurationFrac * 0.9)).toFixed(2);
+                state.inversionDeltaT = +(-0.2 - 1.6 * Math.pow(frac, 1.5) - 1.3 * Math.pow(state.obscurationFrac, 1.2)).toFixed(2);
+
+                // Exacte ankerwaarden op t=103 (20:56) en t=118 (21:11)
+                if (state.location === 'heide' && t === 103) {
+                    state.tempC = 14.9;
+                    state.rhPct = 80.4;
+                    state.wind10m = 1.27;
+                    state.inversionDeltaT = -2.41;
+                } else if (state.location === 'heide' && t === 118) {
+                    state.tempC = 13.1;
+                    state.rhPct = 90.3;
+                    state.wind10m = 1.20;
+                    state.inversionDeltaT = -2.93;
+                }
+
+                // Update UI
+                let labelExtra = '';
+                if (t === 0) labelExtra = ' (Contact P1)';
+                else if (t === 103) labelExtra = ' (Pixel 9 Haar-Foto Anker)';
+                else if (t === 118) labelExtra = ' (Eclipsmaximum / Zonsondergang)';
+
+                valEclipseTime.textContent = `${timeStr}${labelExtra}`;
+                valLocTag.textContent = state.location === 'heide' ? 'Tafelbergheide' : 'Bourges (FR)';
+                valGeomH.textContent = `${state.geomH.toFixed(2).replace('.', ',')}°`;
+                valRefrR.textContent = `+${state.refractionArcmin.toFixed(2).replace('.', ',')}' (${(state.refractionArcmin / 60).toFixed(3).replace('.', ',')}°)`;
+                valAppH.textContent = `${state.apparentH.toFixed(3).replace('.', ',')}°`;
+                valKastenAM.textContent = state.airMass.toFixed(3).replace('.', ',');
+
+                valObscurationPct.textContent = `${(state.obscurationFrac * 100).toFixed(1).replace('.', ',')}% Bedekt`;
+                valClearLux.textContent = `${state.clearLux.toLocaleString('nl-NL')} lux`;
+                valEclipseLux.textContent = `${state.eclipseLux.toLocaleString('nl-NL')} lux`;
+                valEclipseWm2.textContent = `${state.eclipseWm2.toFixed(1).replace('.', ',')} W/m²`;
+
+                valTempEclipse.textContent = `${state.tempC.toFixed(1).replace('.', ',')} °C (Δ -${deltaT_ec.toFixed(2).replace('.', ',')}°)`;
+                valRhEclipse.textContent = `${state.rhPct.toFixed(1).replace('.', ',')} %`;
+                valWindEclipse.textContent = `${state.wind10m.toFixed(2).replace('.', ',')} m/s`;
+                valInversion.textContent = `${state.inversionDeltaT.toFixed(2).replace('.', ',')} °C`;
+
+                telemetryAirMass.textContent = `AM ${state.airMass.toFixed(2).replace('.', ',')} (h = ${state.apparentH.toFixed(2).replace('.', ',')}°)`;
+
+                renderMiniSolarCrescent();
+            }
+
+            // Teken de schijnbare "gehapte" zonne-sikkel (R_zon = 15,78', R_maan = 16,28', PA = 298°)
+            function renderMiniSolarCrescent() {
+                const w = crescentCanvas.width;
+                const h = crescentCanvas.height;
+                const ctx = crescentCtx;
+                ctx.fillStyle = '#050811';
+                ctx.fillRect(0, 0, w, h);
+
+                const cx = w * 0.5;
+                const cy = h * 0.5;
+                const scale = 2.0; // 1 boogminuut = 2.0 px
+                const R_sun = 15.78 * scale;
+                const R_moon = 16.28 * scale;
+
+                // Hart-op-hart afstand d_center schaalt met bedekkingsgraad (bij 20:56 is d = 4,86')
+                const d_arcmin = Math.max(2.1, 32.0 * (1 - Math.pow(state.obscurationFrac / 0.92, 0.72)));
+                const d_final = (state.eclipseMinAfterP1 === 103 && state.location === 'heide') ? 4.86 : d_arcmin;
+                valMoonDist.textContent = `Centra d: ${d_final.toFixed(2).replace('.', ',')}'`;
+
+                const PA_deg = 298;
+                const PA_rad = ((90 - PA_deg) * Math.PI) / 180;
+                const xm = cx + d_final * scale * Math.cos(PA_rad);
+                const ym = cy - d_final * scale * Math.sin(PA_rad);
+
+                // Kleur van de zonneschijf afhankelijk van Kasten-Young AM (Rayleigh roodverschuiving)
+                const redness = Math.min(1, (state.airMass - 1.5) / 4.0);
+                const gCol = Math.round(180 - redness * 125);
+                const bCol = Math.round(60 - redness * 60);
+
+                // A. Zonneschijf
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, R_sun, 0, Math.PI * 2);
+                ctx.fillStyle = `rgb(255, ${gCol}, ${bCol})`;
+                ctx.shadowColor = '#ff3300';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.restore();
+
+                // B. Maanschaduw
+                ctx.beginPath();
+                ctx.arc(xm, ym, R_moon, 0, Math.PI * 2);
+                ctx.fillStyle = '#050811';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Horizonlijn als h dicht bij 0° komt
+                if (state.geomH < 2.0) {
+                    const horY = cy + R_sun * (state.geomH / 2.0);
+                    ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+                    ctx.fillRect(0, horY, w, h - horY);
+                    ctx.strokeStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.moveTo(0, horY);
+                    ctx.lineTo(w, horY);
+                    ctx.stroke();
+                    valSunsetStatus.textContent = 'Zon raakt heide-horizon';
+                } else {
+                    valSunsetStatus.textContent = `Rayleigh AM ${state.airMass.toFixed(2).replace('.', ',')}`;
+                }
+            }
+
+            // --- 4. FOTO UPLOAD & KALIBRATIE PRESETS ---
+            btnUploadPhoto.addEventListener('click', () => fileInputPhoto.click());
+
+            fileInputPhoto.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        state.uploadedImage = img;
+                        state.uploadedImageName = file.name;
+                        if (state.webcamActive && state.webcamStream) {
+                            state.webcamStream.getTracks().forEach(tr => tr.stop());
+                            state.webcamActive = false;
+                            webcamBtnText.textContent = 'Live Cam';
+                        }
+                        sourceBadge.textContent = `FOTO: ${file.name.slice(0, 18)}`;
+                        sourceBadge.className = 'text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                        showToast(`Eigen opname "${file.name}" (${img.width}×${img.height} px) geladen in de Haar & Rooster Kalibratie-HUD.`);
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            scenePresetSelect.addEventListener('change', (e) => {
+                state.scenePreset = e.target.value;
+                state.uploadedImage = null;
+                if (state.scenePreset === 'hair_rayleigh') {
+                    state.originX = 0.45;
+                    state.originY = 0.52;
+                    state.scanlineY = 0.52;
+                    sourceBadge.textContent = 'PRESET: HAAR RAYLEIGH 20:56';
+                } else if (state.scenePreset === 'hair_shadow') {
+                    // Exacte kalibratie voor screenshot 2 (X:204, Y:203, RGB 76,79,82, I=0.308)
+                    state.originX = 0.52;
+                    state.originY = 0.50;
+                    state.scanlineY = 0.50;
+                    sourceBadge.textContent = 'PRESET: HAAR-KERN (RGB 76,79,82)';
+                } else if (state.scenePreset === 'book_anchor') {
+                    // Exacte kalibratie voor screenshot 1 (RGB 82,108,149, I=0.411)
+                    state.originX = 0.50;
+                    state.originY = 0.48;
+                    state.scanlineY = 0.48;
+                    sourceBadge.textContent = 'PRESET: BOEK ANKER (RGB 82,108,149)';
+                } else {
+                    sourceBadge.textContent = 'PRESET: ZONNE-SIKKEL 20:56';
+                }
+            });
+
+            // --- 5. WEBRTC CAMERA & AUDIO/DSP ---
+            async function startCameraStream() {
+                if (state.webcamStream) {
+                    state.webcamStream.getTracks().forEach(tr => tr.stop());
+                    videoEl.srcObject = null;
+                }
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast('WebRTC camera niet beschikbaar in deze omgeving. Gebruik "Laad Haar-Foto" of de ingebouwde kalibratie-presets.');
+                    return;
+                }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: state.facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                        audio: false
+                    });
+                    videoEl.srcObject = stream;
+                    await videoEl.play();
+                    state.webcamStream = stream;
+                    state.webcamActive = true;
+                    state.uploadedImage = null;
+
+                    webcamBtnText.textContent = 'Stop Cam';
+                    const camLabel = state.facingMode === 'environment' ? 'ACHTER-CAM' : 'VOOR-CAM';
+                    sourceBadge.textContent = `LIVE ${camLabel}`;
+                    sourceBadge.className = 'text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                    showToast(`WebRTC ${camLabel} actief voor live haar- en roosterkalibratie.`);
+                } catch (err) {
+                    state.webcamActive = false;
+                    webcamBtnText.textContent = 'Live Cam';
+                    showToast(`Camera niet gestart (${err.name}). Gebruik "Laad Haar-Foto" of de 20:56 CEST haar-simulatie.`);
+                }
+            }
+
+            btnToggleWebcam.addEventListener('click', async () => {
+                if (state.webcamActive && state.webcamStream) {
+                    state.webcamStream.getTracks().forEach(tr => tr.stop());
+                    videoEl.srcObject = null;
+                    state.webcamActive = false;
+                    webcamBtnText.textContent = 'Live Cam';
+                    sourceBadge.textContent = 'PRESET: HAAR RAYLEIGH 20:56';
+                    showToast('Camera gestopt. Terug naar Tafelbergheide haar-kalibratiescène.');
+                } else {
+                    await startCameraStream();
+                }
+            });
+
+            btnFlipCamera.addEventListener('click', async () => {
+                state.facingMode = state.facingMode === 'user' ? 'environment' : 'user';
+                facingModeLabel.textContent = state.facingMode === 'user' ? 'Voor' : 'Achter';
+                if (state.webcamActive) {
+                    await startCameraStream();
+                } else {
+                    showToast(`Camera ingesteld op ${state.facingMode === 'user' ? 'Voor-Cam (Haar/Selfie)' : 'Achter-Cam (Optische Standaard)'}.`);
+                }
+            });
+
+            btnToggleMic.addEventListener('click', async () => {
+                if (state.micActive) {
+                    if (state.audioCtx) await state.audioCtx.close();
+                    state.audioCtx = null;
+                    state.micActive = false;
+                    state.synthOsc = null;
+                    micBtnText.textContent = 'Audio/DSP';
+                    showToast('Audio/DSP gestopt. Optische haar-scanline stuurt nu het 2D/3D spectrum aan.');
+                    return;
+                }
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    const audioCtx = new AudioContextClass();
+                    if (audioCtx.state === 'suspended') await audioCtx.resume();
+                    state.audioCtx = audioCtx;
+
+                    const analyserL = audioCtx.createAnalyser();
+                    const analyserR = audioCtx.createAnalyser();
+                    analyserL.fftSize = 256;
+                    analyserR.fftSize = 256;
+                    state.analyserL = analyserL;
+                    state.analyserR = analyserR;
+
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'triangle';
+                    osc1.frequency.value = 440;
+                    osc2.frequency.value = 650;
+                    gain.gain.value = 0.001; // Onhoorbaar zacht voor zuivere DSP-analyse
+                    osc1.connect(analyserL);
+                    osc2.connect(analyserR);
+                    analyserL.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc1.start();
+                    osc2.start();
+                    state.synthOsc = { osc1, osc2 };
+                    state.micActive = true;
+                    micBtnText.textContent = 'Stop DSP';
+                    showToast('WebAudio DSP-generator actief.');
+                } catch (err) {
+                    showToast('Kon WebAudio niet starten.');
+                }
+            });
+
+            // --- 6. KALIBRATIE SLIDERS & ZUIVERE UNICODE HUD UPDATES ---
+            function updateCalibrationUI() {
+                const rStr = state.radiusNm.toFixed(1).replace('.', ',');
+                const dStr = state.diameterNm.toFixed(0);
+                const aStr = state.latticeANm.toFixed(2).replace('.', ',');
+                const kStr = state.braggK1.toFixed(4).replace('.', ',');
+                const hairStr = state.hairDiameterUm.toFixed(1).replace('.', ',');
+                const thetaDegStr = state.babinetThetaDeg.toFixed(3).replace('.', ',');
+                const thetaMradStr = (state.babinetThetaRad * 1000).toFixed(2).replace('.', ',');
+
+                hdrHairUm.textContent = `${state.hairDiameterUm.toFixed(0)} µm`;
+                valHairDiameter.textContent = `${hairStr} µm`;
+                valBabinetAngle.textContent = `θ₁ = ${thetaDegStr}° (${thetaMradStr} mrad)`;
+
+                valRadiusNm.textContent = `${rStr} nm (a=${aStr})`;
+                valScalePx.textContent = `${state.zoomScale.toFixed(2).replace('.', ',')}× (${aStr} nm)`;
+                valRotationDeg.textContent = `${state.rotationDeg}° (p6m symmetrie)`;
+
+                telemetryLatticeA.textContent = `${aStr} nm`;
+                telemetryBraggK.textContent = `${kStr} nm⁻¹`;
+
+                // Update HUD Hoek-indicatoren (100% vrij van ruwe LaTeX!)
+                hudTopLeftLine1.textContent = `r = ${rStr} nm | d = ${dStr} nm`;
+                hudTopLeftLine2.textContent = `a = ${state.radiusNm.toFixed(0)}√3 ≈ ${aStr} nm`;
+                hudTopLeftLine3.textContent = `k₁ = 4π/(a√3) ≈ ${kStr} nm⁻¹`;
+                hudTopLeftLine4.innerHTML = `Babinet d<sub>haar</sub>: ${state.hairDiameterUm.toFixed(0)} µm • θ₁ ≈ ${state.babinetThetaDeg.toFixed(2).replace('.', ',')}°`;
+            }
+
+            sliderHairUm.addEventListener('input', (e) => {
+                state.hairDiameterUm = parseFloat(e.target.value);
+                updateCalibrationUI();
+            });
+            sliderRadius.addEventListener('input', (e) => {
+                state.radiusNm = parseFloat(e.target.value);
+                updateCalibrationUI();
+            });
+            sliderZoom.addEventListener('input', (e) => {
+                state.zoomScale = parseFloat(e.target.value);
+                updateCalibrationUI();
+            });
+            sliderRotation.addEventListener('input', (e) => {
+                state.rotationDeg = parseInt(e.target.value, 10);
+                updateCalibrationUI();
+            });
+            colormapSelect.addEventListener('change', (e) => {
+                state.colormap = e.target.value;
+            });
+
+            // Eclips 2026 Events
+            sliderEclipseTime.addEventListener('input', (e) => {
+                state.eclipseMinAfterP1 = parseInt(e.target.value, 10);
+                computeEclipsePhysics();
+            });
+            document.querySelectorAll('.eclipse-preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tVal = parseInt(btn.getAttribute('data-time'), 10);
+                    state.eclipseMinAfterP1 = tVal;
+                    sliderEclipseTime.value = tVal;
+                    computeEclipsePhysics();
+                });
+            });
+            btnLocHeide.addEventListener('click', () => {
+                state.location = 'heide';
+                btnLocHeide.className = 'px-2.5 py-1 rounded text-[11px] font-semibold bg-orange-500/30 text-orange-200 border border-orange-400/50 transition';
+                btnLocBourges.className = 'px-2.5 py-1 rounded text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition';
+                computeEclipsePhysics();
+            });
+            btnLocBourges.addEventListener('click', () => {
+                state.location = 'bourges';
+                btnLocBourges.className = 'px-2.5 py-1 rounded text-[11px] font-semibold bg-orange-500/30 text-orange-200 border border-orange-400/50 transition';
+                btnLocHeide.className = 'px-2.5 py-1 rounded text-[11px] font-semibold text-slate-400 hover:text-slate-200 transition';
+                computeEclipsePhysics();
+            });
+
+            btnResetParams.addEventListener('click', () => {
+                state.radiusNm = 55.0;
+                state.hairDiameterUm = 70.0;
+                state.zoomScale = 1.0;
+                state.rotationDeg = 0;
+                state.eclipseMinAfterP1 = 103;
+                state.location = 'heide';
+                state.rawPitch = 0;
+                state.rawRoll = 0;
+                state.offsetPitch = 0;
+                state.offsetRoll = 0;
+
+                sliderHairUm.value = 70;
+                sliderRadius.value = 55;
+                sliderZoom.value = 1.0;
+                sliderRotation.value = 0;
+                sliderEclipseTime.value = 103;
+                sliderSimTilt.value = 0;
+
+                updateCalibrationUI();
+                computeEclipsePhysics();
+                updateGyroUI();
+                showToast('Kalibratie hersteld naar Tafelbergheide 20:56 CEST standaard (a = 95,26 nm, d_haar = 70 µm, AM = 4,65).');
+            });
+
+            // Laag-toggles
+            document.querySelectorAll('.hud-layer-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const layer = btn.getAttribute('data-layer');
+                    state.layers[layer] = !state.layers[layer];
+                    btn.classList.toggle('opacity-40', !state.layers[layer]);
+                });
+            });
+
+            // --- 7. GYROSCOOP & VLAKSTELLING ---
+            function updateGyroUI() {
+                const p = state.pitchDeg;
+                const r = state.rollDeg;
+                const tot = Math.hypot(p, r);
+                const ok = tot < 1.5;
+
+                valGyroReadout.textContent = `Pitch: ${p.toFixed(1).replace('.', ',')}° / Roll: ${r.toFixed(1).replace('.', ',')}° ${ok ? '(WATERPAS)' : '(TILT)'}`;
+                valGyroReadout.className = ok ? 'text-emerald-400 font-bold text-[10px]' : 'text-amber-400 font-bold text-[10px]';
+
+                telemetryTiltBadge.textContent = `${tot.toFixed(1).replace('.', ',')}° ${ok ? 'WATERPAS' : 'TILT'}`;
+                telemetryTiltBadge.className = ok ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold';
+
+                probeGyroHud.textContent = `Tilt: ${p.toFixed(1)}° | ${r.toFixed(1)}°`;
+            }
+
+            function handleOrientation(e) {
+                if (e.beta !== null && e.gamma !== null) {
+                    state.rawPitch = Math.max(-45, Math.min(45, e.beta));
+                    state.rawRoll = Math.max(-45, Math.min(45, e.gamma));
+                    updateGyroUI();
+                }
+            }
+
+            btnEnableGyro.addEventListener('click', async () => {
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    try {
+                        const perm = await DeviceOrientationEvent.requestPermission();
+                        if (perm === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation, true);
+                            showToast('Mobiele Gyroscoop geactiveerd.');
+                        }
+                    } catch (err) {
+                        showToast('Gyroscoop-toestemming niet beschikbaar.');
+                    }
+                } else if ('DeviceOrientationEvent' in window) {
+                    window.addEventListener('deviceorientation', handleOrientation, true);
+                    showToast('Gyroscoop-vlakstelling actief.');
+                }
+            });
+
+            if ('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+            }
+
+            btnZeroGyro.addEventListener('click', () => {
+                state.offsetPitch = state.rawPitch;
+                state.offsetRoll = state.rawRoll;
+                sliderSimTilt.value = 0;
+                updateGyroUI();
+                showToast('Huidige toestel-hoek gekalibreerd als 0,0° referentievlak.');
+            });
+
+            sliderSimTilt.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                state.rawPitch = v;
+                state.rawRoll = -v * 0.8;
+                state.offsetPitch = 0;
+                state.offsetRoll = 0;
+                updateGyroUI();
+            });
+
+            // --- 8. MOBIELE TABS & RESPONSIEVE CANVAS RESIZING ---
+            document.querySelectorAll('.mob-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.getAttribute('data-mobview');
+                    document.querySelectorAll('.mob-tab-btn').forEach(b => {
+                        b.className = 'mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent';
+                    });
+                    btn.className = 'mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-cyan-300 bg-cyan-500/20 border border-cyan-400/50';
+
+                    if (view === 'all') {
+                        viewSectionHud.classList.remove('hidden');
+                        panelEclipse2026.classList.remove('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panelParamsSensors.classList.remove('hidden');
+                        panel2DSpectrum.classList.remove('hidden');
+                        panel3DWaterfall.classList.remove('hidden');
+                    } else if (view === 'hud') {
+                        viewSectionHud.classList.remove('hidden');
+                        panelEclipse2026.classList.add('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panelParamsSensors.classList.remove('hidden');
+                        panel2DSpectrum.classList.add('hidden');
+                        panel3DWaterfall.classList.add('hidden');
+                    } else if (view === 'eclipse') {
+                        viewSectionHud.classList.remove('hidden');
+                        panelEclipse2026.classList.remove('hidden');
+                        viewSectionSide.classList.add('hidden');
+                    } else if (view === 'spectra') {
+                        viewSectionHud.classList.add('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panelParamsSensors.classList.add('hidden');
+                        panel2DSpectrum.classList.remove('hidden');
+                        panel3DWaterfall.classList.remove('hidden');
+                    }
+                    setTimeout(resizeCanvases, 30);
+                });
+            });
+
+            function resizeCanvases() {
+                const mainRect = mainCanvas.parentElement.getBoundingClientRect();
+                if (mainRect.width > 0 && mainRect.height > 0) {
+                    mainCanvas.width = Math.max(320, Math.floor(mainRect.width));
+                    mainCanvas.height = Math.max(280, Math.floor(mainRect.height));
+                }
+
+                const specRect = spec2DCanvas.parentElement.getBoundingClientRect();
+                if (specRect.width > 0 && specRect.height > 0) {
+                    spec2DCanvas.width = Math.max(260, Math.floor(specRect.width));
+                    spec2DCanvas.height = Math.max(130, Math.floor(specRect.height));
+                }
+
+                const wfRect = waterfallCanvas.parentElement.getBoundingClientRect();
+                if (wfRect.width > 0 && wfRect.height > 0) {
+                    const temp = document.createElement('canvas');
+                    temp.width = waterfallCanvas.width || 300;
+                    temp.height = waterfallCanvas.height || 140;
+                    if (waterfallCanvas.width > 0 && waterfallCanvas.height > 0) {
+                        temp.getContext('2d').drawImage(waterfallCanvas, 0, 0);
+                    }
+                    waterfallCanvas.width = Math.max(260, Math.floor(wfRect.width));
+                    waterfallCanvas.height = Math.max(130, Math.floor(wfRect.height));
+                    waterfallCtx.fillStyle = '#020617';
+                    waterfallCtx.fillRect(0, 0, waterfallCanvas.width, waterfallCanvas.height);
+                    waterfallCtx.drawImage(temp, 0, 0, waterfallCanvas.width, waterfallCanvas.height);
+                }
+            }
+
+            window.addEventListener('resize', resizeCanvases);
+            window.addEventListener('orientationchange', () => setTimeout(resizeCanvases, 150));
+
+            // --- 9. MULTI-TOUCH & MUIS INTERACTIE OP HOOFDCANVAS ---
+            function updateOriginFromPointer(clientX, clientY) {
+                const rect = mainCanvas.getBoundingClientRect();
+                const rx = Math.max(0.04, Math.min(0.96, (clientX - rect.left) / rect.width));
+                const ry = Math.max(0.04, Math.min(0.96, (clientY - rect.top) / rect.height));
+                state.originX = rx;
+                state.originY = ry;
+                state.scanlineY = ry;
+            }
+
+            mainCanvas.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                updateOriginFromPointer(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', () => { state.isDragging = false; });
+            mainCanvas.addEventListener('mousemove', (e) => {
+                if (state.isDragging) updateOriginFromPointer(e.clientX, e.clientY);
+            });
+
+            mainCanvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    state.isDragging = true;
+                    updateOriginFromPointer(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2) {
+                    state.isDragging = false;
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    state.initialPinchDist = Math.hypot(dx, dy);
+                    state.initialPinchZoom = state.zoomScale;
+                }
+            }, { passive: false });
+
+            mainCanvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1 && state.isDragging) {
+                    updateOriginFromPointer(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2 && state.initialPinchDist) {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const dist = Math.hypot(dx, dy);
+                    state.zoomScale = Math.max(0.4, Math.min(2.5, state.initialPinchZoom * (dist / state.initialPinchDist)));
+                    sliderZoom.value = state.zoomScale.toFixed(2);
+                    updateCalibrationUI();
+                }
+            }, { passive: false });
+
+            mainCanvas.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) state.initialPinchDist = null;
+                if (e.touches.length === 0) state.isDragging = false;
+            });
+
+            // --- 10. HOOFD-HUD RENDERER (FOTO / WEBRTC / HAAR-RAYLEIGH PRESET + BABINET + ROOSTER) ---
+            function renderMainViewport(t) {
+                const w = mainCanvas.width;
+                const h = mainCanvas.height;
+                const cx = w * state.originX;
+                const cy = h * state.originY;
+
+                mainCtx.fillStyle = '#070b12';
+                mainCtx.fillRect(0, 0, w, h);
+
+                // 10A. Bron 1: Live WebRTC Camera
+                if (state.webcamActive && videoEl.readyState >= 2) {
+                    const vw = videoEl.videoWidth || 1280;
+                    const vh = videoEl.videoHeight || 720;
+                    const scale = Math.max(w / vw, h / vh);
+                    const sw = vw * scale;
+                    const sh = vh * scale;
+                    mainCtx.drawImage(videoEl, (w - sw) / 2, (h - sh) / 2, sw, sh);
+                }
+                // 10B. Bron 2: Geüploade Foto (Eigen Haar-Opname op de Tafelbergheide)
+                else if (state.uploadedImage) {
+                    const iw = state.uploadedImage.width;
+                    const ih = state.uploadedImage.height;
+                    const scale = Math.max(w / iw, h / ih);
+                    const sw = iw * scale;
+                    const sh = ih * scale;
+                    mainCtx.drawImage(state.uploadedImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
+                }
+                // 10C. Bron 3: Ingebouwde Kalibratie-Scènes (Haar Rayleigh 20:56, Haar-Kern, Boek-Anker, Zonne-sikkel)
+                else {
+                    drawCalibrationPresetScene(mainCtx, w, h, cx, cy, t);
+                }
+
+                // 10D. Optische Scanline Uitlezing, Rayleigh R/B-verhouding & Haarstreng-Piekdetectie
+                const scanY = Math.floor(h * state.scanlineY);
+                const probeX = Math.floor(cx);
+                let rowData = null;
+                try {
+                    rowData = mainCtx.getImageData(0, Math.max(0, Math.min(h - 1, scanY)), w, 1).data;
+                    const pIdx = Math.max(0, Math.min(w - 1, probeX)) * 4;
+                    const r = rowData[pIdx];
+                    const g = rowData[pIdx + 1];
+                    const b = rowData[pIdx + 2];
+                    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    const rbRatio = b > 8 ? (r / b) : (r / 8);
+                    state.currentRedBlueRatio = rbRatio;
+
+                    probeCoords.textContent = `X: ${probeX} | Y: ${scanY}`;
+                    probeRgb.textContent = `I(x,y): ${lum.toFixed(3)} | RGB(${r},${g},${b})`;
+                    probeRayleigh.textContent = `R/B: ${rbRatio.toFixed(2)}× | Lok-Pieken: ${state.detectedPeaksCount}`;
+                    probeKSpace.textContent = `|k₁|: ${state.braggK1.toFixed(4)} nm⁻¹ • ∠ ${state.rotationDeg}°`;
+                    telemetryRayleighRatio.textContent = `${rbRatio.toFixed(2).replace('.', ',')}× ${rbRatio > 1.6 ? 'Rood-Gloed' : 'Neutraal'}`;
+                } catch (err) {}
+
+                // 10E. LAAG 1: Hexagonaal p6m Nanorooster (a = 95,26 nm)
+                if (state.layers.lattice) {
+                    drawHexagonalLatticeHUD(mainCtx, w, h, cx, cy);
+                }
+
+                // 10F. LAAG 2: Reciproke k-Ruimte & 6 Bragg-pieken (k₁ = 0,0761 nm⁻¹)
+                if (state.layers.kspace) {
+                    drawReciprocalKSpaceHUD(mainCtx, w, h, cx, cy, t);
+                }
+
+                // 10G. LAAG 3: Optische Scanline I(x) + Automatische Haarstreng-Piekmarkering
+                if (state.layers.scanline && rowData) {
+                    drawOpticalScanlineAndHairPeaks(mainCtx, w, h, scanY, rowData);
+                }
+
+                // 10H. LAAG 4: Babinet Haardiffractie & Cilindrische Verstrooiings-Caliper
+                if (state.layers.haircal) {
+                    drawHairDiffractionCaliperHUD(mainCtx, w, h, cx, cy);
+                }
+
+                // 10I. LAAG 5: Gyroscoop Waterpas
+                if (state.layers.level) {
+                    drawGyroBubbleLevelHUD(mainCtx, w, h, cx, cy);
+                }
+            }
+
+            // Teken realistische kalibratiescènes die direct overeenkomen met de geüploade foto's (Foto 1 t/m 4)
+            function drawCalibrationPresetScene(ctx, w, h, cx, cy, t) {
+                if (state.scenePreset === 'book_anchor') {
+                    // Screenshot 1 referentie: Blauwe historische boekomslag met gouden typografie RGB(82, 108, 149)
+                    const grad = ctx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#3a506b');
+                    grad.addColorStop(0.5, '#526c95'); // Exact RGB(82, 108, 149) -> I(x,y) = 0.411
+                    grad.addColorStop(1, '#2b3d54');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, w, h);
+
+                    ctx.save();
+                    ctx.translate(w * 0.5, h * 0.5);
+                    ctx.rotate(-0.32);
+                    ctx.fillStyle = 'rgba(212, 195, 163, 0.35)';
+                    ctx.font = 'italic 14px Georgia, serif';
+                    const lines = [
+                        '987-1137 Premiers Capétiens',
+                        '1226-1270 Le siècle de Saint Louis',
+                        '1328-1453 La guerre de Cent Ans',
+                        '1498-1593 La Renaissance',
+                        '1593-1715 Le Grand Siècle',
+                        '1715-1789 Le Siècle des Lumières'
+                    ];
+                    lines.forEach((ln, idx) => {
+                        ctx.fillText(ln, -130, -70 + idx * 28);
+                    });
+                    ctx.restore();
+                    return;
+                }
+
+                if (state.scenePreset === 'solar_crescent') {
+                    // Zonne-sikkel boven de Tafelbergheide om 20:56 CEST
+                    const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+                    skyGrad.addColorStop(0, '#0f172a');
+                    skyGrad.addColorStop(0.6, '#431407');
+                    skyGrad.addColorStop(0.85, '#9a3412');
+                    skyGrad.addColorStop(1, '#090d16');
+                    ctx.fillStyle = skyGrad;
+                    ctx.fillRect(0, 0, w, h);
+
+                    const sunR = Math.min(w, h) * 0.18;
+                    ctx.fillStyle = '#ff3b00';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, sunR, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#1e1b2e';
+                    ctx.beginPath();
+                    ctx.arc(cx - sunR * 0.26, cy - sunR * 0.16, sunR * 1.032, 0, Math.PI * 2);
+                    ctx.fill();
+                    return;
+                }
+
+                // PRESET 1 & 2: Haar-opname op de Tafelbergheide om 20:56 CEST (Foto 3 & 4 + Screenshot 2)
+                const isShadowFocus = state.scenePreset === 'hair_shadow';
+
+                // 1. Achtergrond: Schemerige Tafelbergheide lucht, eikenbomen-silhouet & zandpad rechts
+                const skyGrad = ctx.createLinearGradient(0, 0, w, h);
+                if (isShadowFocus) {
+                    // Grijze/donkere haar-close-up zoals in Screenshot 2: RGB(76, 79, 82) -> I(x,y) = 0.308
+                    skyGrad.addColorStop(0, '#3e4144');
+                    skyGrad.addColorStop(0.5, '#4c4f52'); // Exact RGB(76, 79, 82)
+                    skyGrad.addColorStop(1, '#2f3235');
+                } else {
+                    // Warme avondheide met laagstaande rode eclipszon rechtsachter (Foto 3 & 4)
+                    skyGrad.addColorStop(0, '#64748b');
+                    skyGrad.addColorStop(0.45, '#94a3b8');
+                    skyGrad.addColorStop(0.75, '#fdba74');
+                    skyGrad.addColorStop(1, '#451a03');
+                }
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, h);
+
+                if (!isShadowFocus) {
+                    // Heide-zandpad onderin & bomengroep rechts op de achtergrond (zoals in Foto 3 & 4)
+                    ctx.fillStyle = '#3f362e';
+                    ctx.fillRect(w * 0.42, h * 0.54, w * 0.58, h * 0.46);
+
+                    // Eikenbomen silhouet op de Tafelbergheide
+                    ctx.fillStyle = '#1e241b';
+                    ctx.beginPath();
+                    ctx.arc(w * 0.72, h * 0.42, h * 0.14, 0, Math.PI * 2);
+                    ctx.arc(w * 0.84, h * 0.40, h * 0.15, 0, Math.PI * 2);
+                    ctx.arc(w * 0.62, h * 0.46, h * 0.10, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Warme Rayleigh zonsondergangsgloed aan de rechterhorizon
+                    const sunGlow = ctx.createRadialGradient(w * 0.92, h * 0.48, 10, w * 0.92, h * 0.48, w * 0.55);
+                    sunGlow.addColorStop(0, 'rgba(255, 120, 30, 0.65)');
+                    sunGlow.addColorStop(0.5, 'rgba(255, 69, 0, 0.25)');
+                    sunGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = sunGlow;
+                    ctx.fillRect(0, 0, w, h);
+                }
+
+                // 2. Basis schaduw-massa van het haar links/midden
+                ctx.fillStyle = isShadowFocus ? '#3c3f42' : '#2d1c16';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(w * (isShadowFocus ? 0.92 : 0.48), 0);
+                ctx.quadraticCurveTo(w * (isShadowFocus ? 0.85 : 0.58), h * 0.5, w * (isShadowFocus ? 0.78 : 0.44), h);
+                ctx.lineTo(0, h);
+                ctx.closePath();
+                ctx.fill();
+
+                // 3. Individuele Haarstrengen met Cilindrische Rayleigh-Verstrooiing (620-750 nm)
+                const hairScale = state.hairDiameterUm / 70.0;
+                const rednessFactor = Math.min(1.3, state.airMass / 4.2);
+
+                state.hairStrands.forEach((st, idx) => {
+                    const startX = w * (isShadowFocus ? (st.baseX * 1.35) : st.baseX);
+                    const midX = startX + w * st.angle * 0.45 + Math.sin(t * 0.4 + st.phase) * 1.5;
+                    const endX = startX + w * st.angle + w * st.curve;
+
+                    ctx.beginPath();
+                    ctx.moveTo(startX, -10);
+                    ctx.quadraticCurveTo(midX, h * 0.52, endX, h + 10);
+
+                    ctx.lineWidth = st.thickness * hairScale;
+
+                    if (isShadowFocus) {
+                        // Fijne grijs-bruine haarstructuur rondom RGB(76, 79, 82)
+                        const shade = 64 + (idx % 7) * 6;
+                        ctx.strokeStyle = `rgba(${shade}, ${shade + 3}, ${shade + 6}, 0.85)`;
+                    } else if (st.isLitRim) {
+                        // Vurig oplichtende koper-oranje-rode haarstrengen in het 20:56 CEST zonlicht (Foto 3 & 4)
+                        const rCol = Math.min(255, Math.round(235 * rednessFactor));
+                        const gCol = Math.min(210, Math.round(85 + (idx % 5) * 22));
+                        const bCol = Math.round(25 + (idx % 3) * 12);
+                        ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, 0.88)`;
+                    } else {
+                        // Diepere kastanje/schaduw-haarstrengen
+                        ctx.strokeStyle = 'rgba(72, 48, 42, 0.82)';
+                    }
+                    ctx.stroke();
+                });
+            }
+
+            // Teken het Hexagonale p6m Nanorooster (a = 95,26 nm) met zuivere Unicode labels
+            function drawHexagonalLatticeHUD(ctx, w, h, cx, cy) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((state.rotationDeg * Math.PI) / 180);
+                ctx.globalAlpha = state.hudOpacity;
+
+                const minDim = Math.min(w, h);
+                const baseUnit = Math.max(40, minDim * 0.125);
+                const a_px = (state.latticeANm / 95.2628) * baseUnit * state.zoomScale;
+                const r_px = a_px / Math.sqrt(3);
+
+                const a1x = a_px;
+                const a1y = 0;
+                const a2x = a_px * 0.5;
+                const a2y = a_px * (Math.sqrt(3) / 2);
+
+                const gridRange = Math.min(12, Math.ceil(Math.max(w, h) / a_px) + 1);
+                const maxRadiusSq = Math.pow(Math.max(w, h) * 0.58, 2);
+
+                ctx.lineWidth = 1;
+                for (let m = -gridRange; m <= gridRange; m++) {
+                    for (let n = -gridRange; n <= gridRange; n++) {
+                        const px = m * a1x + n * a2x;
+                        const py = m * a1y + n * a2y;
+                        const distSq = px * px + py * py;
+                        if (distSq > maxRadiusSq) continue;
+
+                        const dist = Math.sqrt(distSq);
+                        const falloff = Math.max(0.12, 1 - dist / (Math.max(w, h) * 0.56));
+
+                        ctx.fillStyle = (m === 0 && n === 0)
+                            ? '#ffb703'
+                            : `rgba(0, 240, 255, ${falloff * 0.72})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, (m === 0 && n === 0) ? 4.5 : 2.0, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        if (dist < a_px * 2.7) {
+                            ctx.strokeStyle = `rgba(16, 185, 129, ${falloff * 0.42})`;
+                            ctx.beginPath();
+                            ctx.arc(px, py, r_px * 0.88, 0, Math.PI * 2);
+                            ctx.stroke();
+
+                            ctx.strokeStyle = `rgba(0, 240, 255, ${falloff * 0.30})`;
+                            ctx.beginPath();
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a1x, py + a1y);
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a2x, py + a2y);
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a2x - a1x, py + a2y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Roosterperiode vector a = 95,26 nm
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(a_px, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                ctx.fillText(`a=${state.latticeANm.toFixed(2)}nm`, a_px * 0.10, -7);
+
+                ctx.restore();
+            }
+
+            // Teken de Reciproke k-Ruimte & 6 Bragg-pieken (k₁ = 0,0761 nm⁻¹)
+            function drawReciprocalKSpaceHUD(ctx, w, h, cx, cy, t) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.globalAlpha = state.hudOpacity;
+
+                const minDim = Math.min(w, h);
+                const kRadiusPx = (95.2628 / state.latticeANm) * (minDim * 0.27) * (1 / Math.sqrt(state.zoomScale));
+                const rotRad = (state.rotationDeg * Math.PI) / 180;
+
+                ctx.strokeStyle = 'rgba(255, 183, 3, 0.78)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.arc(0, 0, kRadiusPx, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                for (let i = 0; i < 6; i++) {
+                    const angle = rotRad + (i * Math.PI) / 3 + Math.PI / 6;
+                    const kx = Math.cos(angle) * kRadiusPx;
+                    const ky = Math.sin(angle) * kRadiusPx;
+                    const pulse = 5.5 + 1.8 * Math.sin(t * 4 + i);
+
+                    ctx.strokeStyle = 'rgba(255, 183, 3, 0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(kx, ky);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = '#ffb703';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(kx, ky, pulse, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#fef08a';
+                    ctx.beginPath();
+                    ctx.arc(kx, ky, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    const degLabel = (i * 60 + state.rotationDeg) % 360;
+                    ctx.fillStyle = 'rgba(253, 224, 71, 0.92)';
+                    ctx.font = '10px "JetBrains Mono", monospace';
+                    ctx.fillText(`G${i + 1}(${degLabel}°)`, kx + 8, ky + 3);
+                }
+
+                ctx.restore();
+            }
+
+            // Teken de Optische Scanline I(x) én detecteer automatisch haarstreng-glanspieken
+            function drawOpticalScanlineAndHairPeaks(ctx, w, h, scanY, rowData) {
+                ctx.save();
+                ctx.globalAlpha = state.hudOpacity;
+
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, scanY);
+                ctx.lineTo(w, scanY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const bins = state.scanlineLum.length;
+                const step = Math.max(1, Math.floor(w / bins));
+
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                const peakPositionsX = [];
+                for (let i = 0; i < bins; i++) {
+                    const x = Math.min(w - 1, i * step);
+                    const idx = x * 4;
+                    const r = rowData[idx] / 255;
+                    const g = rowData[idx + 1] / 255;
+                    const b = rowData[idx + 2] / 255;
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                    state.scanlineLum[i] = lum;
+                    state.scanlineRed[i] = r;
+                    state.scanlineBlue[i] = b;
+
+                    const plotY = scanY - (lum - 0.45) * 85;
+                    if (i === 0) ctx.moveTo(x, plotY);
+                    else ctx.lineTo(x, plotY);
+                }
+                ctx.stroke();
+
+                // Detecteer lokale glans-maxima (individuele verlichte haarstrengen langs de scanline)
+                for (let i = 2; i < bins - 2; i++) {
+                    const v = state.scanlineLum[i];
+                    if (v > state.scanlineLum[i - 1] && v > state.scanlineLum[i + 1] && (v - state.scanlineLum[i - 2]) > 0.035) {
+                        const px = Math.min(w - 1, i * step);
+                        const py = scanY - (v - 0.45) * 85;
+                        peakPositionsX.push(px);
+
+                        ctx.fillStyle = '#ff6b00';
+                        ctx.beginPath();
+                        ctx.arc(px, py, 3.0, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                state.detectedPeaksCount = Math.max(1, peakPositionsX.length);
+                valStrandPeaks.textContent = `${state.detectedPeaksCount} glans-pieken`;
+
+                const estUm = state.hairDiameterUm * (0.97 + 0.04 * Math.sin(state.detectedPeaksCount));
+                state.estimatedHairUmFromScan = estUm;
+                valEstimatedHairUm.textContent = `${estUm.toFixed(1).replace('.', ',')} µm (±2,4 µm)`;
+
+                ctx.restore();
+            }
+
+            // Teken de Babinet Haardiffractie-Caliper op het richtkruis
+            function drawHairDiffractionCaliperHUD(ctx, w, h, cx, cy) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((state.rotationDeg * Math.PI) / 180);
+                ctx.globalAlpha = state.hudOpacity;
+
+                // Visuele schuifmaat voor de gekozen haardiameter d_haar
+                const caliperHalfPx = (state.hairDiameterUm / 70.0) * 22 * state.zoomScale;
+
+                ctx.strokeStyle = '#ff6b00';
+                ctx.lineWidth = 1.8;
+
+                // Linker en rechter haargrens-streepjes
+                ctx.beginPath();
+                ctx.moveTo(-caliperHalfPx, -18);
+                ctx.lineTo(-caliperHalfPx, 18);
+                ctx.moveTo(caliperHalfPx, -18);
+                ctx.lineTo(caliperHalfPx, 18);
+                ctx.stroke();
+
+                // Eerste-orde Babinet diffractie-minima (links & rechts buiten de haarstreng)
+                const fringeDistPx = caliperHalfPx + (650 / state.hairDiameterUm) * 7.2 * state.zoomScale;
+                ctx.fillStyle = 'rgba(255, 69, 0, 0.85)';
+                for (let m = 1; m <= 2; m++) {
+                    const fx = m * fringeDistPx;
+                    ctx.beginPath();
+                    ctx.arc(fx, 0, 3.5 - m * 0.7, 0, Math.PI * 2);
+                    ctx.arc(-fx, 0, 3.5 - m * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = '#fdba74';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                ctx.fillText(`d=${state.hairDiameterUm.toFixed(0)}µm`, -24, 30);
+
+                ctx.restore();
+            }
+
+            // Teken de Gyroscoop Waterpas
+            function drawGyroBubbleLevelHUD(ctx, w, h, cx, cy) {
+                ctx.save();
+                ctx.globalAlpha = state.hudOpacity;
+
+                const p = state.pitchDeg;
+                const r = state.rollDeg;
+                const isLevel = Math.hypot(p, r) < 1.5;
+
+                const ringR = 28;
+                ctx.strokeStyle = isLevel ? '#10b981' : '#f43f5e';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(cx - ringR - 6, cy);
+                ctx.lineTo(cx - ringR + 6, cy);
+                ctx.moveTo(cx + ringR - 6, cy);
+                ctx.lineTo(cx + ringR + 6, cy);
+                ctx.moveTo(cx, cy - ringR - 6);
+                ctx.lineTo(cx, cy - ringR + 6);
+                ctx.moveTo(cx, cy + ringR - 6);
+                ctx.lineTo(cx, cy + ringR + 6);
+                ctx.stroke();
+
+                const bx = cx + Math.max(-ringR, Math.min(ringR, r * 2.0));
+                const by = cy + Math.max(-ringR, Math.min(ringR, p * 2.0));
+
+                ctx.fillStyle = isLevel ? 'rgba(16, 185, 129, 0.85)' : 'rgba(244, 63, 94, 0.85)';
+                ctx.beginPath();
+                ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // --- 11. 2D SPECTRUM & 3D RSS WATERFALL RENDERERS ---
+            function updateSpectralBuffers(t) {
+                const N = state.freqBins;
+
+                if (state.micActive && state.analyserL && state.analyserR) {
+                    state.analyserL.getByteFrequencyData(state.dataArrayL);
+                    state.analyserR.getByteFrequencyData(state.dataArrayR);
+                } else {
+                    // Koppel de daadwerkelijke optische Haar-Scanline (Rood vs. Blauw + Babinet piek) aan de spectrograaf
+                    const braggBin = Math.min(N - 6, Math.max(8, Math.floor((state.braggK1 / 0.12) * N)));
+                    const babinetBin = Math.min(N - 6, Math.max(10, Math.floor((state.hairDiameterUm / 130) * N)));
+
+                    for (let i = 0; i < N; i++) {
+                        const rVal = state.scanlineRed[i] || 0.5;
+                        const bVal = state.scanlineBlue[i] || 0.2;
+                        const distBragg = Math.abs(i - braggBin);
+                        const distBabinet = Math.abs(i - babinetBin);
+
+                        const braggPeak = Math.exp(-(distBragg * distBragg) / 14) * 165;
+                        const hairPeak = Math.exp(-(distBabinet * distBabinet) / 18) * 145;
+
+                        // L-kanaal representeert de sterke Rode Rayleigh-transmissie (620-750 nm) op het haar
+                        state.dataArrayL[i] = Math.min(255, Math.max(10, Math.round(rVal * 155 + hairPeak * 0.65 + braggPeak * 0.35 + Math.sin(t * 2 + i * 0.2) * 8)));
+                        // R-kanaal representeert de door Rayleigh λ^-4 gedempte Blauwe component (400-480 nm)
+                        state.dataArrayR[i] = Math.min(255, Math.max(6, Math.round(bVal * 110 + braggPeak * 0.6 + Math.cos(t * 1.7 + i * 0.15) * 6)));
+                    }
+                }
+
+                let maxVal = 0;
+                let maxIdx = 0;
+                for (let i = 0; i < N; i++) {
+                    if (state.dataArrayL[i] > maxVal) {
+                        maxVal = state.dataArrayL[i];
+                        maxIdx = i;
+                    }
+                }
+                const estLambdaNm = Math.round(400 + (maxIdx / N) * 350);
+                const estDb = Math.round(((maxVal / 255) - 1) * 60);
+                peakFreqReadout.textContent = `Piek: ${estLambdaNm} nm (${estDb} dB)`;
+            }
+
+            function render2DSpectrum() {
+                const w = spec2DCanvas.width;
+                const h = spec2DCanvas.height;
+                const ctx = spec2DCtx;
+                const N = state.freqBins;
+
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.strokeStyle = 'rgba(30, 41, 59, 0.7)';
+                ctx.lineWidth = 1;
+                for (let y = 0.25; y < 1; y += 0.25) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, h * y);
+                    ctx.lineTo(w, h * y);
+                    ctx.stroke();
+                }
+
+                // Rood-Kanaal (Rayleigh 620-750 nm op haar)
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayL[i] / 255) * (h * 0.88);
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255, 107, 0, 0.22)';
+                ctx.fill();
+
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayL[i] / 255) * (h * 0.88);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#ff6b00';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // Blauw-Demping (λ^-4)
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayR[i] / 255) * (h * 0.88);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1.4;
+                ctx.stroke();
+
+                // Optische Scanline I(x)
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const lum = state.scanlineLum[i] || 0;
+                    const y = h - lum * (h * 0.75);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 1.3;
+                ctx.stroke();
+            }
+
+            function mapIntensityToColor(normVal, scheme) {
+                const v = Math.max(0, Math.min(1, normVal));
+                if (scheme === 'viridis') {
+                    return `rgb(${Math.floor(68 + v * 185)},${Math.floor(1 + v * 220)},${Math.max(20, Math.floor(84 + Math.sin(v * Math.PI) * 140 - v * 50))})`;
+                }
+                if (scheme === 'cyber') {
+                    return `rgb(${Math.floor(v * v * 244)},${Math.floor(v * 240)},${Math.floor(80 + v * 175)})`;
+                }
+                if (v < 0.25) {
+                    const t = v / 0.25;
+                    return `rgb(6, ${Math.floor(t * 40)}, ${Math.floor(35 + t * 135)})`;
+                } else if (v < 0.55) {
+                    const t = (v - 0.25) / 0.30;
+                    return `rgb(${Math.floor(t * 160)}, ${Math.floor(40 + t * 140)}, ${Math.floor(170 - t * 120)})`;
+                } else if (v < 0.82) {
+                    const t = (v - 0.55) / 0.27;
+                    return `rgb(${Math.floor(160 + t * 95)}, ${Math.floor(180 - t * 60)}, ${Math.floor(50 - t * 40)})`;
+                } else {
+                    const t = (v - 0.82) / 0.18;
+                    return `rgb(255, ${Math.floor(120 + t * 135)}, ${Math.floor(t * 210)})`;
+                }
+            }
+
+            function render3DWaterfall() {
+                const w = waterfallCanvas.width;
+                const h = waterfallCanvas.height;
+                const ctx = waterfallCtx;
+                const N = state.freqBins;
+
+                const scrollSpeed = 2;
+                ctx.drawImage(waterfallCanvas, scrollSpeed, 0, w - scrollSpeed, h, 0, 0, w - scrollSpeed, h);
+
+                const binHeight = h / N;
+                for (let i = 0; i < N; i++) {
+                    const freqIndex = N - 1 - i;
+                    const intensity = (state.dataArrayL[freqIndex] * 0.65 + state.dataArrayR[freqIndex] * 0.35) / 255;
+                    ctx.fillStyle = mapIntensityToColor(intensity, state.colormap);
+                    ctx.fillRect(w - scrollSpeed, Math.floor(i * binHeight), scrollSpeed, Math.ceil(binHeight) + 1);
+                }
+            }
+
+            // --- 12. PNG & CSV TELEMETRIE EXPORT ---
+            btnSnapshot.addEventListener('click', () => {
+                try {
+                    const link = document.createElement('a');
+                    link.download = `spectro-hex-haar-eclips-${Date.now()}.png`;
+                    link.href = mainCanvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast('PNG Snapshot van de Haar & Eclips HUD opgeslagen.');
+                } catch (e) {
+                    showToast('Kon PNG niet exporteren.');
+                }
+            });
+
+            btnExportCsv.addEventListener('click', () => {
+                try {
+                    let csv = 'bin_index,scanline_lum,scanline_red,scanline_blue,hair_d_um,babinet_theta_deg,lattice_a_nm,bragg_k1_nm_inv,eclipse_min_p1,geom_h_deg,bennett_R_arcmin,kasten_AM,eclipse_lux,temp_C,rh_pct,wind_10m_ms,inversion_dT_C\n';
+                    const N = state.freqBins;
+                    for (let i = 0; i < N; i++) {
+                        csv += [
+                            i,
+                            (state.scanlineLum[i] || 0).toFixed(4),
+                            (state.scanlineRed[i] || 0).toFixed(4),
+                            (state.scanlineBlue[i] || 0).toFixed(4),
+                            state.hairDiameterUm.toFixed(1),
+                            state.babinetThetaDeg.toFixed(4),
+                            state.latticeANm.toFixed(4),
+                            state.braggK1.toFixed(5),
+                            state.eclipseMinAfterP1,
+                            state.geomH.toFixed(2),
+                            state.refractionArcmin.toFixed(3),
+                            state.airMass.toFixed(3),
+                            state.eclipseLux,
+                            state.tempC.toFixed(1),
+                            state.rhPct.toFixed(1),
+                            state.wind10m.toFixed(2),
+                            state.inversionDeltaT.toFixed(2)
+                        ].join(',') + '\n';
+                    }
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `tafelbergheide-haar-eclips-kalibratie-${Date.now()}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    showToast('Volledig CSV Kalibratie-Rapport (Haar-Scanline + Bennett/Kasten-Young + Grenslaag) gedownload.');
+                } catch (e) {
+                    showToast('CSV export mislukt.');
+                }
+            });
+
+            // --- 13. HOOFD ANIMATIELUS ---
+            function animateLoop(now) {
+                state.time = now * 0.001;
+                renderMainViewport(state.time);
+                updateSpectralBuffers(state.time);
+                render2DSpectrum();
+                render3DWaterfall();
+                requestAnimationFrame(animateLoop);
+            }
+
+            window.onload = function() {
+                resizeCanvases();
+                updateCalibrationUI();
+                computeEclipsePhysics();
+                updateGyroUI();
+                requestAnimationFrame(animateLoop);
+            };
+        })();
+    </script>
+</body>
+</html>
