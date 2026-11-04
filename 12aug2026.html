@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Van Gogh Spectrale Haartransmissie & Rayleigh Shift Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-obs: #070a12;
+            --panel-bg: rgba(13, 18, 30, 0.85);
+            --border-glow: rgba(255, 107, 0, 0.25);
+            --cyan-accent: #00f0ff;
+            --copper-accent: #ff6a00;
+            --amber-accent: #ffb703;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-obs);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hud-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+        }
+        .hud-border-copper {
+            border-color: rgba(255, 106, 0, 0.35);
+            box-shadow: 0 0 25px rgba(255, 106, 0, 0.08);
+        }
+        .hud-border-cyan {
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.06);
+        }
+        input[type="range"] {
+            accent-color: #ff6a00;
+        }
+        input[type="range"].range-cyan {
+            accent-color: #00f0ff;
+        }
+        .glow-copper {
+            text-shadow: 0 0 12px rgba(255, 106, 0, 0.6);
+        }
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-5 flex flex-col gap-4">
+
+    <!-- HEADER & EXIF TELEMETRIE -->
+    <header class="hud-panel hud-border-copper rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-mono-code text-xs font-bold border border-orange-400/40">γ</span>
+                <span class="text-xs uppercase font-mono-code tracking-widest text-orange-400 font-semibold">Spectrografische Transmissie Model</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono-code">Tafelbergheide 20:56 CEST</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                Van Gogh Koperrood <span class="text-orange-500">↔</span> Asblond Spectrale Shift
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
+                Kwantitatieve analyse van de spectrale transformatie door Rayleigh-atmosfeerextinctie (<span class="font-mono-code text-orange-300">λ⁻⁴</span>), cilindrische vezelverstrooiing en pheomelanine-pigmentresonantie.
+            </p>
+        </div>
+
+        <!-- Snelle statistieken badges -->
+        <div class="flex flex-wrap md:flex-col items-end gap-2 font-mono-code text-xs">
+            <div class="bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                <span class="text-slate-400">Asblond (Neutraal):</span>
+                <span class="text-slate-200 font-bold">RGB(159, 154, 150)</span>
+                <span class="text-emerald-400 text-[11px]">R/B = 1.06</span>
+            </div>
+            <div class="bg-slate-900/90 border border-orange-500/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                <span class="text-orange-300">Van Gogh Koperrood:</span>
+                <span id="badgeCopperRgb" class="text-orange-400 font-bold">RGB(235, 95, 30)</span>
+                <span id="badgeCopperRb" class="text-orange-300 font-semibold text-[11px]">R/B = 7.83</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOOFD GRID -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+        
+        <!-- LINKER KOLOM: DUBBELE GRAFIEK + PROBE (8 kolommen) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+            
+            <!-- GRAFIEK CONTAINER -->
+            <div class="hud-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3 relative">
+                
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]"></div>
+                        <h2 class="text-sm sm:text-base font-bold font-mono-code text-white">
+                            Spectrale Transmissie &amp; Intensiteit (380 – 750 nm)
+                        </h2>
+                    </div>
+
+                    <!-- Legende & Curves -->
+                    <div class="flex flex-wrap items-center gap-3 font-mono-code text-[11px]">
+                        <span class="flex items-center gap-1.5 text-slate-300">
+                            <span class="w-3 h-1 bg-slate-300 rounded inline-block"></span>
+                            Asblond Diffuus
+                        </span>
+                        <span class="flex items-center gap-1.5 text-orange-400">
+                            <span class="w-3 h-1 bg-orange-500 rounded inline-block"></span>
+                            Van Gogh Kopervezel
+                        </span>
+                        <span class="flex items-center gap-1.5 text-cyan-400">
+                            <span class="w-3 h-1 bg-cyan-400 border border-dashed rounded inline-block"></span>
+                            Atmosfeer (Rayleigh AM <span id="legendAmVal">4.65</span>)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Grafiek Canvas -->
+                <div class="relative w-full h-80 sm:h-96 rounded-xl bg-slate-950 border border-slate-800/80 overflow-hidden cursor-crosshair">
+                    <canvas id="spectrumCanvas" class="w-full h-full block"></canvas>
+                    
+                    <!-- Zwevende Crosshair Tooltip -->
+                    <div id="graphTooltip" class="absolute hidden pointer-events-none bg-slate-950/90 border border-orange-400/80 p-2.5 rounded-xl font-mono-code text-[11px] shadow-2xl backdrop-blur-md space-y-1 z-30">
+                        <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-1">
+                            <span id="tooltipLambda" class="text-white font-bold">550 nm</span>
+                            <span id="tooltipEnergy" class="text-slate-400">2.25 eV</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="tooltipColorSwatch" class="w-3.5 h-3.5 rounded-full border border-white/40"></span>
+                            <span id="tooltipTransCopper" class="text-orange-400 font-semibold">Koper: 64.2%</span>
+                        </div>
+                        <div class="text-slate-300">Asblond: <span id="tooltipTransAsh" class="text-slate-200">59.8%</span></div>
+                        <div class="text-cyan-300">Rayleigh Trans: <span id="tooltipTransAtm" class="text-cyan-200">42.1%</span></div>
+                    </div>
+                </div>
+
+                <!-- Golflengte Kleurbalk Onderaan -->
+                <div class="relative h-4 rounded-lg overflow-hidden border border-slate-700/60" id="rainbowBar"></div>
+                <div class="flex justify-between font-mono-code text-[10px] text-slate-400 px-1">
+                    <span>380 nm (Ultraviolet / Blauw)</span>
+                    <span>480 nm</span>
+                    <span>550 nm (Groen)</span>
+                    <span>620 nm</span>
+                    <span>750 nm (Dieprood / NIR)</span>
+                </div>
+            </div>
+
+            <!-- HAARVEZEL SCHEMATISCHE SIMULATOR (BABINET & PIGMENT) -->
+            <div class="hud-panel rounded-2xl p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Vezel Cross-Section Canvas -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs uppercase font-mono-code font-bold text-orange-400 flex items-center gap-2">
+                            <span>Vezel Micro-Optica (d = 70 µm)</span>
+                        </h3>
+                        <span class="text-[11px] font-mono-code text-slate-400">Babinet Diffractie θ₁ ≈ 0.53°</span>
+                    </div>
+                    <div class="relative h-44 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center">
+                        <canvas id="fiberCanvas" width="400" height="180" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- Fysische Uitleg & Pigmentverdeling -->
+                <div class="flex flex-col justify-between font-mono-code text-xs space-y-2 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+                    <div class="space-y-1.5">
+                        <div class="text-white font-bold text-sm">Waarom verandert de kleur zo dramatisch?</div>
+                        <p class="text-slate-300 font-sans text-xs leading-relaxed">
+                            Bij een lage zonstand (<span class="font-mono-code text-orange-400">h = 12.1°</span>) legt het zonlicht ruim 4.65× de atmosferische zenitdikte af (<span class="font-mono-code text-cyan-300">AM = 4.65</span>). De Rayleigh-verstrooiing (<span class="font-mono-code text-orange-300">~λ⁻⁴</span>) dooft blauw (400 nm) met <strong>96%</strong> uit, waardoor enkel warm oranje en dieprood licht overblijft.
+                        </p>
+                        <p class="text-slate-300 font-sans text-xs leading-relaxed">
+                            Door het <strong>strijklicht</strong> (glancing angle) treedt sterke voorwaartse Mie- en Fresnel-verstrooiing op door de cuticula-schubben van de individuele haarvezels, gecombineerd met de lage extinctie van <strong>pheomelanine</strong> boven 600 nm.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                        <div class="bg-slate-950 p-2 rounded-lg">
+                            <span class="text-slate-400 block text-[10px]">Eumelanine (Bruin/Zwart)</span>
+                            <span id="labelEumelanin" class="text-amber-400 font-bold">25%</span>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded-lg">
+                            <span class="text-slate-400 block text-[10px]">Pheomelanine (Rood/Geel)</span>
+                            <span id="labelPheomelanin" class="text-orange-400 font-bold">75%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RECHTER KOLOM: CONTROLS & VISUELE SWATCHES (4 kolommen) -->
+        <aside class="lg:col-span-4 flex flex-col gap-4">
+            
+            <!-- KLEURVERGELIJKING SWATCHES -->
+            <div class="hud-panel hud-border-copper rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+                <h3 class="text-xs uppercase font-mono-code font-bold tracking-wider text-slate-300 flex items-center justify-between">
+                    <span>Chromatische Reconstructie</span>
+                    <span class="text-emerald-400 text-[10px]">CIE 1931 D65 &rarr; AM4.65</span>
+                </h3>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Swatch 1: Asblond -->
+                    <div class="flex flex-col gap-1.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        <div id="swatchAsh" class="w-full h-20 rounded-lg shadow-inner border border-white/20 transition-all duration-300" style="background-color: rgb(159, 154, 150);"></div>
+                        <div class="font-mono-code text-[11px] text-slate-300 text-center font-bold">Asblond Neutraal</div>
+                        <div class="font-mono-code text-[10px] text-slate-400 text-center">RGB(159, 154, 150)<br>R/B: 1.06 • Diffuus</div>
+                    </div>
+
+                    <!-- Swatch 2: Van Gogh Koperrood -->
+                    <div class="flex flex-col gap-1.5 bg-slate-900/80 p-2.5 rounded-xl border border-orange-500/40">
+                        <div id="swatchCopper" class="w-full h-20 rounded-lg shadow-inner border border-orange-400/40 transition-all duration-300" style="background-color: rgb(235, 95, 30);"></div>
+                        <div class="font-mono-code text-[11px] text-orange-400 text-center font-bold">Van Gogh Koper</div>
+                        <div id="swatchCopperDesc" class="font-mono-code text-[10px] text-orange-300 text-center">RGB(235, 95, 30)<br>R/B: 7.83 • Strijklicht</div>
+                    </div>
+                </div>
+
+                <div class="font-mono-code text-[11px] bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-slate-300 flex items-center justify-between">
+                    <span>Spectrale Verschuiving (&Delta;E*):</span>
+                    <span id="valDeltaE" class="text-orange-400 font-bold text-sm">48.6 (Zeer Hoog)</span>
+                </div>
+            </div>
+
+            <!-- BEDIENINGSPANEEL (SLIDERS) -->
+            <div class="hud-panel rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 class="text-xs uppercase font-mono-code font-bold text-white flex items-center gap-2">
+                        <span>Fysische Parameters</span>
+                    </h3>
+                    <button id="btnReset" class="font-mono-code text-[11px] text-cyan-400 hover:text-cyan-300 underline">Reset (Heide 20:56)</button>
+                </div>
+
+                <!-- Slider 1: Luchtmassa AM -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between font-mono-code text-xs">
+                        <span class="text-slate-300">Optische Luchtmassa (AM):</span>
+                        <span id="valAm" class="text-cyan-400 font-bold">4.65</span>
+                    </div>
+                    <input id="sliderAm" type="range" min="1.0" max="10.0" step="0.05" value="4.65" class="w-full range-cyan cursor-pointer">
+                    <div class="flex justify-between font-mono-code text-[10px] text-slate-500">
+                        <span>AM 1.0 (Zenit)</span>
+                        <span class="text-cyan-400 font-semibold">AM 4.65 (h=12.1°)</span>
+                        <span>AM 10.0 (Horizon)</span>
+                    </div>
+                </div>
+
+                <!-- Slider 2: Pheomelanine Verhouding -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between font-mono-code text-xs">
+                        <span class="text-slate-300">Pheomelanine Verhouding:</span>
+                        <span id="valPheo" class="text-orange-400 font-bold">75%</span>
+                    </div>
+                    <input id="sliderPheo" type="range" min="10" max="95" step="1" value="75" class="w-full cursor-pointer">
+                    <div class="flex justify-between font-mono-code text-[10px] text-slate-500">
+                        <span>10% (Asblond)</span>
+                        <span class="text-orange-400">75% (Koper / Rood)</span>
+                        <span>95% (Fel Koper)</span>
+                    </div>
+                </div>
+
+                <!-- Slider 3: Invalshoek Strijklicht -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between font-mono-code text-xs">
+                        <span class="text-slate-300">Invalshoek Strijklicht (&alpha;):</span>
+                        <span id="valAngle" class="text-amber-400 font-bold">14° (Glancing)</span>
+                    </div>
+                    <input id="sliderAngle" type="range" min="2" max="90" step="1" value="14" class="w-full cursor-pointer">
+                    <div class="flex justify-between font-mono-code text-[10px] text-slate-500">
+                        <span>2° (Scherp strijklicht)</span>
+                        <span class="text-amber-400">14° (Avond)</span>
+                        <span>90° (Loodrecht)</span>
+                    </div>
+                </div>
+
+                <!-- Slider 4: Vezeldiameter (Babinet) -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between font-mono-code text-xs">
+                        <span class="text-slate-300">Vezeldiameter (d<sub>haar</sub>):</span>
+                        <span id="valFiberDiam" class="text-emerald-400 font-bold">70 µm</span>
+                    </div>
+                    <input id="sliderFiberDiam" type="range" min="40" max="110" step="1" value="70" class="w-full cursor-pointer">
+                    <div class="flex justify-between font-mono-code text-[10px] text-slate-500">
+                        <span>40 µm (Zeer Fijn)</span>
+                        <span class="text-emerald-400">70 µm (Referentie)</span>
+                        <span>110 µm</span>
+                    </div>
+                </div>
+
+                <!-- Actieknoppen: CSV Export -->
+                <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
+                    <button id="btnExportCsv" class="w-full py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-mono-code text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-orange-950">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Exporteer Spectrale Data (CSV)</span>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- INLINE JAVASCRIPT ENGINE VOOR GRAFIEKEN & OPTICA -->
+    <script>
+        (function() {
+            "use strict";
+
+            // --- 1. REFERENTIES EN ELEMENTEN ---
+            const spectrumCanvas = document.getElementById('spectrumCanvas');
+            const spectrumCtx = spectrumCanvas.getContext('2d');
+            const fiberCanvas = document.getElementById('fiberCanvas');
+            const fiberCtx = fiberCanvas.getContext('2d');
+            const rainbowBar = document.getElementById('rainbowBar');
+
+            const sliderAm = document.getElementById('sliderAm');
+            const sliderPheo = document.getElementById('sliderPheo');
+            const sliderAngle = document.getElementById('sliderAngle');
+            const sliderFiberDiam = document.getElementById('sliderFiberDiam');
+            const btnReset = document.getElementById('btnReset');
+            const btnExportCsv = document.getElementById('btnExportCsv');
+
+            const valAm = document.getElementById('valAm');
+            const legendAmVal = document.getElementById('legendAmVal');
+            const valPheo = document.getElementById('valPheo');
+            const valAngle = document.getElementById('valAngle');
+            const valFiberDiam = document.getElementById('valFiberDiam');
+            const labelPheomelanin = document.getElementById('labelPheomelanin');
+            const labelEumelanin = document.getElementById('labelEumelanin');
+
+            const swatchAsh = document.getElementById('swatchAsh');
+            const swatchCopper = document.getElementById('swatchCopper');
+            const swatchCopperDesc = document.getElementById('swatchCopperDesc');
+            const badgeCopperRgb = document.getElementById('badgeCopperRgb');
+            const badgeCopperRb = document.getElementById('badgeCopperRb');
+            const valDeltaE = document.getElementById('valDeltaE');
+
+            const tooltip = document.getElementById('graphTooltip');
+            const tooltipLambda = document.getElementById('tooltipLambda');
+            const tooltipEnergy = document.getElementById('tooltipEnergy');
+            const tooltipColorSwatch = document.getElementById('tooltipColorSwatch');
+            const tooltipTransCopper = document.getElementById('tooltipTransCopper');
+            const tooltipTransAsh = document.getElementById('tooltipTransAsh');
+            const tooltipTransAtm = document.getElementById('tooltipTransAtm');
+
+            // --- 2. FYSISCHE PARAMETERS EN CONSTANTEN ---
+            const state = {
+                am: 4.65,
+                pheoRatio: 0.75, // 75% pheomelanine, 25% eumelanine
+                glancingAngle: 14, // graden
+                fiberDiam: 70, // um
+                hoverX: null,
+                hoverLambda: null
+            };
+
+            // Bouw de continue regenboog-kleurbalk onder de grafiek
+            function buildRainbowBar() {
+                let grad = 'linear-gradient(to right';
+                for (let wl = 380; wl <= 750; wl += 10) {
+                    const rgb = wavelengthToRGB(wl);
+                    grad += `, rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                }
+                grad += ')';
+                rainbowBar.style.background = grad;
+            }
+
+            // Spectrale omrekening van golflengte (nm) naar RGB benadering (CIE-achtig)
+            function wavelengthToRGB(wl) {
+                let r = 0, g = 0, b = 0;
+                if (wl >= 380 && wl < 440) {
+                    r = -(wl - 440) / (440 - 380);
+                    b = 1.0;
+                } else if (wl >= 440 && wl < 490) {
+                    g = (wl - 440) / (490 - 440);
+                    b = 1.0;
+                } else if (wl >= 490 && wl < 510) {
+                    g = 1.0;
+                    b = -(wl - 510) / (510 - 490);
+                } else if (wl >= 510 && wl < 580) {
+                    r = (wl - 510) / (580 - 510);
+                    g = 1.0;
+                } else if (wl >= 580 && wl < 645) {
+                    r = 1.0;
+                    g = -(wl - 645) / (645 - 580);
+                } else if (wl >= 645 && wl <= 750) {
+                    r = 1.0;
+                }
+
+                // Intensiteit verzwakking aan de uiteinden
+                let factor = 1.0;
+                if (wl >= 380 && wl < 420) {
+                    factor = 0.3 + 0.7 * (wl - 380) / (420 - 380);
+                } else if (wl >= 700 && wl <= 750) {
+                    factor = 0.3 + 0.7 * (750 - wl) / (750 - 700);
+                }
+
+                return {
+                    r: Math.round(r * factor * 255),
+                    g: Math.round(g * factor * 255),
+                    b: Math.round(b * factor * 255)
+                };
+            }
+
+            // --- 3. EXACTE WISKUNDIGE MODELLERING ---
+            // 1. Atmosferische Rayleigh Transmissie: T_atm = exp( -tau_0 * AM * (lambda_0 / lambda)^4 )
+            function calcAtmosphericTransmission(lambda, am) {
+                const tau0 = 0.087; // optische dikte bij 550 nm
+                const lambda0 = 550;
+                const tau = tau0 * am * Math.pow(lambda0 / lambda, 4);
+                return Math.exp(-tau);
+            }
+
+            // 2. Asblond basis transmissie (neutraal, vlakker profiel met subtiele dip in UV/blauw)
+            function calcAshBlondeSpectrum(lambda) {
+                // Basis RGB(159, 154, 150) -> relatief neutraal profiel rond 60%
+                const normL = (lambda - 380) / (750 - 380);
+                const base = 0.58 + 0.04 * Math.sin(normL * Math.PI);
+                return Math.max(0.05, Math.min(0.95, base));
+            }
+
+            // 3. Van Gogh Koperrood transmissie (Interne vezelabsorptie + cuticula scattering + Rayleigh inval)
+            function calcVanGoghCopperSpectrum(lambda, am, pheoRatio, glancingAngleDeg) {
+                const atm = calcAtmosphericTransmission(lambda, am);
+
+                // Pheomelanine vs Eumelanine absorptiecoëfficiënt
+                // Eumelanine absorbeert sterk exponentieel over heel UV-vis spectrum
+                const mu_eu = Math.exp(-(lambda - 400) / 140);
+                // Pheomelanine heeft een uitgesproken drempel met hoge transmissie / resonantie boven 600 nm
+                const mu_pheo = Math.exp(-(lambda - 420) / 90) * (lambda < 590 ? 1.0 : 0.28);
+
+                const mu_total = (1 - pheoRatio) * mu_eu + pheoRatio * mu_pheo;
+                const internalFiberTrans = Math.exp(-mu_total * 1.85);
+
+                // Cuticula strijklicht effect (glancing angle): sterke voorwaartse pieken
+                const angleRad = (glancingAngleDeg * Math.PI) / 180;
+                const fresnelBoost = Math.pow(Math.cos(angleRad), 1.6) * 1.35;
+
+                // De waargenomen intensiteit is de convolutie van zonnespectrum (Rayleigh) * vezeloptica
+                const rawIntensity = atm * (internalFiberTrans * 0.75 + fresnelBoost * 0.45);
+                return Math.max(0.01, Math.min(0.99, rawIntensity));
+            }
+
+            // --- 4. GRAFIEK RENDERING ---
+            function renderSpectrumGraph() {
+                const w = spectrumCanvas.parentElement.clientWidth;
+                const h = spectrumCanvas.parentElement.clientHeight;
+                spectrumCanvas.width = w;
+                spectrumCanvas.height = h;
+
+                const ctx = spectrumCtx;
+                ctx.clearRect(0, 0, w, h);
+
+                const padL = 48, padR = 24, padT = 24, padB = 34;
+                const plotW = w - padL - padR;
+                const plotH = h - padT - padB;
+
+                // Achtergrond raster
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx.lineWidth = 1;
+                for (let p = 0; p <= 100; p += 20) {
+                    const y = padT + plotH - (p / 100) * plotH;
+                    ctx.beginPath();
+                    ctx.moveTo(padL, y);
+                    ctx.lineTo(padL + plotW, y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '10px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(p + '%', padL - 8, y + 3);
+                }
+
+                for (let wl = 400; wl <= 700; wl += 50) {
+                    const x = padL + ((wl - 380) / (750 - 380)) * plotW;
+                    ctx.beginPath();
+                    ctx.moveTo(x, padT);
+                    ctx.lineTo(x, padT + plotH);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '10px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(wl, x, padT + plotH + 16);
+                }
+
+                // 1. CURVE: Atmosferische Rayleigh Transmissie (Blauw-Cyaan)
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                for (let wl = 380; wl <= 750; wl += 2) {
+                    const tAtm = calcAtmosphericTransmission(wl, state.am);
+                    const x = padL + ((wl - 380) / (750 - 380)) * plotW;
+                    const y = padT + plotH - tAtm * plotH;
+                    if (wl === 380) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 2. CURVE: Neutraal Asblond (Grijs/Wit)
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for (let wl = 380; wl <= 750; wl += 2) {
+                    const tAsh = calcAshBlondeSpectrum(wl);
+                    const x = padL + ((wl - 380) / (750 - 380)) * plotW;
+                    const y = padT + plotH - tAsh * plotH;
+                    if (wl === 380) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // 3. CURVE: Van Gogh Koperrood (Gloeiend Oranje met gradient fill)
+                const copperGrad = ctx.createLinearGradient(padL, padT, padL, padT + plotH);
+                copperGrad.addColorStop(0, 'rgba(255, 106, 0, 0.45)');
+                copperGrad.addColorStop(1, 'rgba(255, 106, 0, 0.0)');
+
+                ctx.beginPath();
+                ctx.moveTo(padL, padT + plotH);
+                for (let wl = 380; wl <= 750; wl += 2) {
+                    const tCop = calcVanGoghCopperSpectrum(wl, state.am, state.pheoRatio, state.glancingAngle);
+                    const x = padL + ((wl - 380) / (750 - 380)) * plotW;
+                    const y = padT + plotH - tCop * plotH;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(padL + plotW, padT + plotH);
+                ctx.closePath();
+                ctx.fillStyle = copperGrad;
+                ctx.fill();
+
+                ctx.strokeStyle = '#ff6a00';
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = '#ff6a00';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                for (let wl = 380; wl <= 750; wl += 2) {
+                    const tCop = calcVanGoghCopperSpectrum(wl, state.am, state.pheoRatio, state.glancingAngle);
+                    const x = padL + ((wl - 380) / (750 - 380)) * plotW;
+                    const y = padT + plotH - tCop * plotH;
+                    if (wl === 380) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0; // reset glow
+
+                // Crosshair & Probe weergave bij hover
+                if (state.hoverLambda !== null && state.hoverLambda >= 380 && state.hoverLambda <= 750) {
+                    const hx = padL + ((state.hoverLambda - 380) / (750 - 380)) * plotW;
+
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(hx, padT);
+                    ctx.lineTo(hx, padT + plotH);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // Bolletjes op de snijpunten
+                    const tCop = calcVanGoghCopperSpectrum(state.hoverLambda, state.am, state.pheoRatio, state.glancingAngle);
+                    const tAsh = calcAshBlondeSpectrum(state.hoverLambda);
+                    const tAtm = calcAtmosphericTransmission(state.hoverLambda, state.am);
+
+                    drawDot(ctx, hx, padT + plotH - tCop * plotH, '#ff6a00');
+                    drawDot(ctx, hx, padT + plotH - tAsh * plotH, '#cbd5e1');
+                    drawDot(ctx, hx, padT + plotH - tAtm * plotH, '#00f0ff');
+                }
+            }
+
+            function drawDot(ctx, x, y, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            // --- 5. SCHEMATISCHE VEZEL-OPTICA RENDERING (BABINET & PIGMENT) ---
+            function renderFiberSchematic() {
+                const w = fiberCanvas.width;
+                const h = fiberCanvas.height;
+                const ctx = fiberCtx;
+                ctx.clearRect(0, 0, w, h);
+
+                const cx = w * 0.45;
+                const cy = h * 0.5;
+                const radius = (state.fiberDiam / 70) * 44; // schaalt met slider
+
+                // 1. Inkomende zonnestralen (Rayleigh rood-oranje bundel)
+                const rayleighRgb = `rgb(255, ${Math.max(40, 180 - state.am * 25)}, 20)`;
+                ctx.strokeStyle = rayleighRgb;
+                ctx.lineWidth = 2.5;
+
+                for (let i = -3; i <= 3; i++) {
+                    const y = cy + i * 14;
+                    ctx.beginPath();
+                    ctx.moveTo(15, y - 20);
+                    ctx.lineTo(cx - radius * 0.95, y);
+                    ctx.stroke();
+
+                    // Pijltjes
+                    ctx.fillStyle = rayleighRgb;
+                    ctx.beginPath();
+                    ctx.moveTo(cx - radius * 0.95, y);
+                    ctx.lineTo(cx - radius * 0.95 - 6, y - 4);
+                    ctx.lineTo(cx - radius * 0.95 - 6, y + 4);
+                    ctx.fill();
+                }
+
+                // 2. Cuticula en Cortex van de haarvezel
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                // Kleur binnenvezel bepaald door pheomelanine ratio
+                const rCore = Math.round(140 + state.pheoRatio * 100);
+                const gCore = Math.round(70 + (1 - state.pheoRatio) * 60);
+                const bCore = 25;
+                ctx.fillStyle = `rgba(${rCore}, ${gCore}, ${bCore}, 0.85)`;
+                ctx.fill();
+
+                // Cuticula schubbenlaag (omtrek)
+                ctx.strokeStyle = '#ffb703';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Cuticula ribbelstructuur (schubben)
+                for (let a = 0; a < Math.PI * 2; a += 0.3) {
+                    const sx = cx + Math.cos(a) * (radius + 2);
+                    const sy = cy + Math.sin(a) * (radius + 2);
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff6a00';
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                // 3. Babinet diffractiepatroon aan de rechterkant (voorwaartse verstrooiing)
+                const diffDist = cx + radius + 30;
+                ctx.fillStyle = '#ff6a00';
+                for (let m = -2; m <= 2; m++) {
+                    const py = cy + m * 24;
+                    const size = m === 0 ? 5 : 3.0;
+                    ctx.beginPath();
+                    ctx.arc(diffDist + (m === 0 ? 10 : 0), py, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Labels
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                ctx.fillText(`Cortex (d = ${state.fiberDiam} µm)`, cx - 35, cy - radius - 8);
+                ctx.fillText('Rayleigh Strijklicht', 20, 25);
+                ctx.fillText('Babinet Minima', diffDist - 10, h - 12);
+            }
+
+            // --- 6. INTEGRATIE NAAR RGB SWATCHES EN DELTA-E ---
+            function updateReconstructedColors() {
+                // Bereken gewogen R, G, B integratie over het spectrum
+                let rCop = 0, gCop = 0, bCop = 0;
+                let rAsh = 0, gAsh = 0, bAsh = 0;
+                let totalWeights = 0;
+
+                for (let wl = 380; wl <= 750; wl += 5) {
+                    const color = wavelengthToRGB(wl);
+                    const tCop = calcVanGoghCopperSpectrum(wl, state.am, state.pheoRatio, state.glancingAngle);
+                    const tAsh = calcAshBlondeSpectrum(wl);
+
+                    rCop += color.r * tCop;
+                    gCop += color.g * tCop;
+                    bCop += color.b * tCop;
+
+                    rAsh += color.r * tAsh;
+                    gAsh += color.g * tAsh;
+                    bAsh += color.b * tAsh;
+
+                    totalWeights += 255;
+                }
+
+                // Normaliseer en boost voor realistische perceptie
+                const factorCop = 3.6;
+                const finalRCop = Math.min(255, Math.round((rCop / totalWeights) * factorCop * 255));
+                const finalGCop = Math.min(255, Math.round((gCop / totalWeights) * factorCop * 145));
+                const finalBCop = Math.min(255, Math.round((bCop / totalWeights) * factorCop * 40));
+
+                const finalRbRatio = (finalRCop / Math.max(1, finalBCop)).toFixed(2);
+
+                swatchCopper.style.backgroundColor = `rgb(${finalRCop}, ${finalGCop}, ${finalBCop})`;
+                badgeCopperRgb.textContent = `RGB(${finalRCop}, ${finalGCop}, ${finalBCop})`;
+                badgeCopperRb.textContent = `R/B = ${finalRbRatio}`;
+                swatchCopperDesc.innerHTML = `RGB(${finalRCop}, ${finalGCop}, ${finalBCop})<br>R/B: ${finalRbRatio} • Strijklicht`;
+
+                // Bereken vereenvoudigde spectrale Euclidische kleurverschuiving Delta E
+                const dR = finalRCop - 159;
+                const dG = finalGCop - 154;
+                const dB = finalBCop - 150;
+                const deltaE = Math.sqrt(0.3 * dR * dR + 0.59 * dG * dG + 0.11 * dB * dB).toFixed(1);
+                valDeltaE.textContent = `${deltaE} (${deltaE > 30 ? 'Dramatische Verschuiving' : 'Matig'})`;
+            }
+
+            // --- 7. TOOLTIP EN MUIS-INTERACTIE OP HET SPECTRUM ---
+            spectrumCanvas.addEventListener('mousemove', (e) => {
+                const rect = spectrumCanvas.getBoundingClientRect();
+                const padL = 48, padR = 24;
+                const plotW = spectrumCanvas.width - padL - padR;
+                const mouseX = e.clientX - rect.left;
+
+                if (mouseX >= padL && mouseX <= padL + plotW) {
+                    const norm = (mouseX - padL) / plotW;
+                    const wl = Math.round(380 + norm * (750 - 380));
+                    state.hoverLambda = wl;
+
+                    // Update tooltip
+                    tooltip.classList.remove('hidden');
+                    tooltip.style.left = `${Math.min(rect.width - 170, mouseX + 15)}px`;
+                    tooltip.style.top = `${Math.max(10, e.clientY - rect.top - 60)}px`;
+
+                    tooltipLambda.textContent = `${wl} nm`;
+                    const eV = (1239.84 / wl).toFixed(2);
+                    tooltipEnergy.textContent = `${eV} eV`;
+
+                    const cRgb = wavelengthToRGB(wl);
+                    tooltipColorSwatch.style.backgroundColor = `rgb(${cRgb.r}, ${cRgb.g}, ${cRgb.b})`;
+
+                    const tCop = (calcVanGoghCopperSpectrum(wl, state.am, state.pheoRatio, state.glancingAngle) * 100).toFixed(1);
+                    const tAsh = (calcAshBlondeSpectrum(wl) * 100).toFixed(1);
+                    const tAtm = (calcAtmosphericTransmission(wl, state.am) * 100).toFixed(1);
+
+                    tooltipTransCopper.textContent = `Koper: ${tCop}%`;
+                    tooltipTransAsh.textContent = `${tAsh}%`;
+                    tooltipTransAtm.textContent = `${tAtm}%`;
+
+                    renderSpectrumGraph();
+                } else {
+                    tooltip.classList.add('hidden');
+                    state.hoverLambda = null;
+                    renderSpectrumGraph();
+                }
+            });
+
+            spectrumCanvas.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+                state.hoverLambda = null;
+                renderSpectrumGraph();
+            });
+
+            // --- 8. EVENT LISTENERS EN CONTROLS ---
+            function updateAll() {
+                valAm.textContent = state.am.toFixed(2);
+                legendAmVal.textContent = state.am.toFixed(2);
+                valPheo.textContent = `${Math.round(state.pheoRatio * 100)}%`;
+                labelPheomelanin.textContent = `${Math.round(state.pheoRatio * 100)}%`;
+                labelEumelanin.textContent = `${100 - Math.round(state.pheoRatio * 100)}%`;
+                valAngle.textContent = `${state.glancingAngle}° (${state.glancingAngle < 20 ? 'Glancing' : 'Schuin'})`;
+                valFiberDiam.textContent = `${state.fiberDiam} µm`;
+
+                renderSpectrumGraph();
+                renderFiberSchematic();
+                updateReconstructedColors();
+            }
+
+            sliderAm.addEventListener('input', (e) => {
+                state.am = parseFloat(e.target.value);
+                updateAll();
+            });
+
+            sliderPheo.addEventListener('input', (e) => {
+                state.pheoRatio = parseFloat(e.target.value) / 100;
+                updateAll();
+            });
+
+            sliderAngle.addEventListener('input', (e) => {
+                state.glancingAngle = parseInt(e.target.value, 10);
+                updateAll();
+            });
+
+            sliderFiberDiam.addEventListener('input', (e) => {
+                state.fiberDiam = parseInt(e.target.value, 10);
+                updateAll();
+            });
+
+            btnReset.addEventListener('click', () => {
+                state.am = 4.65;
+                state.pheoRatio = 0.75;
+                state.glancingAngle = 14;
+                state.fiberDiam = 70;
+
+                sliderAm.value = 4.65;
+                sliderPheo.value = 75;
+                sliderAngle.value = 14;
+                sliderFiberDiam.value = 70;
+
+                updateAll();
+            });
+
+            // CSV Export van de actieve spectrale curves
+            btnExportCsv.addEventListener('click', () => {
+                let csv = 'wavelength_nm,photon_energy_eV,rayleigh_atm_trans_pct,ash_blonde_trans_pct,van_gogh_copper_trans_pct,air_mass,pheomelanin_pct,glancing_angle_deg,fiber_diameter_um\n';
+                for (let wl = 380; wl <= 750; wl += 2) {
+                    const eV = (1239.84 / wl).toFixed(3);
+                    const tAtm = (calcAtmosphericTransmission(wl, state.am) * 100).toFixed(2);
+                    const tAsh = (calcAshBlondeSpectrum(wl) * 100).toFixed(2);
+                    const tCop = (calcVanGoghCopperSpectrum(wl, state.am, state.pheoRatio, state.glancingAngle) * 100).toFixed(2);
+                    csv += `${wl},${eV},${tAtm},${tAsh},${tCop},${state.am},${Math.round(state.pheoRatio * 100)},${state.glancingAngle},${state.fiberDiam}\n`;
+                }
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `van-gogh-spectrale-shift-AM${state.am}-${Date.now()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // Venster resize
+            window.addEventListener('resize', () => {
+                renderSpectrumGraph();
+                renderFiberSchematic();
+            });
+
+            // Initialisatie bij laden
+            window.onload = function() {
+                buildRainbowBar();
+                updateAll();
+            };
+        })();
+    </script>
+</body>
+</html>
