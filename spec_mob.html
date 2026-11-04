@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Spectrograaf & 95,26 nm Hexagonaal p6m Diffractie Observatorium — Mobile & Desktop</title>
+    <!-- Tailwind CSS voor responsieve mobile-first & desktop instrumentatie -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hud-cyan: #00f0ff;
+            --hud-emerald: #10b981;
+            --hud-amber: #ffb703;
+            --hud-rose: #f43f5e;
+            --bg-dark: #080c14;
+            --bg-panel: rgba(8, 12, 20, 0.90);
+        }
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            min-height: 100dvh;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+        }
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080c14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+        .hud-grid-bg {
+            background-image: 
+                linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .hud-border {
+            border: 1px solid rgba(0, 240, 255, 0.24);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05), inset 0 0 12px rgba(0, 240, 255, 0.03);
+        }
+        .hud-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(12px);
+        }
+        /* Voorkom ongewenst scrollen/zoomen tijdens vingerbewegingen op het wetenschappelijke canvas */
+        .touch-none-canvas {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        input[type="range"] {
+            accent-color: #00f0ff;
+            height: 8px;
+        }
+        .glow-cyan {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+        }
+        .mobile-nav-safe {
+            padding-bottom: env(safe-area-inset-bottom, 6px);
+        }
+    </style>
+</head>
+<body class="flex flex-col hud-grid-bg select-none">
+
+    <!-- BOVENSTE TELEMETRIE & MOBIELE VELDTEST BALK -->
+    <header class="hud-panel border-b border-cyan-500/30 px-3 py-2 sticky top-0 z-40 flex flex-col gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <!-- Merk & Status -->
+            <div class="flex items-center gap-2.5">
+                <div class="relative flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-950/90 border border-cyan-400/60 text-cyan-300 font-mono-tech font-bold text-xs shadow-inner shrink-0">
+                    p6m
+                    <span id="statusDot" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="statusDotSolid" class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <h1 class="text-xs sm:text-sm md:text-base font-bold tracking-wider uppercase text-cyan-300 font-mono-tech glow-cyan">
+                            SPECTRO-HEX HUD v3.0 <span class="text-emerald-400 text-[10px] sm:text-xs">[MOBILE & RIG]</span>
+                        </h1>
+                        <span id="sourceBadge" class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            60FPS Proc-Sim
+                        </span>
+                        <span class="hidden xl:inline-block text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                            🔒 Zero-Trust Lokaal
+                        </span>
+                    </div>
+                    <p class="text-[10px] sm:text-[11px] text-slate-400 font-mono-tech truncate max-w-[92vw] sm:max-w-none">
+                        $r=55\text{ nm}$ • $d=110\text{ nm}$ • $a=55\sqrt{3}\approx 95{,}2628\text{ nm}$ • $k_1=0{,}0761\text{ nm}^{-1}$
+                    </p>
+                </div>
+            </div>
+
+            <!-- Primaire Hardware & Export Actieknoppen (Grote Touch Targets voor Mobiel) -->
+            <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end">
+                <button id="btnToggleWebcam" class="flex-1 sm:flex-initial min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono-tech text-xs font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 active:bg-cyan-500/40 text-cyan-200 border border-cyan-400/50 transition flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4 text-cyan-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                    <span id="webcamBtnText">Camera</span>
+                </button>
+
+                <!-- Wissel Voor/Achter Camera (Essentieel voor Mobiele Optische Standaard) -->
+                <button id="btnFlipCamera" class="min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800/90 hover:bg-slate-700 active:bg-slate-600 text-cyan-300 border border-cyan-500/40 transition flex items-center justify-center gap-1" title="Wissel Camera (Achterzijde 'environment' vs. Voorzijde 'user')">
+                    <svg class="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span id="facingModeLabel">Achter</span>
+                </button>
+
+                <button id="btnToggleMic" class="flex-1 sm:flex-initial min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono-tech text-xs font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 active:bg-emerald-500/40 text-emerald-200 border border-emerald-400/50 transition flex items-center justify-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                    </svg>
+                    <span id="micBtnText">Audio/DSP</span>
+                </button>
+
+                <button id="btnSnapshot" class="min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 transition flex items-center justify-center gap-1" title="Bewaar HUD Frame als PNG">
+                    <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    </svg>
+                    <span>PNG</span>
+                </button>
+
+                <button id="btnExportCsv" class="min-h-[38px] px-2.5 py-1.5 rounded-lg font-mono-tech text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 transition flex items-center justify-center gap-1" title="Exporteer Spectrale Scanline & Rooster Telemetrie als CSV">
+                    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>CSV</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Compacte Live Telemetrie Strip (Scrollbaar op kleine mobiele schermen) -->
+        <div class="flex items-center gap-2 overflow-x-auto py-0.5 font-mono-tech text-[11px] no-scrollbar">
+            <div class="bg-slate-900/90 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">BRON:</span>
+                <span id="telemetryResolution" class="text-cyan-300 font-semibold">PROC-GEN 60FPS</span>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">PERIODE ($a$):</span>
+                <span id="telemetryLatticeA" class="text-emerald-400 font-semibold">95.26 nm</span>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">BRAGG ($k_1$):</span>
+                <span id="telemetryBraggK" class="text-amber-400 font-semibold">0.0761 nm⁻¹</span>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">VLAKSTELLING:</span>
+                <span id="telemetryTiltBadge" class="text-emerald-400 font-semibold">0.0° WATERPAS</span>
+            </div>
+            <div class="bg-slate-900/90 border border-slate-700/80 px-2 py-0.5 rounded flex items-center gap-1.5 shrink-0">
+                <span class="text-slate-400">FPS:</span>
+                <span id="telemetryFps" class="text-cyan-300 font-semibold">60</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status Meldingbalk (vervangt alert() volledig) -->
+    <div id="statusToast" class="hidden bg-slate-900/95 border-b border-amber-500/40 px-4 py-2 text-xs font-mono-tech text-amber-300 flex items-center justify-between z-30">
+        <span id="statusToastText">Systeemmelding...</span>
+        <button id="btnCloseToast" class="text-slate-400 hover:text-white px-2 py-0.5">✕</button>
+    </div>
+
+    <!-- HOOFD DASHBOARD GRID (Mobiel: Tab-gestuurd / Desktop lg+: Volledig Split-Screen Observatorium) -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 p-2.5 sm:p-3 max-w-[1920px] w-full mx-auto">
+
+        <!-- LINKER KOLOM: WEBRTC VIEWPORT MET MULTI-TOUCH WETENSCHAPPELIJKE HUD (7 kolommen op desktop) -->
+        <section id="viewSectionHud" class="lg:col-span-7 flex flex-col gap-3">
+            
+            <!-- Hoofd Video + Vector HUD Container -->
+            <div class="relative rounded-xl overflow-hidden hud-border bg-black flex-1 min-h-[54dvh] sm:min-h-[480px] lg:min-h-[540px] flex items-center justify-center">
+                <!-- Verborgen HTML5 Video element met playsinline, autoplay en muted voor iOS Safari & Android Chrome -->
+                <video id="webrtcVideo" playsinline webkit-playsinline autoplay muted class="hidden"></video>
+                
+                <!-- Multi-Touch Canvas (touch-action: none voor 1-vinger crosshair drag & 2-vinger pinch-to-zoom) -->
+                <canvas id="mainHudCanvas" class="w-full h-full block cursor-crosshair touch-none-canvas"></canvas>
+
+                <!-- Zwevende HUD Hoek-indicatoren (Boven Links: Compact op Mobiel) -->
+                <div class="absolute top-2.5 left-2.5 pointer-events-none flex flex-col gap-0.5 bg-slate-950/80 backdrop-blur-md p-2 rounded-lg border border-cyan-500/30 font-mono-tech text-[10px] sm:text-[11px] max-w-[62%]">
+                    <div class="text-cyan-400 font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+                        <span class="truncate">p6m ROOSTER & k-RUIMTE</span>
+                    </div>
+                    <div class="text-slate-300 truncate">
+                        $r = \mathbf{55\text{ nm}}$ | $d = \mathbf{110\text{ nm}}$
+                    </div>
+                    <div class="text-emerald-300 truncate">
+                        $a = 55\sqrt{3} \approx \mathbf{95{,}26\text{ nm}}$
+                    </div>
+                    <div class="text-amber-300 truncate">
+                        $k_1 = \frac{4\pi}{a\sqrt{3}} \approx \mathbf{0{,}0761\text{ nm}^{-1}}$
+                    </div>
+                </div>
+
+                <!-- Zwevende HUD Hoek-indicatoren (Boven Rechts: Live Pixel, Tilt & Golfgetal Probe) -->
+                <div class="absolute top-2.5 right-2.5 pointer-events-none bg-slate-950/80 backdrop-blur-md p-2 rounded-lg border border-slate-700/80 font-mono-tech text-[10px] sm:text-[11px] text-right">
+                    <div id="probeCoords" class="text-cyan-300 font-semibold">X: 0 | Y: 0</div>
+                    <div id="probeRgb" class="text-emerald-300">I(x,y): 0.00</div>
+                    <div id="probeKSpace" class="text-amber-300">|k₁|: 0.0761 nm⁻¹</div>
+                    <div id="probeGyroHud" class="text-slate-300">Tilt: 0.0° | 0.0°</div>
+                </div>
+
+                <!-- Interactieve Laag-toggles onderaan in de Viewport (Swipebaar / Grote Touch Knoppen) -->
+                <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 bg-slate-950/90 backdrop-blur-md p-2 rounded-lg border border-cyan-500/30">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full xl:w-auto text-[11px] font-mono-tech">
+                        <button data-layer="lattice" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 transition truncate">
+                            [1] p6m (95,26nm)
+                        </button>
+                        <button data-layer="kspace" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-400/60 transition truncate">
+                            [2] Bragg (0,0761)
+                        </button>
+                        <button data-layer="scanline" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-emerald-500/25 text-emerald-200 border border-emerald-400/60 transition truncate">
+                            [3] Scanline I(x)
+                        </button>
+                        <button data-layer="level" class="hud-layer-btn active min-h-[34px] px-2 py-1 rounded bg-rose-500/25 text-rose-200 border border-rose-400/60 transition truncate">
+                            [4] Gyro Waterpas
+                        </button>
+                    </div>
+                    <div class="text-[10px] font-mono-tech text-slate-400 hidden xl:block">
+                        1-vinger: verplaats scanline • 2-vinger pinch: schaal rooster
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wiskundige Synthese Kaart (Zichtbaar onder de HUD) -->
+            <div class="hud-panel hud-border rounded-xl p-3 grid grid-cols-1 md:grid-cols-3 gap-2.5 font-mono-tech text-xs">
+                <div class="bg-slate-900/70 p-2.5 rounded-lg border border-cyan-500/20">
+                    <div class="text-cyan-400 font-bold mb-1 flex items-center justify-between">
+                        <span>1. HEXAGONAAL ROOSTER</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300">Reële Ruimte</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Deeltjesstraal $r = 55\text{ nm}$ ($d = 110\text{ nm}$) vormt een $p6m$-rooster met periode:
+                    </p>
+                    <div class="mt-1 p-1 rounded bg-black/50 text-cyan-200 text-[11px] text-center border border-cyan-500/20">
+                        $a = 2r\cos(30^\circ) = 55\sqrt{3} \approx 95{,}2628\text{ nm}$
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/70 p-2.5 rounded-lg border border-amber-500/20">
+                    <div class="text-amber-400 font-bold mb-1 flex items-center justify-between">
+                        <span>2. BRAGG DIFFRACTIE</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300">k-Ruimte FFT</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        De Fouriertransformatie $I(\mathbf{k}) = |F(\mathbf{k})|^2$ geeft 6 Bragg-pieken op $60^\circ$:
+                    </p>
+                    <div class="mt-1 p-1 rounded bg-black/50 text-amber-200 text-[11px] text-center border border-amber-500/20">
+                        $k_1 = \frac{4\pi}{a\sqrt{3}} = \frac{4\pi}{165} \approx 0{,}0761\text{ nm}^{-1}$
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/70 p-2.5 rounded-lg border border-emerald-500/20">
+                    <div class="text-emerald-400 font-bold mb-1 flex items-center justify-between">
+                        <span>3. MOBIELE VELDTEST</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300">Rig & Sensor</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] leading-relaxed">
+                        Gebruik de <strong>Gyro-Waterpas ($0{,}0^\circ$)</strong> voor loodrechte optische standaarden en pinch-zoom op het scherm.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECHTER KOLOM: SPECTROGRAFEN (2D MFL + 3D RSS WATERFALL) & MOBIELE SENSOREN (5 kolommen op desktop) -->
+        <aside id="viewSectionSide" class="lg:col-span-5 flex flex-col gap-3">
+
+            <!-- PANEEL A: 2D FREQUENTIESPECTRUM (visual.spectrograph MFL stijl + Ruimtelijke Scanline FFT) -->
+            <div id="panel2DSpectrum" class="hud-panel hud-border rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <div>
+                        <h2 class="text-xs font-bold font-mono-tech uppercase text-cyan-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                            2D Momentaan Frequentiespectrum ($f$ vs. $A$)
+                        </h2>
+                        <p class="text-[11px] text-slate-400 font-mono-tech">
+                            Max for Live <code class="text-cyan-300">visual.spectrograph</code> L/R + Optische Scanline FFT
+                        </p>
+                    </div>
+                    <span id="peakFreqReadout" class="text-xs font-mono-tech px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 shrink-0">
+                        Piek: 440 Hz
+                    </span>
+                </div>
+
+                <div class="relative h-44 sm:h-48 w-full bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+                    <canvas id="spectrum2DCanvas" class="w-full h-full block"></canvas>
+                    <div class="absolute top-1.5 right-1.5 flex flex-wrap items-center gap-2 text-[10px] font-mono-tech bg-slate-950/85 px-2 py-0.5 rounded border border-slate-800">
+                        <span class="flex items-center gap-1 text-cyan-300"><i class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></i> L-Audio</span>
+                        <span class="flex items-center gap-1 text-rose-400"><i class="w-2 h-2 rounded-full bg-rose-500 inline-block"></i> R-Doppler</span>
+                        <span class="flex items-center gap-1 text-emerald-400"><i class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></i> Scanline FFT</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEEL B: 3D WATERFALL SPECTROGRAM (Radio-Sky Spectrograph RSS stijl: X=Tijd, Y=Frequentie, Kleur=dB) -->
+            <div id="panel3DWaterfall" class="hud-panel hud-border rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <div>
+                        <h2 class="text-xs font-bold font-mono-tech uppercase text-amber-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                            3D Tijdsafhankelijk Spectrogram (RSS Waterfall)
+                        </h2>
+                        <p class="text-[11px] text-slate-400 font-mono-tech">
+                            RSS-indeling: <strong class="text-slate-200">Y = Frequentie (hoogste boven)</strong>, <strong class="text-slate-200">X = Tijd ($t$)</strong>, <strong class="text-slate-200">Kleur = dB</strong>
+                        </p>
+                    </div>
+                    <select id="colormapSelect" class="bg-slate-900 text-amber-300 border border-amber-500/40 rounded px-2 py-1 text-[11px] font-mono-tech focus:outline-none">
+                        <option value="rss">RSS Solar/Jovian</option>
+                        <option value="viridis">Viridis</option>
+                        <option value="cyber">Cyaan-Magenta</option>
+                    </select>
+                </div>
+
+                <div class="relative h-44 sm:h-48 w-full bg-slate-950 rounded-lg border border-slate-800 overflow-hidden">
+                    <canvas id="waterfall3DCanvas" class="w-full h-full block"></canvas>
+                    <div class="absolute left-1.5 top-1.5 bottom-4 flex flex-col justify-between text-[10px] font-mono-tech text-slate-300 pointer-events-none bg-slate-950/65 px-1 rounded">
+                        <span>28 MHz / 20 kHz</span>
+                        <span>23 MHz / 10 kHz</span>
+                        <span>18 MHz / 100 Hz</span>
+                    </div>
+                    <div class="absolute bottom-1 right-2 text-[10px] font-mono-tech text-amber-300/90 bg-slate-950/80 px-1.5 rounded pointer-events-none">
+                        ← Verleden ($t - \Delta t$) | Nu ($t_0$) →
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEEL C: MOBIELE GYRO-WATERPAS & ROOSTER KALIBRATIE -->
+            <div id="panelParamsSensors" class="hud-panel hud-border rounded-xl p-3.5 flex-1 flex flex-col justify-between gap-3 font-mono-tech text-xs">
+                
+                <!-- Mobiele Vlakstelling / Gyroscoop Waterpas Sectie -->
+                <div class="bg-slate-900/90 p-2.5 rounded-lg border border-rose-500/30 flex flex-col gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span class="text-rose-300 font-bold uppercase flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                                Mobiele Vlakstelling / Gyro-Waterpas
+                            </span>
+                            <span class="text-[10px] text-slate-400 block">
+                                Controleer loodrechte camerastand ($0{,}0^\circ$ tilt) op optische standaard
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button id="btnEnableGyro" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/50 text-[11px] font-semibold">
+                                Activeer Gyro-Sensor
+                            </button>
+                            <button id="btnZeroGyro" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-[11px]">
+                                Kalibreer 0°
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 items-center pt-1">
+                        <div class="flex items-center justify-between bg-slate-950/80 px-2.5 py-1.5 rounded border border-slate-800">
+                            <span class="text-slate-400 text-[11px]">Pitch ($\beta$) / Roll ($\gamma$):</span>
+                            <span id="valGyroReadout" class="text-emerald-400 font-bold text-[11px]">0.0° / 0.0° (OK)</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-950/80 px-2.5 py-1.5 rounded border border-slate-800">
+                            <span class="text-slate-400 text-[10px] shrink-0">Sim Tilt:</span>
+                            <input id="sliderSimTilt" type="range" min="-15" max="15" step="0.5" value="0" class="w-full cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rooster Parameters -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1">
+                    <span class="font-bold text-slate-200 uppercase tracking-wider">Rooster-Parameters (Touch)</span>
+                    <button id="btnResetParams" class="text-[11px] text-cyan-400 hover:text-cyan-200 underline">
+                        Reset 95,26 nm Standaard
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Deeltjesstraal r (30 - 100 nm, standaard 55 nm -> d=110 nm, a=95.26 nm) -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1.5">
+                            <span class="text-slate-400">Deeltjesstraal ($r$):</span>
+                            <span id="valRadiusNm" class="text-cyan-300 font-bold">55.0 nm (d=110 nm)</span>
+                        </div>
+                        <input id="sliderRadius" type="range" min="30" max="100" step="0.5" value="55" class="w-full bg-slate-800 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>30 nm</span>
+                            <span class="text-emerald-400">55 nm (a=95,26nm)</span>
+                            <span>100 nm</span>
+                        </div>
+                    </div>
+
+                    <!-- Visuele Zoom / Schaal -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1.5">
+                            <span class="text-slate-400">HUD Rooster-Schaal:</span>
+                            <span id="valScalePx" class="text-emerald-300 font-bold">1.00× (95,26 nm)</span>
+                        </div>
+                        <input id="sliderZoom" type="range" min="0.4" max="2.5" step="0.05" value="1.0" class="w-full bg-slate-800 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>0.4×</span>
+                            <span>Pinch-Zoom / 1.0×</span>
+                            <span>2.5×</span>
+                        </div>
+                    </div>
+
+                    <!-- Rooster Rotatie (p6m zesvoudige symmetrie) -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1.5">
+                            <span class="text-slate-400">Oriëntatie ($\theta$):</span>
+                            <span id="valRotationDeg" class="text-amber-300 font-bold">0° (p6m symmetrie)</span>
+                        </div>
+                        <input id="sliderRotation" type="range" min="0" max="180" step="1" value="0" class="w-full bg-slate-800 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>0°</span>
+                            <span>60° (Invariante As)</span>
+                            <span>180°</span>
+                        </div>
+                    </div>
+
+                    <!-- HUD Opacity -->
+                    <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                        <div class="flex justify-between text-[11px] mb-1.5">
+                            <span class="text-slate-400">HUD Vector Helderheid:</span>
+                            <span id="valHudOpacity" class="text-cyan-300 font-bold">85%</span>
+                        </div>
+                        <input id="sliderOpacity" type="range" min="15" max="100" step="5" value="85" class="w-full bg-slate-800 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>Subtiel</span>
+                            <span>Optimaal</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Synthetische Signaalbron & Simulatiemodus -->
+                <div class="bg-slate-900/90 p-2.5 rounded-lg border border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
+                    <div class="text-[11px]">
+                        <span class="text-slate-300 font-semibold block">Signaalgenerator & Overlay Modus:</span>
+                        <span class="text-[10px] text-slate-400">Combineer WebRTC camera met theoretische golf-interferentie</span>
+                    </div>
+                    <select id="simModeSelect" class="bg-slate-950 text-cyan-300 border border-cyan-500/40 rounded px-2.5 py-1.5 text-xs font-mono-tech focus:outline-none w-full sm:w-auto">
+                        <option value="hex_diffraction">p6m Interferentie + Solar Burst Sim</option>
+                        <option value="nodal_tide">18,6-Jarige Maansknoop & Doppler Golf</option>
+                        <option value="clean_cam">Pure Camera-weergave (geen testgolf)</option>
+                    </select>
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- VOETTEKST MET OVERZICHTSTABEL & ZERO-TRUST PRIVACYVERKLARING -->
+    <footer class="p-2.5 sm:p-3 max-w-[1920px] w-full mx-auto">
+        <div class="hud-panel hud-border rounded-xl p-3.5 flex flex-col gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-mono-tech font-bold uppercase text-cyan-300 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Synthese-Matrix: Audio-Spectrum (MFL), Radio-Sky Waterfall (RSS) & 95,26 nm Reciproke k-Ruimte
+                </h3>
+                <span class="text-[10px] font-mono-tech text-emerald-300 bg-emerald-950/70 border border-emerald-500/30 px-2 py-0.5 rounded">
+                    Zero-Trust Architectuur: 100% Client-Side Browser Execution (Geen Cloud-opslag) • Privé Onderzoeksgebruik
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse font-mono-tech text-[11px]">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 bg-slate-900/60">
+                            <th class="py-1.5 px-2.5">Systeem / Domein</th>
+                            <th class="py-1.5 px-2.5">Signaalbron</th>
+                            <th class="py-1.5 px-2.5">Dimensies & Assen</th>
+                            <th class="py-1.5 px-2.5">Wiskundige Kern / Roostermaat</th>
+                            <th class="py-1.5 px-2.5">Mobiele & Desktop Implementatie</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 text-slate-300">
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-cyan-300">1. Visual.Spectrograph (MFL)</td>
+                            <td class="py-1.5 px-2.5">Akoestisch (20 Hz – 20 kHz)</td>
+                            <td class="py-1.5 px-2.5">2D Instant: Frequentie ($f$) vs. Amplitude ($A$)</td>
+                            <td class="py-1.5 px-2.5">1D FFT (L/R balans + optische scanline)</td>
+                            <td class="py-1.5 px-2.5 text-cyan-300">Paneel A: Realtime L/R + Scanline FFT</td>
+                        </tr>
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-amber-300">2. Radio-Sky Spectrograph (RSS)</td>
+                            <td class="py-1.5 px-2.5">Zon / Jupiter Bursts (18–28 MHz)</td>
+                            <td class="py-1.5 px-2.5">3D Tijdreeks: X = Tijd ($t$), Y = $f$, Kleur = dB</td>
+                            <td class="py-1.5 px-2.5">Hoogste frequentie bovenaan (~10 scans/s)</td>
+                            <td class="py-1.5 px-2.5 text-amber-300">Paneel B: Horizontale Waterfall</td>
+                        </tr>
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-1.5 px-2.5 font-semibold text-emerald-300">3. Hexagonaal Nanorooster ($p6m$)</td>
+                            <td class="py-1.5 px-2.5">Optische / Elektronen Diffractie</td>
+                            <td class="py-1.5 px-2.5">2D Ruimtelijk $(x,y)$ $\leftrightarrow$ Reciproke $(k_x, k_y)$</td>
+                            <td class="py-1.5 px-2.5">$r=55\text{ nm}, d=110\text{ nm}, a=95{,}26\text{ nm}, k_1=0{,}0761\text{ nm}^{-1}$</td>
+                            <td class="py-1.5 px-2.5 text-emerald-300">Hoofd-HUD + Pinch-Zoom + Gyro-Waterpas</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MOBIELE BOTTOM NAVIGATION BAR (Alleen zichtbaar op smartphones/tablets in portretmodus < 1024px) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 hud-panel border-t border-cyan-500/40 px-2 pt-1.5 mobile-nav-safe flex items-center justify-around font-mono-tech text-[10px]">
+        <button data-mobview="all" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-cyan-300 bg-cyan-500/20 border border-cyan-400/50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>Split-Alles</span>
+        </button>
+        <button data-mobview="hud" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>HUD Camera</span>
+        </button>
+        <button data-mobview="spectra" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>2D & 3D RSS</span>
+        </button>
+        <button data-mobview="sensors" class="mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            <span>Gyro & Rooster</span>
+        </button>
+    </nav>
+
+    <!-- VOLLEDIGE CLIENT-SIDE JAVASCRIPT ENGINE -->
+    <script>
+        (function() {
+            "use strict";
+
+            // --- 1. ELEMENT REFERENTIES ---
+            const videoEl = document.getElementById('webrtcVideo');
+            const mainCanvas = document.getElementById('mainHudCanvas');
+            const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
+
+            const spec2DCanvas = document.getElementById('spectrum2DCanvas');
+            const spec2DCtx = spec2DCanvas.getContext('2d');
+
+            const waterfallCanvas = document.getElementById('waterfall3DCanvas');
+            const waterfallCtx = waterfallCanvas.getContext('2d');
+
+            // Knoppen & UI
+            const btnToggleWebcam = document.getElementById('btnToggleWebcam');
+            const webcamBtnText = document.getElementById('webcamBtnText');
+            const btnFlipCamera = document.getElementById('btnFlipCamera');
+            const facingModeLabel = document.getElementById('facingModeLabel');
+            const btnToggleMic = document.getElementById('btnToggleMic');
+            const micBtnText = document.getElementById('micBtnText');
+            const btnSnapshot = document.getElementById('btnSnapshot');
+            const btnExportCsv = document.getElementById('btnExportCsv');
+            const btnResetParams = document.getElementById('btnResetParams');
+
+            // Gyroscoop knoppen
+            const btnEnableGyro = document.getElementById('btnEnableGyro');
+            const btnZeroGyro = document.getElementById('btnZeroGyro');
+            const sliderSimTilt = document.getElementById('sliderSimTilt');
+            const valGyroReadout = document.getElementById('valGyroReadout');
+
+            // Telemetrie Badges
+            const sourceBadge = document.getElementById('sourceBadge');
+            const telemetryResolution = document.getElementById('telemetryResolution');
+            const telemetryLatticeA = document.getElementById('telemetryLatticeA');
+            const telemetryBraggK = document.getElementById('telemetryBraggK');
+            const telemetryTiltBadge = document.getElementById('telemetryTiltBadge');
+            const telemetryFps = document.getElementById('telemetryFps');
+            const peakFreqReadout = document.getElementById('peakFreqReadout');
+
+            const probeCoords = document.getElementById('probeCoords');
+            const probeRgb = document.getElementById('probeRgb');
+            const probeKSpace = document.getElementById('probeKSpace');
+            const probeGyroHud = document.getElementById('probeGyroHud');
+
+            // Sliders & Selects
+            const sliderRadius = document.getElementById('sliderRadius');
+            const sliderZoom = document.getElementById('sliderZoom');
+            const sliderRotation = document.getElementById('sliderRotation');
+            const sliderOpacity = document.getElementById('sliderOpacity');
+            const colormapSelect = document.getElementById('colormapSelect');
+            const simModeSelect = document.getElementById('simModeSelect');
+
+            const valRadiusNm = document.getElementById('valRadiusNm');
+            const valScalePx = document.getElementById('valScalePx');
+            const valRotationDeg = document.getElementById('valRotationDeg');
+            const valHudOpacity = document.getElementById('valHudOpacity');
+
+            // Mobiele secties voor View Switcher
+            const viewSectionHud = document.getElementById('viewSectionHud');
+            const viewSectionSide = document.getElementById('viewSectionSide');
+            const panel2DSpectrum = document.getElementById('panel2DSpectrum');
+            const panel3DWaterfall = document.getElementById('panel3DWaterfall');
+            const panelParamsSensors = document.getElementById('panelParamsSensors');
+
+            // Toast meldingen (geen alert()!)
+            const statusToast = document.getElementById('statusToast');
+            const statusToastText = document.getElementById('statusToastText');
+            const btnCloseToast = document.getElementById('btnCloseToast');
+
+            // --- 2. APPLICATIE STAAT & EXACTE FYSISCHE CONSTANTEN ---
+            const state = {
+                webcamActive: false,
+                webcamStream: null,
+                facingMode: 'environment', // 'environment' (achterzijde voor optische standaard) of 'user' (voorzijde)
+                micActive: false,
+                audioCtx: null,
+                analyserL: null,
+                analyserR: null,
+                synthOsc: null,
+
+                // Fysische parameters (Standaard: r = 55 nm, d = 110 nm, a = 95.2628 nm, k1 = 0.0761 nm^-1)
+                radiusNm: 55.0,
+                get diameterNm() { return this.radiusNm * 2; },
+                get latticeANm() { return this.radiusNm * Math.sqrt(3); }, // 55 * sqrt(3) = 95.26279 nm
+                get braggK1() { return (4 * Math.PI) / (this.latticeANm * Math.sqrt(3)); }, // 4*pi / (3*r) = 0.076159 nm^-1
+
+                // Visuele HUD instellingen
+                zoomScale: 1.0,
+                rotationDeg: 0,
+                hudOpacity: 0.85,
+                colormap: 'rss',
+                simMode: 'hex_diffraction',
+
+                // Laag-toggles
+                layers: {
+                    lattice: true,
+                    kspace: true,
+                    scanline: true,
+                    level: true
+                },
+
+                // Mobiele Gyroscoop / Vlakstelling (in graden)
+                gyroEnabled: false,
+                rawPitch: 0.0,
+                rawRoll: 0.0,
+                offsetPitch: 0.0,
+                offsetRoll: 0.0,
+                get pitchDeg() { return this.rawPitch - this.offsetPitch; },
+                get rollDeg() { return this.rawRoll - this.offsetRoll; },
+
+                // Interactieve oorsprong & multi-touch pinch status
+                originX: 0.5,
+                originY: 0.5,
+                scanlineY: 0.5,
+                isDragging: false,
+                initialPinchDist: null,
+                initialPinchZoom: 1.0,
+
+                // Tijd & FPS
+                time: 0,
+                frameCount: 0,
+                lastFpsUpdate: performance.now(),
+                fps: 60,
+                peakFreqHz: 440,
+                peakDb: -12,
+
+                // Audio/Spectraal buffers
+                freqBins: 128,
+                dataArrayL: new Uint8Array(128),
+                dataArrayR: new Uint8Array(128),
+                scanlineFFT: new Float32Array(128)
+            };
+
+            function showToast(message) {
+                statusToastText.textContent = message;
+                statusToast.classList.remove('hidden');
+            }
+
+            btnCloseToast.addEventListener('click', () => {
+                statusToast.classList.add('hidden');
+            });
+
+            // --- 3. MOBIELE VIEW SWITCHER (PORTRET ERGONOMIE) ---
+            document.querySelectorAll('.mob-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.getAttribute('data-mobview');
+                    document.querySelectorAll('.mob-tab-btn').forEach(b => {
+                        b.className = 'mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-slate-400 border border-transparent';
+                    });
+                    btn.className = 'mob-tab-btn flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-lg text-cyan-300 bg-cyan-500/20 border border-cyan-400/50';
+
+                    if (view === 'all') {
+                        viewSectionHud.classList.remove('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panel2DSpectrum.classList.remove('hidden');
+                        panel3DWaterfall.classList.remove('hidden');
+                        panelParamsSensors.classList.remove('hidden');
+                    } else if (view === 'hud') {
+                        viewSectionHud.classList.remove('hidden');
+                        viewSectionSide.classList.add('hidden');
+                    } else if (view === 'spectra') {
+                        viewSectionHud.classList.add('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panel2DSpectrum.classList.remove('hidden');
+                        panel3DWaterfall.classList.remove('hidden');
+                        panelParamsSensors.classList.add('hidden');
+                    } else if (view === 'sensors') {
+                        viewSectionHud.classList.add('hidden');
+                        viewSectionSide.classList.remove('hidden');
+                        panel2DSpectrum.classList.add('hidden');
+                        panel3DWaterfall.classList.add('hidden');
+                        panelParamsSensors.classList.remove('hidden');
+                    }
+                    setTimeout(resizeCanvases, 30);
+                });
+            });
+
+            // --- 4. RESPONSIEVE CANVAS RESIZING ---
+            function resizeCanvases() {
+                const mainRect = mainCanvas.parentElement.getBoundingClientRect();
+                if (mainRect.width > 0 && mainRect.height > 0) {
+                    mainCanvas.width = Math.max(320, Math.floor(mainRect.width));
+                    mainCanvas.height = Math.max(280, Math.floor(mainRect.height));
+                }
+
+                const specRect = spec2DCanvas.parentElement.getBoundingClientRect();
+                if (specRect.width > 0 && specRect.height > 0) {
+                    spec2DCanvas.width = Math.max(260, Math.floor(specRect.width));
+                    spec2DCanvas.height = Math.max(140, Math.floor(specRect.height));
+                }
+
+                const wfRect = waterfallCanvas.parentElement.getBoundingClientRect();
+                if (wfRect.width > 0 && wfRect.height > 0) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = waterfallCanvas.width || 300;
+                    tempCanvas.height = waterfallCanvas.height || 160;
+                    if (waterfallCanvas.width > 0 && waterfallCanvas.height > 0) {
+                        tempCanvas.getContext('2d').drawImage(waterfallCanvas, 0, 0);
+                    }
+                    waterfallCanvas.width = Math.max(260, Math.floor(wfRect.width));
+                    waterfallCanvas.height = Math.max(140, Math.floor(wfRect.height));
+                    waterfallCtx.fillStyle = '#020617';
+                    waterfallCtx.fillRect(0, 0, waterfallCanvas.width, waterfallCanvas.height);
+                    waterfallCtx.drawImage(tempCanvas, 0, 0, waterfallCanvas.width, waterfallCanvas.height);
+                }
+            }
+
+            window.addEventListener('resize', resizeCanvases);
+            window.addEventListener('orientationchange', () => setTimeout(resizeCanvases, 150));
+
+            // --- 5. MOBIELE & DESKTOP WEBRTC CAMERA (FACINGMODE ENVIRONMENT / USER) ---
+            async function startCameraStream() {
+                if (state.webcamStream) {
+                    state.webcamStream.getTracks().forEach(track => track.stop());
+                    videoEl.srcObject = null;
+                }
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showToast('WebRTC getUserMedia niet ondersteund in deze browser. Procedurele 95,26 nm simulator blijft actief.');
+                    return;
+                }
+
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: { ideal: state.facingMode },
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: false
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    videoEl.srcObject = stream;
+                    await videoEl.play();
+                    state.webcamStream = stream;
+                    state.webcamActive = true;
+
+                    webcamBtnText.textContent = 'Stop Cam';
+                    const camLabel = state.facingMode === 'environment' ? 'ACHTER-CAM' : 'VOOR-CAM';
+                    sourceBadge.textContent = `LIVE ${camLabel}`;
+                    sourceBadge.className = 'text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                    const vw = videoEl.videoWidth || 1280;
+                    const vh = videoEl.videoHeight || 720;
+                    telemetryResolution.textContent = `${camLabel} ${vw}×${vh}`;
+                    showToast(`WebRTC ${camLabel} actief (${vw}×${vh} px) met playsinline mobiele HUD-rendering.`);
+                } catch (err) {
+                    state.webcamActive = false;
+                    webcamBtnText.textContent = 'Camera';
+                    showToast(`Camera niet gestart (${err.name}). De 60fps procedurele 95,26 nm golf-simulator blijft actief.`);
+                }
+            }
+
+            async function toggleWebcam() {
+                if (state.webcamActive && state.webcamStream) {
+                    state.webcamStream.getTracks().forEach(track => track.stop());
+                    videoEl.srcObject = null;
+                    state.webcamActive = false;
+                    webcamBtnText.textContent = 'Camera';
+                    sourceBadge.textContent = '60FPS Proc-Sim';
+                    sourceBadge.className = 'text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40';
+                    telemetryResolution.textContent = 'PROC-GEN 60FPS';
+                    showToast('Camera gestopt. Overgeschakeld op de procedurele 95,26 nm diffractie-simulator.');
+                } else {
+                    await startCameraStream();
+                }
+            }
+
+            btnFlipCamera.addEventListener('click', async () => {
+                state.facingMode = state.facingMode === 'environment' ? 'user' : 'environment';
+                facingModeLabel.textContent = state.facingMode === 'environment' ? 'Achter' : 'Voor';
+                if (state.webcamActive) {
+                    await startCameraStream();
+                } else {
+                    showToast(`Camera-voorkeur ingesteld op: ${state.facingMode === 'environment' ? 'Achterzijde (Optische Standaard)' : 'Voorzijde (Selfie/User)'}. Tik op 'Camera' om te starten.`);
+                }
+            });
+
+            // --- 6. MICROFOON & WEBAUDIO DSP SYNTH ---
+            async function toggleMicrophone() {
+                if (state.micActive) {
+                    if (state.audioCtx) {
+                        await state.audioCtx.close();
+                        state.audioCtx = null;
+                    }
+                    state.micActive = false;
+                    state.synthOsc = null;
+                    micBtnText.textContent = 'Audio/DSP';
+                    showToast('Audio/DSP gestopt. Synthetische Bragg & RSS-waterval simulator actief.');
+                    return;
+                }
+
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    const audioCtx = new AudioContextClass();
+                    if (audioCtx.state === 'suspended') {
+                        await audioCtx.resume();
+                    }
+                    state.audioCtx = audioCtx;
+
+                    const analyserL = audioCtx.createAnalyser();
+                    const analyserR = audioCtx.createAnalyser();
+                    analyserL.fftSize = 256;
+                    analyserR.fftSize = 256;
+                    analyserL.smoothingTimeConstant = 0.78;
+                    analyserR.smoothingTimeConstant = 0.78;
+
+                    state.analyserL = analyserL;
+                    state.analyserR = analyserR;
+                    state.freqBins = analyserL.frequencyBinCount;
+                    state.dataArrayL = new Uint8Array(state.freqBins);
+                    state.dataArrayR = new Uint8Array(state.freqBins);
+
+                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        try {
+                            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                            const source = audioCtx.createMediaStreamSource(micStream);
+                            const splitter = audioCtx.createChannelSplitter(2);
+                            source.connect(splitter);
+                            splitter.connect(analyserL, 0);
+                            splitter.connect(analyserR, 1);
+                            state.micActive = true;
+                            micBtnText.textContent = 'Stop Mic';
+                            showToast('Live Mobiele/Desktop Microfoon gekoppeld aan 2D Spectrum en 3D RSS Waterfall.');
+                            return;
+                        } catch (micErr) {
+                            // Gebruik onhoorbare interne DSP synth als microfoon niet beschikbaar is
+                        }
+                    }
+
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain1 = audioCtx.createGain();
+                    const gain2 = audioCtx.createGain();
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'triangle';
+                    osc1.frequency.value = 440;
+                    osc2.frequency.value = 660;
+                    gain1.gain.value = 0.5;
+                    gain2.gain.value = 0.5;
+                    osc1.connect(gain1);
+                    osc2.connect(gain2);
+                    gain1.connect(analyserL);
+                    gain2.connect(analyserR);
+                    osc1.start();
+                    osc2.start();
+                    state.synthOsc = { osc1, osc2 };
+                    state.micActive = true;
+                    micBtnText.textContent = 'Stop DSP';
+                    showToast('Interne WebAudio DSP-generator gestart voor 2D/3D spectrograaf-veldtest.');
+                } catch (e) {
+                    showToast('WebAudio kon niet starten: ' + e.message);
+                }
+            }
+
+            btnToggleWebcam.addEventListener('click', toggleWebcam);
+            btnToggleMic.addEventListener('click', toggleMicrophone);
+
+            // --- 7. MOBIELE GYROSCOOP / VLAKSTELLING SENSOR (DEVICEORIENTATION) ---
+            function updateGyroUI() {
+                const p = state.pitchDeg;
+                const r = state.rollDeg;
+                const totalTilt = Math.hypot(p, r);
+                const isLevel = totalTilt < 1.2;
+
+                valGyroReadout.textContent = `${p.toFixed(1)}° / ${r.toFixed(1)}° ${isLevel ? '(WATERPAS)' : '(TILT!)'}`;
+                valGyroReadout.className = isLevel ? 'text-emerald-400 font-bold text-[11px]' : 'text-amber-400 font-bold text-[11px]';
+
+                telemetryTiltBadge.textContent = `${totalTilt.toFixed(1)}° ${isLevel ? 'WATERPAS' : 'TILT'}`;
+                telemetryTiltBadge.className = isLevel ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold';
+
+                probeGyroHud.textContent = `Tilt: ${p.toFixed(1)}° | ${r.toFixed(1)}°`;
+            }
+
+            function handleOrientationEvent(event) {
+                if (event.beta !== null && event.gamma !== null) {
+                    state.gyroEnabled = true;
+                    state.rawPitch = Math.max(-45, Math.min(45, event.beta));
+                    state.rawRoll = Math.max(-45, Math.min(45, event.gamma));
+                    updateGyroUI();
+                }
+            }
+
+            btnEnableGyro.addEventListener('click', async () => {
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    try {
+                        const permissionState = await DeviceOrientationEvent.requestPermission();
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientationEvent, true);
+                            showToast('iOS Gyroscoop- en Vlakstellingssensor geactiveerd.');
+                        } else {
+                            showToast('Gyroscoop-toestemming geweigerd. Gebruik de Sim Tilt-schuifregelaar.');
+                        }
+                    } catch (err) {
+                        showToast('Kon iOS DeviceOrientation niet opvragen: ' + err.message);
+                    }
+                } else if ('DeviceOrientationEvent' in window) {
+                    window.addEventListener('deviceorientation', handleOrientationEvent, true);
+                    showToast('Mobiele Gyroscoop-vlakstelling actief (kantel je toestel of gebruik de Sim-slider op desktop).');
+                } else {
+                    showToast('Geen fysieke gyroscoop gedetecteerd. Gebruik de Sim Tilt-schuifregelaar voor vlakstellingstest.');
+                }
+            });
+
+            // Automatisch luisteren op Android/toestellen die geen expliciete iOS-permission vereisen
+            if ('DeviceOrientationEvent' in window && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+                window.addEventListener('deviceorientation', handleOrientationEvent, true);
+            }
+
+            btnZeroGyro.addEventListener('click', () => {
+                state.offsetPitch = state.rawPitch;
+                state.offsetRoll = state.rawRoll;
+                sliderSimTilt.value = 0;
+                updateGyroUI();
+                showToast('Vlakstelling gekalibreerd: huidige stand ingesteld als 0,0° referentievlak.');
+            });
+
+            sliderSimTilt.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                state.rawPitch = v;
+                state.rawRoll = v * 0.65;
+                state.offsetPitch = 0;
+                state.offsetRoll = 0;
+                updateGyroUI();
+            });
+
+            // --- 8. KALIBRATIE, MULTI-TOUCH PINCH & UI EVENTS ---
+            function updateCalibrationReadouts() {
+                valRadiusNm.textContent = `${state.radiusNm.toFixed(1)} nm (d=${state.diameterNm.toFixed(0)} nm)`;
+                valScalePx.textContent = `${state.zoomScale.toFixed(2)}× (${state.latticeANm.toFixed(2)} nm)`;
+                valRotationDeg.textContent = `${state.rotationDeg}° (p6m symmetrie)`;
+                valHudOpacity.textContent = `${Math.round(state.hudOpacity * 100)}%`;
+
+                telemetryLatticeA.textContent = `${state.latticeANm.toFixed(2)} nm`;
+                telemetryBraggK.textContent = `${state.braggK1.toFixed(4)} nm⁻¹`;
+            }
+
+            sliderRadius.addEventListener('input', (e) => {
+                state.radiusNm = parseFloat(e.target.value);
+                updateCalibrationReadouts();
+            });
+
+            sliderZoom.addEventListener('input', (e) => {
+                state.zoomScale = parseFloat(e.target.value);
+                updateCalibrationReadouts();
+            });
+
+            sliderRotation.addEventListener('input', (e) => {
+                state.rotationDeg = parseInt(e.target.value, 10);
+                updateCalibrationReadouts();
+            });
+
+            sliderOpacity.addEventListener('input', (e) => {
+                state.hudOpacity = parseInt(e.target.value, 10) / 100;
+                updateCalibrationReadouts();
+            });
+
+            colormapSelect.addEventListener('change', (e) => {
+                state.colormap = e.target.value;
+            });
+
+            simModeSelect.addEventListener('change', (e) => {
+                state.simMode = e.target.value;
+            });
+
+            btnResetParams.addEventListener('click', () => {
+                state.radiusNm = 55.0;
+                state.zoomScale = 1.0;
+                state.rotationDeg = 0;
+                state.hudOpacity = 0.85;
+                state.originX = 0.5;
+                state.originY = 0.5;
+                state.scanlineY = 0.5;
+                state.rawPitch = 0;
+                state.rawRoll = 0;
+                state.offsetPitch = 0;
+                state.offsetRoll = 0;
+
+                sliderRadius.value = 55;
+                sliderZoom.value = 1.0;
+                sliderRotation.value = 0;
+                sliderOpacity.value = 85;
+                sliderSimTilt.value = 0;
+                updateCalibrationReadouts();
+                updateGyroUI();
+                showToast('Parameters hersteld naar exacte 95,2628 nm roosterperiode (r=55 nm, d=110 nm, k₁=0,0761 nm⁻¹).');
+            });
+
+            // Laag-toggles
+            document.querySelectorAll('.hud-layer-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const layer = btn.getAttribute('data-layer');
+                    state.layers[layer] = !state.layers[layer];
+                    if (state.layers[layer]) {
+                        btn.classList.remove('opacity-40');
+                    } else {
+                        btn.classList.add('opacity-40');
+                    }
+                });
+            });
+
+            // PNG Snapshot export
+            btnSnapshot.addEventListener('click', () => {
+                try {
+                    const dataUrl = mainCanvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `spectro-hex-hud-${Math.round(state.latticeANm)}nm-${Date.now()}.png`;
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast('PNG Snapshot van mobiele/desktop HUD opgeslagen.');
+                } catch (err) {
+                    showToast('Snapshot kon niet worden geëxporteerd.');
+                }
+            });
+
+            // CSV Telemetrie & Scanline Export
+            btnExportCsv.addEventListener('click', () => {
+                try {
+                    let csv = 'bin_index,freq_est_hz,audio_L_db,audio_R_db,optical_scanline_I_norm,lattice_r_nm,lattice_a_nm,bragg_k1_nm_inv,pitch_deg,roll_deg\n';
+                    const N = state.freqBins;
+                    for (let i = 0; i < N; i++) {
+                        const freqHz = Math.round((i / N) * 20000);
+                        const lVal = state.dataArrayL[i];
+                        const rVal = state.dataArrayR[i];
+                        const scanI = (state.scanlineFFT[i] || 0).toFixed(4);
+                        csv += `${i},${freqHz},${lVal},${rVal},${scanI},${state.radiusNm.toFixed(2)},${state.latticeANm.toFixed(4)},${state.braggK1.toFixed(5)},${state.pitchDeg.toFixed(2)},${state.rollDeg.toFixed(2)}\n`;
+                    }
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `spectro-telemetry-${state.latticeANm.toFixed(2)}nm-${Date.now()}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    showToast('CSV Telemetrie (128 spectrale kanalen + 95,26 nm roosterparameters & gyro-tilt) geëxporteerd.');
+                } catch (err) {
+                    showToast('CSV export mislukt.');
+                }
+            });
+
+            // --- 9. MULTI-TOUCH & MUIS INTERACTIE OP HOOFDCANVAS (1-VINGER SLEEP & 2-VINGER PINCH-ZOOM) ---
+            function updateOriginFromClient(clientX, clientY) {
+                const rect = mainCanvas.getBoundingClientRect();
+                const relX = Math.max(0.05, Math.min(0.95, (clientX - rect.left) / rect.width));
+                const relY = Math.max(0.05, Math.min(0.95, (clientY - rect.top) / rect.height));
+                state.originX = relX;
+                state.originY = relY;
+                state.scanlineY = relY;
+            }
+
+            mainCanvas.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                updateOriginFromClient(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', () => { state.isDragging = false; });
+            mainCanvas.addEventListener('mousemove', (e) => {
+                if (state.isDragging) {
+                    updateOriginFromClient(e.clientX, e.clientY);
+                }
+            });
+
+            // Touch events met pinch-to-zoom voor mobiele veldtesten
+            mainCanvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1) {
+                    state.isDragging = true;
+                    updateOriginFromClient(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2) {
+                    state.isDragging = false;
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    state.initialPinchDist = Math.hypot(dx, dy);
+                    state.initialPinchZoom = state.zoomScale;
+                }
+            }, { passive: false });
+
+            mainCanvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1 && state.isDragging) {
+                    updateOriginFromClient(e.touches[0].clientX, e.touches[0].clientY);
+                } else if (e.touches.length === 2 && state.initialPinchDist) {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const dist = Math.hypot(dx, dy);
+                    const scaleFactor = dist / state.initialPinchDist;
+                    state.zoomScale = Math.max(0.4, Math.min(2.5, state.initialPinchZoom * scaleFactor));
+                    sliderZoom.value = state.zoomScale.toFixed(2);
+                    updateCalibrationReadouts();
+                }
+            }, { passive: false });
+
+            mainCanvas.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    state.initialPinchDist = null;
+                }
+                if (e.touches.length === 0) {
+                    state.isDragging = false;
+                }
+            });
+
+            // --- 10. HOOFD-CANVAS RENDERER (WEBRTC + PROCEDURELE GOLF + p6m ROOSTER + k-RUIMTE + GYRO WATERPAS) ---
+            function renderMainViewport(t) {
+                const w = mainCanvas.width;
+                const h = mainCanvas.height;
+                const cx = w * state.originX;
+                const cy = h * state.originY;
+
+                mainCtx.fillStyle = '#080c14';
+                mainCtx.fillRect(0, 0, w, h);
+
+                // 10A. Live WebRTC Video
+                if (state.webcamActive && videoEl.readyState >= 2) {
+                    const vw = videoEl.videoWidth || 1280;
+                    const vh = videoEl.videoHeight || 720;
+                    const scale = Math.max(w / vw, h / vh);
+                    const sw = vw * scale;
+                    const sh = vh * scale;
+                    const sx = (w - sw) / 2;
+                    const sy = (h - sh) / 2;
+                    mainCtx.drawImage(videoEl, sx, sy, sw, sh);
+
+                    mainCtx.fillStyle = 'rgba(8, 12, 20, 0.22)';
+                    mainCtx.fillRect(0, 0, w, h);
+                }
+
+                // 10B. Procedurele 95,26 nm Golf-Interferentie (Fallback of Hybride)
+                if (!state.webcamActive || state.simMode !== 'clean_cam') {
+                    mainCtx.save();
+                    mainCtx.globalAlpha = state.webcamActive ? 0.30 : 0.94;
+                    drawProceduralWaveField(mainCtx, w, h, cx, cy, t);
+                    mainCtx.restore();
+                }
+
+                // 10C. Optische Scanline Pixel Uitlezing
+                const scanY = Math.floor(h * state.scanlineY);
+                const probeX = Math.floor(cx);
+                let rowData = null;
+                try {
+                    rowData = mainCtx.getImageData(0, Math.max(0, Math.min(h - 1, scanY)), w, 1).data;
+                    const pIdx = Math.max(0, Math.min(w - 1, probeX)) * 4;
+                    const r = rowData[pIdx];
+                    const g = rowData[pIdx + 1];
+                    const b = rowData[pIdx + 2];
+                    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                    probeCoords.textContent = `X: ${probeX} | Y: ${scanY}`;
+                    probeRgb.textContent = `I(x,y): ${lum.toFixed(3)} | RGB(${r},${g},${b})`;
+                    probeKSpace.textContent = `|k₁|: ${state.braggK1.toFixed(4)} nm⁻¹ • ∠ ${state.rotationDeg}°`;
+                } catch (e) {}
+
+                // 10D. LAAG 1: Hexagonaal p6m Nanorooster (a = 95,26 nm)
+                if (state.layers.lattice) {
+                    drawHexagonalLatticeHUD(mainCtx, w, h, cx, cy);
+                }
+
+                // 10E. LAAG 2: Reciproke k-Ruimte & 6-voudige Bragg-ring (k1 = 0,0761 nm^-1)
+                if (state.layers.kspace) {
+                    drawReciprocalKSpaceHUD(mainCtx, w, h, cx, cy, t);
+                }
+
+                // 10F. LAAG 3: Optische Scanline I(x)
+                if (state.layers.scanline && rowData) {
+                    drawOpticalScanlineOverlay(mainCtx, w, h, scanY, rowData);
+                }
+
+                // 10G. LAAG 4: Mobiele Gyroscoop Waterpas (Pitch & Roll Bubble Target) & Reticle
+                if (state.layers.level) {
+                    drawGyroBubbleLevelHUD(mainCtx, w, h, cx, cy);
+                }
+            }
+
+            function drawProceduralWaveField(ctx, w, h, cx, cy, t) {
+                const basePitch = (state.latticeANm / 95.2628) * 60 * state.zoomScale;
+
+                const grad = ctx.createRadialGradient(cx, cy, 8, cx, cy, Math.max(w, h) * 0.7);
+                grad.addColorStop(0, 'rgba(0, 240, 255, 0.18)');
+                grad.addColorStop(0.45, 'rgba(16, 185, 129, 0.08)');
+                grad.addColorStop(1, 'rgba(8, 12, 20, 0.96)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.lineWidth = 1;
+                const numRings = 12;
+                for (let i = 1; i <= numRings; i++) {
+                    const phase = (t * 0.8 + i) % numRings;
+                    const r = phase * (basePitch * 0.55);
+                    const alpha = Math.max(0, (1 - r / (Math.max(w, h) * 0.65)) * 0.35);
+                    ctx.strokeStyle = i % 2 === 0
+                        ? `rgba(0, 240, 255, ${alpha})`
+                        : `rgba(255, 183, 3, ${alpha * 0.8})`;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                if (state.simMode === 'nodal_tide') {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+                    ctx.lineWidth = 2;
+                    for (let x = 0; x < w; x += 4) {
+                        const normX = (x - cx) / 110;
+                        const nodalEnv = Math.cos(normX * 0.35 - t * 0.4);
+                        const m2Carrier = Math.sin(normX * 3.2 - t * 2.5);
+                        const y = cy + nodalEnv * m2Carrier * 75;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            function drawHexagonalLatticeHUD(ctx, w, h, cx, cy) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate((state.rotationDeg * Math.PI) / 180);
+                ctx.globalAlpha = state.hudOpacity;
+
+                const minDim = Math.min(w, h);
+                const baseUnit = Math.max(42, minDim * 0.13);
+                const a_px = (state.latticeANm / 95.2628) * baseUnit * state.zoomScale;
+                const r_px = a_px / Math.sqrt(3);
+
+                const a1x = a_px;
+                const a1y = 0;
+                const a2x = a_px * 0.5;
+                const a2y = a_px * (Math.sqrt(3) / 2);
+
+                const gridRange = Math.min(14, Math.ceil(Math.max(w, h) / a_px) + 1);
+                const maxRadiusSq = Math.pow(Math.max(w, h) * 0.62, 2);
+
+                ctx.lineWidth = 1;
+
+                for (let m = -gridRange; m <= gridRange; m++) {
+                    for (let n = -gridRange; n <= gridRange; n++) {
+                        const px = m * a1x + n * a2x;
+                        const py = m * a1y + n * a2y;
+                        const distSq = px * px + py * py;
+                        if (distSq > maxRadiusSq) continue;
+
+                        const dist = Math.sqrt(distSq);
+                        const falloff = Math.max(0.12, 1 - dist / (Math.max(w, h) * 0.6));
+
+                        ctx.fillStyle = (m === 0 && n === 0)
+                            ? '#ffb703'
+                            : `rgba(0, 240, 255, ${falloff * 0.75})`;
+                        ctx.beginPath();
+                        ctx.arc(px, py, (m === 0 && n === 0) ? 4.5 : 2.1, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        if (dist < a_px * 2.9) {
+                            ctx.strokeStyle = `rgba(16, 185, 129, ${falloff * 0.45})`;
+                            ctx.beginPath();
+                            ctx.arc(px, py, r_px * 0.88, 0, Math.PI * 2);
+                            ctx.stroke();
+
+                            ctx.strokeStyle = `rgba(0, 240, 255, ${falloff * 0.32})`;
+                            ctx.beginPath();
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a1x, py + a1y);
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a2x, py + a2y);
+                            ctx.moveTo(px, py);
+                            ctx.lineTo(px + a2x - a1x, py + a2y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Primaire roosterperiode vector a = 95,26 nm
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(a_px, 0);
+                ctx.stroke();
+
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                ctx.fillText(`a=${state.latticeANm.toFixed(2)}nm`, a_px * 0.12, -7);
+
+                ctx.restore();
+            }
+
+            function drawReciprocalKSpaceHUD(ctx, w, h, cx, cy, t) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.globalAlpha = state.hudOpacity;
+
+                const minDim = Math.min(w, h);
+                const kRadiusPx = (95.2628 / state.latticeANm) * (minDim * 0.28) * (1 / Math.sqrt(state.zoomScale));
+                const rotRad = (state.rotationDeg * Math.PI) / 180;
+
+                // 1e Orde Bragg-diffractiering |k1| = 0,0761 nm^-1
+                ctx.strokeStyle = 'rgba(255, 183, 3, 0.75)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.arc(0, 0, kRadiusPx, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 6 Bragg-pieken op exact 60° interval (p6m symmetrie)
+                for (let i = 0; i < 6; i++) {
+                    const angle = rotRad + (i * Math.PI) / 3 + Math.PI / 6;
+                    const kx = Math.cos(angle) * kRadiusPx;
+                    const ky = Math.sin(angle) * kRadiusPx;
+                    const pulse = 5.5 + 2 * Math.sin(t * 4 + i);
+
+                    ctx.strokeStyle = 'rgba(255, 183, 3, 0.25)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(kx, ky);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = '#ffb703';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(kx, ky, pulse, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#fef08a';
+                    ctx.beginPath();
+                    ctx.arc(kx, ky, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    const degLabel = (i * 60 + state.rotationDeg) % 360;
+                    ctx.fillStyle = 'rgba(253, 224, 71, 0.92)';
+                    ctx.font = '10px "JetBrains Mono", monospace';
+                    ctx.fillText(`G${i + 1}(${degLabel}°)`, kx + 8, ky + 3);
+                }
+
+                ctx.fillStyle = '#ffb703';
+                ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                ctx.fillText(`k₁ = ${state.braggK1.toFixed(4)} nm⁻¹`, -62, -kRadiusPx - 8);
+
+                ctx.restore();
+            }
+
+            function drawOpticalScanlineOverlay(ctx, w, h, scanY, rowData) {
+                ctx.save();
+                ctx.globalAlpha = state.hudOpacity;
+
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, scanY);
+                ctx.lineTo(w, scanY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                const bins = state.scanlineFFT.length;
+                const step = Math.max(1, Math.floor(w / bins));
+
+                for (let i = 0; i < bins; i++) {
+                    const x = Math.min(w - 1, i * step);
+                    const idx = x * 4;
+                    const lum = (0.299 * rowData[idx] + 0.587 * rowData[idx + 1] + 0.114 * rowData[idx + 2]) / 255;
+                    state.scanlineFFT[i] = lum;
+
+                    const plotY = scanY - (lum - 0.5) * 80;
+                    if (i === 0) ctx.moveTo(x, plotY);
+                    else ctx.lineTo(x, plotY);
+                }
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            // Teken de Mobiele Gyroscoop Waterpas (Pitch & Roll Bubble) rondom de oorsprong
+            function drawGyroBubbleLevelHUD(ctx, w, h, cx, cy) {
+                ctx.save();
+                ctx.globalAlpha = state.hudOpacity;
+
+                const p = state.pitchDeg;
+                const r = state.rollDeg;
+                const totalTilt = Math.hypot(p, r);
+                const isLevel = totalTilt < 1.2;
+
+                // Buitenste waterpas-ring rond het centrum
+                const ringR = 28;
+                ctx.strokeStyle = isLevel ? '#10b981' : '#f43f5e';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Kruisdraden
+                ctx.beginPath();
+                ctx.moveTo(cx - ringR - 6, cy);
+                ctx.lineTo(cx - ringR + 6, cy);
+                ctx.moveTo(cx + ringR - 6, cy);
+                ctx.lineTo(cx + ringR + 6, cy);
+                ctx.moveTo(cx, cy - ringR - 6);
+                ctx.lineTo(cx, cy - ringR + 6);
+                ctx.moveTo(cx, cy + ringR - 6);
+                ctx.lineTo(cx, cy + ringR + 6);
+                ctx.stroke();
+
+                // Zwevende waterpas-bel (verplaatst o.b.v. Roll en Pitch)
+                const bx = cx + Math.max(-ringR, Math.min(ringR, r * 2.2));
+                const by = cy + Math.max(-ringR, Math.min(ringR, p * 2.2));
+
+                ctx.fillStyle = isLevel ? 'rgba(16, 185, 129, 0.85)' : 'rgba(244, 63, 94, 0.85)';
+                ctx.beginPath();
+                ctx.arc(bx, by, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // --- 11. SPECTRAAL SIGNAAL GENERATOR & 2D/3D RENDERING ---
+            function updateSpectralBuffers(t) {
+                const N = state.freqBins;
+
+                if (state.micActive && state.analyserL && state.analyserR) {
+                    if (state.synthOsc) {
+                        state.synthOsc.osc1.frequency.setValueAtTime(320 + Math.sin(t * 1.4) * 180, state.audioCtx.currentTime);
+                        state.synthOsc.osc2.frequency.setValueAtTime(520 + Math.cos(t * 0.9) * 220, state.audioCtx.currentTime);
+                    }
+                    state.analyserL.getByteFrequencyData(state.dataArrayL);
+                    state.analyserR.getByteFrequencyData(state.dataArrayR);
+                } else {
+                    const braggBin = Math.min(N - 4, Math.max(8, Math.floor((state.braggK1 / 0.12) * N)));
+                    const sweepBin = Math.floor(((Math.sin(t * 0.65) + 1) * 0.35 + 0.15) * N);
+
+                    for (let i = 0; i < N; i++) {
+                        const scanVal = state.scanlineFFT[i] || 0.3;
+                        const distBragg = Math.abs(i - braggBin);
+                        const distSweep = Math.abs(i - sweepBin);
+
+                        const braggPeak = Math.exp(-(distBragg * distBragg) / 14) * 195;
+                        const solarBurst = Math.exp(-(distSweep * distSweep) / 28) * (130 + 60 * Math.sin(t * 3.2));
+                        const harmonic2 = Math.exp(-Math.pow(i - braggBin * 1.732, 2) / 10) * 110;
+
+                        state.dataArrayL[i] = Math.min(255, Math.max(8, 18 + braggPeak + solarBurst * 0.6 + scanVal * 45 + Math.random() * 12));
+                        state.dataArrayR[i] = Math.min(255, Math.max(8, 18 + braggPeak * 0.75 + solarBurst + harmonic2 + Math.random() * 12));
+                    }
+                }
+
+                let maxVal = 0;
+                let maxIdx = 0;
+                for (let i = 0; i < N; i++) {
+                    if (state.dataArrayL[i] > maxVal) {
+                        maxVal = state.dataArrayL[i];
+                        maxIdx = i;
+                    }
+                }
+                state.peakFreqHz = Math.round((maxIdx / N) * 20000);
+                state.peakDb = Math.round(((maxVal / 255) - 1) * 60);
+                peakFreqReadout.textContent = `Piek: ${state.peakFreqHz} Hz (${state.peakDb} dB)`;
+            }
+
+            function render2DSpectrum() {
+                const w = spec2DCanvas.width;
+                const h = spec2DCanvas.height;
+                const ctx = spec2DCtx;
+                const N = state.freqBins;
+
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.strokeStyle = 'rgba(30, 41, 59, 0.7)';
+                ctx.lineWidth = 1;
+                for (let y = 0.25; y < 1; y += 0.25) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, h * y);
+                    ctx.lineTo(w, h * y);
+                    ctx.stroke();
+                }
+
+                // L-Kanaal
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayL[i] / 255) * (h * 0.88);
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+                ctx.fill();
+
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayL[i] / 255) * (h * 0.88);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // R-Kanaal
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const y = h - (state.dataArrayR[i] / 255) * (h * 0.88);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 1.4;
+                ctx.stroke();
+
+                // Optische Scanline FFT
+                ctx.beginPath();
+                for (let i = 0; i < N; i++) {
+                    const x = (i / (N - 1)) * w;
+                    const lum = state.scanlineFFT[i] || 0;
+                    const y = h - lum * (h * 0.65);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            }
+
+            function mapIntensityToColor(normVal, scheme) {
+                const v = Math.max(0, Math.min(1, normVal));
+                if (scheme === 'viridis') {
+                    const r = Math.floor(68 + v * 185);
+                    const g = Math.floor(1 + v * 220);
+                    const b = Math.floor(84 + Math.sin(v * Math.PI) * 140 - v * 50);
+                    return `rgb(${r},${g},${Math.max(20, b)})`;
+                }
+                if (scheme === 'cyber') {
+                    const r = Math.floor(v * v * 244);
+                    const g = Math.floor(v * 240);
+                    const b = Math.floor(80 + v * 175);
+                    return `rgb(${r},${g},${b})`;
+                }
+                if (v < 0.25) {
+                    const t = v / 0.25;
+                    return `rgb(4, ${Math.floor(t * 45)}, ${Math.floor(30 + t * 140)})`;
+                } else if (v < 0.55) {
+                    const t = (v - 0.25) / 0.30;
+                    return `rgb(${Math.floor(t * 40)}, ${Math.floor(45 + t * 195)}, ${Math.floor(170 - t * 90)})`;
+                } else if (v < 0.82) {
+                    const t = (v - 0.55) / 0.27;
+                    return `rgb(${Math.floor(40 + t * 215)}, ${Math.floor(240 - t * 60)}, ${Math.floor(80 - t * 70)})`;
+                } else {
+                    const t = (v - 0.82) / 0.18;
+                    return `rgb(255, ${Math.floor(180 + t * 75)}, ${Math.floor(t * 220)})`;
+                }
+            }
+
+            function render3DWaterfall() {
+                const w = waterfallCanvas.width;
+                const h = waterfallCanvas.height;
+                const ctx = waterfallCtx;
+                const N = state.freqBins;
+
+                const scrollSpeed = 2;
+                ctx.drawImage(waterfallCanvas, scrollSpeed, 0, w - scrollSpeed, h, 0, 0, w - scrollSpeed, h);
+
+                const binHeight = h / N;
+                for (let i = 0; i < N; i++) {
+                    const freqIndex = N - 1 - i;
+                    const combinedIntensity = (state.dataArrayL[freqIndex] * 0.6 + state.dataArrayR[freqIndex] * 0.4) / 255;
+                    ctx.fillStyle = mapIntensityToColor(combinedIntensity, state.colormap);
+                    ctx.fillRect(w - scrollSpeed, Math.floor(i * binHeight), scrollSpeed, Math.ceil(binHeight) + 1);
+                }
+            }
+
+            // --- 12. ANIMATIELUS ---
+            function animateLoop(now) {
+                state.frameCount++;
+                if (now - state.lastFpsUpdate >= 500) {
+                    state.fps = Math.round((state.frameCount * 1000) / (now - state.lastFpsUpdate));
+                    telemetryFps.textContent = state.fps;
+                    state.frameCount = 0;
+                    state.lastFpsUpdate = now;
+                }
+
+                state.time = now * 0.001;
+
+                renderMainViewport(state.time);
+                updateSpectralBuffers(state.time);
+                render2DSpectrum();
+                render3DWaterfall();
+
+                requestAnimationFrame(animateLoop);
+            }
+
+            window.onload = function() {
+                resizeCanvases();
+                updateCalibrationReadouts();
+                updateGyroUI();
+                requestAnimationFrame(animateLoop);
+            };
+        })();
+    </script>
+</body>
+</html>
