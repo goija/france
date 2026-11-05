@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VORTEX OS — Astrometrie 2041 | p3/p6 95.26 nm | Leptonen | WebRTC & STL Cockpit</title>
+  <style>
+    :root {
+      --bg-0: #050811;
+      --bg-1: #0b1120;
+      --bg-2: #111a2e;
+      --border: #1e2d4a;
+      --cyan: #00f0ff;
+      --gold: #f5b942;
+      --green: #10b981;
+      --magenta: #ec4899;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-0);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+    header {
+      background: linear-gradient(90deg, #070c18 0%, #0f1b33 50%, #070c18 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+    .brand h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .top-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button, .btn {
+      background: var(--bg-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 11px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    button:hover, .btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    button.active, .btn-primary {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    button.btn-gold {
+      background: rgba(245, 185, 66, 0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 330px 1fr 360px;
+      gap: 10px;
+      padding: 10px;
+      min-height: calc(100vh - 58px);
+    }
+    @media (max-width: 1280px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .panel-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--cyan);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .control-group label {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+    select, input[type="number"], input[type="text"], textarea {
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 100%;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .canvas-container {
+      position: relative;
+      background: #020409;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      min-height: 540px;
+      display: flex;
+      flex-direction: column;
+    }
+    #mainCanvas {
+      width: 100%;
+      height: 540px;
+      display: block;
+      cursor: crosshair;
+    }
+    .hud-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(5, 8, 17, 0.84);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      pointer-events: none;
+      max-width: 340px;
+    }
+    .hud-probe {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(5, 8, 17, 0.88);
+      border: 1px solid rgba(245, 185, 66, 0.45);
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      pointer-events: none;
+      min-width: 245px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: var(--bg-2);
+      color: var(--cyan);
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .badge-cyan { background: rgba(0,240,255,0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .badge-gold { background: rgba(245,185,66,0.15); color: var(--gold); border: 1px solid var(--gold); }
+    .badge-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid var(--green); }
+    .badge-magenta { background: rgba(236,72,153,0.15); color: var(--magenta); border: 1px solid var(--magenta); }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; gap: 8px; }
+    .log-box {
+      background: #03060c;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      height: 120px;
+      overflow-y: auto;
+      color: #a7f3d0;
+    }
+    /* Slide-deck modal */
+    #slideModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 14, 0.96);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px 48px;
+    }
+    #slideModal.open { display: flex; }
+    .slide-body {
+      max-width: 1100px;
+      margin: auto;
+      width: 100%;
+      background: var(--bg-1);
+      border: 1px solid var(--cyan);
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.12);
+    }
+    .slide-body h2 {
+      color: var(--cyan);
+      font-family: var(--font-mono);
+      font-size: 24px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .slide-body ul {
+      margin-left: 20px;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .slide-body li { margin-bottom: 8px; }
+    video#camVideo { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="brand-badge">VORTEX OS v4.2</span>
+    <div>
+      <h1>Astrometrische R-Engine (2041) • 17 Behanggroepen (95,26 / 110 nm) • Leptonen • WebRTC & 3D STL</h1>
+      <div class="brand-sub">JD 2466722.66667 (22-07-2041 04:00 UTC) | Tafelbergheide (12-08-2026) | TS-01 28-10-2026 08:05 -> TS-02 31-10-2026 14:04 (+70h)</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button class="btn-gold" onclick="toggleSlideDeck(true)">🌌 Open Definitief Slide-Deck (5 Slides)</button>
+    <button onclick="setPresetLocation(43.7886, 4.8317, 'Saint-Rémy-de-Provence (2041)')">📍 Saint-Rémy (43.79°N)</button>
+    <button onclick="setPresetLocation(52.2167, 5.1833, 'Tafelbergheide (Eclips 2026)')">📍 Tafelbergheide (52.22°N)</button>
+    <button onclick="activateGPS()">🛰️ Mobiele GPS & SensorNet</button>
+    <button onclick="toggleCameraAR()" id="btnCam">📷 Start Camera AR</button>
+  </div>
+</header>
+
+<video id="camVideo" autoplay playsinline muted></video>
+
+<div class="workspace">
+  <!-- LINKER KOLOM: ASTROMETRIE, BEHANGGROEPEN, SPIEGEL/DRAAI & STL/JSON -->
+  <div class="panel">
+    <div class="panel-title">
+      <span>1. Astrometrie & Kristallografie Controls</span>
+      <span class="badge badge-cyan">R-SYNC</span>
+    </div>
+
+    <div class="grid-2">
+      <div class="control-group">
+        <label>Breedtegraad φ (°N)</label>
+        <input type="number" id="inpLat" step="0.0001" value="43.7886" onchange="updateSimulation()" />
+      </div>
+      <div class="control-group">
+        <label>Lengtegraad λ (°E)</label>
+        <input type="number" id="inpLon" step="0.0001" value="4.8317" onchange="updateSimulation()" />
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label><span>Juliaanse Datum (JD) / Tijd-Offset (uur)</span><span id="lblTimeOffset">0.0 h (04:00 UTC)</span></label>
+      <input type="range" id="rngTime" min="-6" max="6" step="0.05" value="0" oninput="updateSimulation()" />
+    </div>
+
+    <div class="control-group">
+      <label><span>17 Kristallografische Behanggroepen</span><span class="badge badge-gold">IUCr</span></label>
+      <select id="selWallpaper" onchange="updateSimulation()">
+        <option value="p3_p6" selected>Gecombineerd: p3 (120°, 120%) + p6 (60°, 60%)</option>
+        <option value="p3">p3 — Hexagonaal 3-voudig (120°, schaal 120%)</option>
+        <option value="p3m1">p3m1 — Hexagonaal 3-voudig + Spiegelassen M(φ)</option>
+        <option value="p31m">p31m — Hexagonaal 3-voudig + 30° Spiegelassen</option>
+        <option value="p6">p6 — Hexagonaal 6-voudig (60°, schaal 60%)</option>
+        <option value="p6m">p6m — Volledig Dihedraal Hexagonaal + G1..G6</option>
+        <option value="p1">p1 — Oblique (Enkel translatie)</option>
+        <option value="p2">p2 — Oblique (180° tweetallige rotatie)</option>
+        <option value="pm">pm — Rechthoekig (Parallelle spiegelassen)</option>
+        <option value="pg">pg — Rechthoekig (Glijspiegelassen)</option>
+        <option value="cm">cm — Gecentreerd Rechthoekig (Spiegel + glij)</option>
+        <option value="pmm">pmm — Rechthoekig (Loodrechte spiegelassen)</option>
+        <option value="pmg">pmg — Rechthoekig (Spiegel + 180° rotatie)</option>
+        <option value="pgg">pgg — Rechthoekig (Loodrechte glijspiegels)</option>
+        <option value="cmm">cmm — Ruitvormig (Dihedrale spiegels)</option>
+        <option value="p4">p4 — Vierkant 4-voudig (90° rotatie)</option>
+        <option value="p4m">p4m — Vierkant Dihedraal (90° + 45° spiegels)</option>
+        <option value="p4g">p4g — Vierkant Glijspiegel + 90° rotatie</option>
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="control-group">
+        <label><span>Rooster a (nm)</span><span id="lblLatticeA">95.26 nm</span></label>
+        <select id="selLatticeA" onchange="updateSimulation()">
+          <option value="95.26" selected>95.26 nm (Hyaden Anker)</option>
+          <option value="110.0">110.0 nm (VORTEX G1-G6)</option>
+          <option value="55.0">55.0 nm (Segment s=a/2)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label><span>Spiegelas φ₀ (°)</span><span id="lblMirrorPhi">95.26°</span></label>
+        <input type="range" id="rngMirrorPhi" min="0" max="180" step="0.02" value="95.26" oninput="updateSimulation()" />
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:4px;">
+      <span>2. Universele Spiegel- & Draai-Engine</span>
+      <span class="badge badge-magenta">2D / 3D / AR</span>
+    </div>
+
+    <div class="grid-3">
+      <button id="btnFlipH" onclick="toggleMirror('H')">↔ Spiegel X (Mx)</button>
+      <button id="btnFlipV" onclick="toggleMirror('V')">↕ Spiegel Y (My)</button>
+      <button id="btnFlipPhi" class="active" onclick="toggleMirror('PHI')">⟋ As M(φ₀)</button>
+    </div>
+    <div class="grid-2">
+      <button id="btnKaleido" onclick="toggleMirror('KALEIDO')">❄️ p6 Kaleidoscoop</button>
+      <button id="btnPhotonicG" class="active" onclick="toggleMirror('G1G6')">⬢ G1–G6 + Spectrum</button>
+    </div>
+
+    <div class="control-group">
+      <label><span>Globale Rotatie θ (Beeld / Rooster / STL)</span><span id="lblGlobalRot">0.0°</span></label>
+      <input type="range" id="rngGlobalRot" min="0" max="360" step="0.5" value="0" oninput="updateSimulation()" />
+    </div>
+
+    <div class="panel-title" style="margin-top:4px;">
+      <span>3. Upload & 3D .STL / .JSON / Beeld</span>
+      <span class="badge badge-green">I/O</span>
+    </div>
+
+    <div class="control-group">
+      <label>Upload Beeld (PNG/JPG/SVG), 3D Model (.STL) of Data (.JSON)</label>
+      <input type="file" id="fileUpload" accept=".png,.jpg,.jpeg,.svg,.stl,.json" onchange="handleUniversalUpload(event)" />
+    </div>
+
+    <div class="grid-3">
+      <div class="control-group">
+        <label>STL Rot X (°)</label>
+        <input type="range" id="rngStlX" min="0" max="360" value="25" oninput="updateSimulation()" />
+      </div>
+      <div class="control-group">
+        <label>STL Rot Y (°)</label>
+        <input type="range" id="rngStlY" min="0" max="360" value="40" oninput="updateSimulation()" />
+      </div>
+      <div class="control-group">
+        <label>STL Spiegelvlak</label>
+        <select id="selStlMirror" onchange="updateSimulation()">
+          <option value="NONE">Geen (Chiraal)</option>
+          <option value="XY">Spiegel XY (z → -z)</option>
+          <option value="YZ">Spiegel YZ (x → -x)</option>
+          <option value="XZ">Spiegel XZ (y → -y)</option>
+          <option value="PHI" selected>Spiegel M(95.26°)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <button onclick="generateSampleSTL()">🧊 Genereer p6 Hex-STL</button>
+      <button onclick="exportCurrentStateJSON()">💾 Export .JSON Staat</button>
+    </div>
+  </div>
+
+  <!-- MIDDEN KOLOM: HOOFDCANVAS + ASTROMETRISCHE & LEPTON TABELLEN -->
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div class="canvas-container">
+      <canvas id="mainCanvas" width="920" height="540"></canvas>
+
+      <div class="hud-overlay" id="hudLeft">
+        <div style="color:var(--cyan); font-weight:700; margin-bottom:4px;">VORTEX AR HUD • ASTROMETRIE & FOTONICA</div>
+        <div id="hudAstroText">Laden...</div>
+      </div>
+
+      <div class="hud-probe" id="hudRight">
+        <div style="color:var(--gold); font-weight:700; margin-bottom:4px;">NANOSONDE (X_nm, Y_nm) & MATRIX</div>
+        <div id="hudProbeText">Beweeg muis over het rooster...</div>
+      </div>
+    </div>
+
+    <!-- Onder-tabbladen onder het canvas -->
+    <div class="panel">
+      <div class="tabs">
+        <button class="active" onclick="switchBottomTab('tabAstro', this)">🔭 1. Astrometrie (2041 & Eclips 2026)</button>
+        <button onclick="switchBottomTab('tabParticles', this)">⚛️ 2. Leptongetallen & Deeltjesclassificatie</button>
+        <button onclick="switchBottomTab('tabAudit', this)">🔐 3. Cryptografisch SMTP- & Tijdsanker-Register</button>
+        <button onclick="switchBottomTab('tabRCode', this)">📜 4. R-Engine & Vivaldi .desktop</button>
+      </div>
+
+      <!-- TAB 1: Astrometrie -->
+      <div id="tabAstro" class="tab-content active">
+        <table>
+          <thead>
+            <tr>
+              <th>Hemellichaam (Epoch 2041)</th>
+              <th>RK α (°)</th>
+              <th>Declinatie δ (°)</th>
+              <th>Hoogte h (°)</th>
+              <th>Azimut A (°)</th>
+              <th>Uurhoek H (°)</th>
+              <th>Koppeling Rooster / Fotonica</th>
+            </tr>
+          </thead>
+          <tbody id="astroTableBody"></tbody>
+        </table>
+        <div style="font-size:11px; color:var(--muted); font-family:var(--font-mono);">
+          <strong>Eclips 12-08-2026 (Tafelbergheide 52°13'N, 5°11'E):</strong> VSOP87 (Versie Da) + ELP-2000/82 (37.862 termen, fout &lt; 0,025 s) | Seculaire maansversnelling: -25,858"/cy² | ΔT(2026.6) = 71,88 s (gecorrigeerd met LLR-term c) | Danjon (1/85, 75 km) vs Chauvenet (1/50) | Micro-meteorologie: R_n &lt; 0, Calluna vulgaris dekzand-afkoeling, Eclipse Calm (H → 0), grondinversie ∂T/∂z &gt; 0.
+        </div>
+      </div>
+
+      <!-- TAB 2: Deeltjesclassificatie & Leptongetallen -->
+      <div id="tabParticles" class="tab-content">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:var(--font-mono); font-size:11px; color:var(--cyan);">
+            Standaardmodel Symmetrie-Toewijzing op G1–G6 (p6, 60°) & p3 (120°) met CP-Spiegeloperator M(φ):
+          </span>
+          <label style="font-family:var(--font-mono); font-size:11px;">
+            <input type="checkbox" id="chkAntiParticles" onchange="renderParticleTable(); updateSimulation();" />
+            Activeer CP-Spiegeling (Antideeltjes: L → -L, B → -B, Q → -Q)
+          </label>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Knoop / Groep</th>
+              <th>Deeltje</th>
+              <th>Symbool</th>
+              <th>Generatie / Familie</th>
+              <th>Massa</th>
+              <th>Lading Q</th>
+              <th>Spin J</th>
+              <th>L_e</th>
+              <th>L_μ</th>
+              <th>L_τ</th>
+              <th>L_tot</th>
+              <th>Baryon B</th>
+            </tr>
+          </thead>
+          <tbody id="particleTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- TAB 3: Cryptografisch SMTP Register -->
+      <div id="tabAudit" class="tab-content">
+        <table>
+          <thead>
+            <tr>
+              <th>Anker ID</th>
+              <th>Tijdstempel (CET / Lokaal)</th>
+              <th>Tijdstempel (UTC)</th>
+              <th>Systeem / SMTP Hop</th>
+              <th>Cryptografische Verificatie & Queue-ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-gold">TS-01</span></td>
+              <td>Wo 28-10-2026 08:05:00</td>
+              <td>2026-10-28 07:05:00 UTC</td>
+              <td>Primair Ochtend-Tijdsanker</td>
+              <td>Initiële registratie • Lokale referentietijd CET (UTC+1)</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-cyan">SMTP-HOP-01</span></td>
+              <td>Wo 28-10-2026 16:04:25 +0100</td>
+              <td>2026-10-28 15:04:25 UTC</td>
+              <td>ec2-34-250-253-130 (mail.zaaksysteem.nl) → mail-out.zaaksysteem.nl [149.210.141.108]</td>
+              <td>Exim 4.95 • ID: <strong>1xM5CT-00AzoK-Ar</strong> • TLS1.3 ECDHE_RSA_WITH_AES_256_GCM_SHA384 • env: mail-zaaksysteem@tholen.nl</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-cyan">SMTP-HOP-02</span></td>
+              <td>Wo 28-10-2026 16:04:31 +0100</td>
+              <td>2026-10-28 15:04:31 UTC</td>
+              <td>mail-out.zaaksysteem.nl [149.210.141.108] → mailinosl106.protonmail.ch</td>
+              <td>Postfix ESMTPS • ID: <strong>4jF9cv2Mlzz5K</strong> • TLSv1.3 AES_256_GCM_SHA384 (256/256) • x25519 • RSA-PSS 4096-bit SHA512 (Δt = +6 s)</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-green">TS-02</span></td>
+              <td>Za 31-10-2026 14:04:00</td>
+              <td>2026-10-31 13:04:00 UTC</td>
+              <td>Secundair Tijdsanker (+70,0 uur)</td>
+              <td>Exact interval Δt = 252.000 s sinds SMTP-ontvangst</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TAB 4: R-Engine & Desktop Entry -->
+      <div id="tabRCode" class="tab-content">
+        <textarea rows="6" readonly>
+# R-Engine Verificatie (JD = 2466722.66667 | 22 juli 2041 04:00 UTC | Saint-Rémy)
+lat <- 43.7886; lon <- 4.8317; JD <- 2466722.66667
+T <- (JD - 2451545.0) / 36525.0
+GMST <- (280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T^2) %% 360
+LST <- (GMST + lon) %% 360
+
+# [Desktop Entry] Vivaldi Social (dbbilopofoppfadmjolkgmoopfmehcne)
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app-id=dbbilopofoppfadmjolkgmoopfmehcne
+        </textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECHTER KOLOM: WEBRTC DATACHANNELS & SENSORNET TELEMETRIE -->
+  <div class="panel">
+    <div class="panel-title">
+      <span>4. WebRTC P2P DataChannel Engine</span>
+      <span class="badge badge-green" id="rtcStatusBadge">GEREED</span>
+    </div>
+
+    <div style="font-size:11px; color:var(--muted);">
+      Verbind twee nodes peer-to-peer of test direct via de lokale Loopback-brug om astrometrie, (X_nm, Y_nm)-coördinaten, lepton-staten en .STL/.JSON-matrices real-time te streamen.
+    </div>
+
+    <div class="grid-2">
+      <button class="btn-primary" onclick="startWebRTCLoopback()">🔗 Start P2P Loopback</button>
+      <button onclick="broadcastStateOverRTC()">📡 Stream Huidige Staat</button>
+    </div>
+
+    <div class="grid-2">
+      <button onclick="createManualOffer()">1. Genereer SDP Offer</button>
+      <button onclick="acceptManualSignal()">2. Verwerk SDP / Answer</button>
+    </div>
+
+    <div class="control-group">
+      <label>SDP Signaling / JSON Payload Inspector</label>
+      <textarea id="rtcSignalBox" rows="3" placeholder="SDP Offer/Answer of JSON DataChannel pakket..."></textarea>
+    </div>
+
+    <div class="control-group">
+      <label><span>WebRTC DataChannel Live Log</span><span id="lblRtcBytes">0 bytes</span></label>
+      <div class="log-box" id="rtcLog"></div>
+    </div>
+
+    <div class="panel-title" style="margin-top:4px;">
+      <span>5. SensorNet & Fotonische Telemetrie</span>
+      <span class="badge badge-cyan">LIVE BUS</span>
+    </div>
+
+    <table>
+      <tbody>
+        <tr>
+          <td>Oriëntatie (α, β, γ)</td>
+          <td id="senOrient">95.22° / 12.10° / 0.00°</td>
+        </tr>
+        <tr>
+          <td>Elevatie-Kalibratie (h)</td>
+          <td id="senElev">12.10° (Tafelbergheide Ref)</td>
+        </tr>
+        <tr>
+          <td>Fotonisch Rooster (G1–G6)</td>
+          <td>a = 110 nm | s = 55 nm | A = 7859.14 nm²</td>
+        </tr>
+        <tr>
+          <td>Diëlektrische Multilaag</td>
+          <td>SiO₂/TiO₂ | Δn_r = 1.45–2.10 | η &gt; 94.2%</td>
+        </tr>
+        <tr>
+          <td>Spectraal Filter (TE/TM)</td>
+          <td id="senSpec">d = 70 μm | a = 95.26 nm | 620–750 nm</td>
+        </tr>
+        <tr>
+          <td>3D STL Mesh Status</td>
+          <td id="senStlStatus">Hexagonaal p6-prisma geladen (24 driehoeken)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="control-group">
+      <label><span>Spectrale Golfvorm & Intensiteit S↓ (h = 12,1°)</span><span id="lblFlux">94.2% TE/TM</span></label>
+      <canvas id="specCanvas" width="330" height="90" style="background:#03060c; border:1px solid var(--border); border-radius:4px; width:100%;"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE-DECK MODAL (PRESENTATIEMODUS) -->
+<div id="slideModal">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span class="brand-badge">DEFINITIEF SLIDE-DECK • VORTEX OS 1889–2026–2041</span>
+    <div style="display:flex; gap:8px;">
+      <button onclick="changeSlide(-1)">◀ Vorige Slide</button>
+      <span id="slideCounter" style="font-family:var(--font-mono); padding:6px 12px; color:var(--gold);">1 / 5</span>
+      <button onclick="changeSlide(1)">Volgende Slide ▶</button>
+      <button class="btn-gold" onclick="toggleSlideDeck(false)">✖ Sluiten (Esc)</button>
+    </div>
+  </div>
+  <div class="slide-body" id="slideContent"></div>
+  <div style="text-align:center; font-family:var(--font-mono); font-size:11px; color:var(--muted);">
+    Gebruik pijltjestoetsen (← / →) om door het slide-deck te navigeren.
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// 1. GLOBALE STAAT & DATASTRUCTUREN
+// ============================================================================
+const state = {
+  lat: 43.7886,
+  lon: 4.8317,
+  locName: "Saint-Rémy-de-Provence (2041)",
+  baseJD: 2466722.66667, // 22 juli 2041 04:00 UTC
+  timeOffsetHours: 0,
+  wallpaper: "p3_p6",
+  latticeA: 95.26,
+  mirrorPhi: 95.26,
+  flipH: false,
+  flipV: false,
+  flipPhi: true,
+  kaleido: false,
+  showG1G6: true,
+  globalRot: 0,
+  stlRotX: 25,
+  stlRotY: 40,
+  stlMirror: "PHI",
+  mouseX: 460,
+  mouseY: 270,
+  camActive: false,
+  uploadedImage: null,
+  stlTriangles: [],
+  customJsonNodes: [],
+  rtcBytes: 0,
+  sensorAlpha: 95.22,
+  sensorBeta: 12.10,
+  sensorGamma: 0.0
+};
+
+// De 4 hemellichamen uit het R-script (Epoch 2041)
+const bodies2041 = [
+  { name: "Zon (Ochtendschemering)", ra: 122.10, dec: 20.10, color: "#f59e0b", radius: 9, note: "Civiele schemering (-4.00°)" },
+  { name: "Maan (~16% Sikkel)",      ra: 86.25,  dec: 21.50, color: "#f8fafc", radius: 8, note: "8 Meton-cycli (1880 mnd)" },
+  { name: "Venus (Morgenster)",      ra: 82.50,  dec: 20.50, color: "#38bdf8", radius: 6, note: "19 Pentagram-cycli (95 syn)" },
+  { name: "Aldebaran / Hyaden",      ra: 69.58,  dec: 16.65, color: "#fb7185", radius: 6, note: "Anker Az 95.22° -> 95.26 nm" }
+];
+
+// Standaardmodel Deeltjes & Leptongetallen gekoppeld aan G1-G6 (p6) en p3
+const standardModelParticles = [
+  { node: "G1 (0° • p6)",   name: "Elektron",          sym: "e⁻",  antiSym: "e⁺",  fam: "Lepton (Gen I)",   mass: "0.511 MeV/c²", q: -1,   spin: "1/2", le: 1, lmu: 0, ltau: 0, b: 0, color: "#00f0ff" },
+  { node: "G2 (60° • p6)",  name: "Elektron-neutrino", sym: "ν_e", antiSym: "ν̄_e", fam: "Lepton (Gen I)",   mass: "< 0.8 eV/c²",  q: 0,    spin: "1/2", le: 1, lmu: 0, ltau: 0, b: 0, color: "#38bdf8" },
+  { node: "G3 (120° • p6)", name: "Muon",              sym: "μ⁻",  antiSym: "μ⁺",  fam: "Lepton (Gen II)",  mass: "105.66 MeV/c²",q: -1,   spin: "1/2", le: 0, lmu: 1, ltau: 0, b: 0, color: "#f5b942" },
+  { node: "G4 (180° • p6)", name: "Muon-neutrino",     sym: "ν_μ", antiSym: "ν̄_μ", fam: "Lepton (Gen II)",  mass: "< 0.19 MeV/c²",q: 0,    spin: "1/2", le: 0, lmu: 1, ltau: 0, b: 0, color: "#fbbf24" },
+  { node: "G5 (240° • p6)", name: "Tau-lepton",        sym: "τ⁻",  antiSym: "τ⁺",  fam: "Lepton (Gen III)", mass: "1776.86 MeV/c²",q: -1,  spin: "1/2", le: 0, lmu: 0, ltau: 1, b: 0, color: "#ec4899" },
+  { node: "G6 (300° • p6)", name: "Tau-neutrino",      sym: "ν_τ", antiSym: "ν̄_τ", fam: "Lepton (Gen III)", mass: "< 18.2 MeV/c²",q: 0,    spin: "1/2", le: 0, lmu: 0, ltau: 1, b: 0, color: "#f472b6" },
+  { node: "p3-A (0°)",      name: "Up / Down Quark",   sym: "u/d", antiSym: "ū/d̄", fam: "Quark (Gen I)",    mass: "2.2 / 4.7 MeV",q: "+2/3, -1/3", spin: "1/2", le: 0, lmu: 0, ltau: 0, b: 0.333, color: "#10b981" },
+  { node: "p3-B (120°)",    name: "Charm / Strange",   sym: "c/s", antiSym: "c̄/s̄", fam: "Quark (Gen II)",   mass: "1.27 GeV / 95 MeV",q: "+2/3, -1/3", spin: "1/2", le: 0, lmu: 0, ltau: 0, b: 0.333, color: "#34d399" },
+  { node: "p3-C (240°)",    name: "Top / Bottom",      sym: "t/b", antiSym: "t̄/b̄", fam: "Quark (Gen III)",  mass: "172.7 / 4.18 GeV",q: "+2/3, -1/3", spin: "1/2", le: 0, lmu: 0, ltau: 0, b: 0.333, color: "#059669" },
+  { node: "Centrum (C₆)",   name: "Foton / Z⁰ / Higgs",sym: "γ/Z/H",antiSym:"γ/Z/H",fam: "IJkboson / Scalair",mass: "0 / 91.2 / 125 GeV",q: 0, spin: "1 / 0", le: 0, lmu: 0, ltau: 0, b: 0, color: "#ffffff" }
+];
+
+// ============================================================================
+// 2. SFERISCHE TRIGONOMETRIE (EXACTE R-SCRIPT IMPLEMENTATIE)
+// ============================================================================
+function computeRScriptAstrometry(jd, latDeg, lonDeg) {
+  const T = (jd - 2451545.0) / 36525.0;
+  const gmstRaw = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T;
+  const GMST = ((gmstRaw % 360) + 360) % 360;
+  const LST = ((GMST + lonDeg) % 360 + 360) % 360;
+  const latRad = latDeg * Math.PI / 180;
+
+  const computed = bodies2041.map(b => {
+    const haDeg = (((LST - b.ra + 180) % 360) + 360) % 360 - 180;
+    const haRad = haDeg * Math.PI / 180;
+    const decRad = b.dec * Math.PI / 180;
+
+    const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+    const altRad = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+    const altDeg = altRad * 180 / Math.PI;
+
+    const y = -Math.sin(haRad) * Math.cos(decRad);
+    const x = Math.sin(decRad) * Math.cos(latRad) - Math.cos(decRad) * Math.sin(latRad) * Math.cos(haRad);
+    const azDeg = ((Math.atan2(y, x) * 180 / Math.PI) % 360 + 360) % 360;
+
+    return { ...b, alt: altDeg, az: azDeg, ha: haDeg, GMST, LST };
+  });
+  return { GMST, LST, bodies: computed };
+}
+
+// ============================================================================
+// 3. KRISTALLOGRAFISCHE 17 BEHANGGROEPEN & SPIEGELMATRIX M(φ)
+// ============================================================================
+function rot2D(x, y, deg) {
+  const r = deg * Math.PI / 180;
+  return [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)];
+}
+
+function mirror2D(x, y, phiDeg) {
+  const r2 = 2 * phiDeg * Math.PI / 180;
+  return [x * Math.cos(r2) + y * Math.sin(r2), x * Math.sin(r2) - y * Math.cos(r2)];
+}
+
+function getWallpaperSymmetryOps(group) {
+  // Retourneert rotatiehoeken, schaalfactor, basishoek gamma en spiegelas-offsets
+  const hexGroups = ["p3", "p3m1", "p31m", "p6", "p6m", "p3_p6"];
+  const sqGroups  = ["p4", "p4m", "p4g"];
+  const gamma = hexGroups.includes(group) ? 120 : (sqGroups.includes(group) ? 90 : 90);
+
+  switch (group) {
+    case "p1":   return { gamma: 75, rots: [0], scale: 1.0, mirrors: [] };
+    case "p2":   return { gamma: 75, rots: [0, 180], scale: 1.0, mirrors: [] };
+    case "pm":   return { gamma: 90, rots: [0], scale: 1.0, mirrors: [0] };
+    case "pg":   return { gamma: 90, rots: [0], scale: 1.0, mirrors: [0], glide: true };
+    case "cm":   return { gamma: 60, rots: [0], scale: 1.0, mirrors: [0] };
+    case "pmm":  return { gamma: 90, rots: [0, 180], scale: 1.0, mirrors: [0, 90] };
+    case "pmg":  return { gamma: 90, rots: [0, 180], scale: 1.0, mirrors: [0] };
+    case "pgg":  return { gamma: 90, rots: [0, 180], scale: 1.0, mirrors: [45], glide: true };
+    case "cmm":  return { gamma: 60, rots: [0, 180], scale: 1.0, mirrors: [0, 90] };
+    case "p4":   return { gamma: 90, rots: [0, 90, 180, 270], scale: 0.85, mirrors: [] };
+    case "p4m":  return { gamma: 90, rots: [0, 90, 180, 270], scale: 0.85, mirrors: [0, 45, 90, 135] };
+    case "p4g":  return { gamma: 90, rots: [0, 90, 180, 270], scale: 0.85, mirrors: [45, 135] };
+    case "p3":   return { gamma: 120, rots: [0, 120, 240], scale: 1.20, mirrors: [] };
+    case "p3m1": return { gamma: 120, rots: [0, 120, 240], scale: 1.20, mirrors: [0, 60, 120] };
+    case "p31m": return { gamma: 120, rots: [0, 120, 240], scale: 1.20, mirrors: [30, 90, 150] };
+    case "p6":   return { gamma: 120, rots: [0, 60, 120, 180, 240, 300], scale: 0.60, mirrors: [] };
+    case "p6m":  return { gamma: 120, rots: [0, 60, 120, 180, 240, 300], scale: 0.60, mirrors: [0, 30, 60, 90, 120, 150] };
+    case "p3_p6":
+    default:
+      return { gamma: 120, combinedP3P6: true, mirrors: [0, 30, 60, 90, 120, 150] };
+  }
+}
+
+// ============================================================================
+// 4. 3D .STL PARSER (ASCII & BINARY) + GENERATOR + 3D SPIEGEL/DRAAI-ENGINE
+// ============================================================================
+function generateSampleSTL() {
+  const tris = [];
+  const r = 42, h = 28;
+  for (let i = 0; i < 6; i++) {
+    const a1 = (i * 60) * Math.PI / 180;
+    const a2 = ((i + 1) * 60) * Math.PI / 180;
+    const x1 = r * Math.cos(a1), y1 = r * Math.sin(a1);
+    const x2 = r * Math.cos(a2), y2 = r * Math.sin(a2);
+    // Boven- en ondervlak
+    tris.push([[0, 0, h], [x1, y1, h], [x2, y2, h]]);
+    tris.push([[0, 0, -h], [x2, y2, -h], [x1, y1, -h]]);
+    // Zijvlakken
+    tris.push([[x1, y1, h], [x1, y1, -h], [x2, y2, -h]]);
+    tris.push([[x1, y1, h], [x2, y2, -h], [x2, y2, h]]);
+  }
+  state.stlTriangles = tris;
+  document.getElementById("senStlStatus").textContent = `Hexagonaal p6-prisma (${tris.length} driehoeken)`;
+  updateSimulation();
+}
+
+function parseSTLFile(arrayBuffer) {
+  const textDecoder = new TextDecoder("utf-8");
+  const headerText = textDecoder.decode(arrayBuffer.slice(0, 256));
+  const tris = [];
+
+  if (headerText.trim().startsWith("solid") && headerText.includes("facet")) {
+    const fullText = textDecoder.decode(arrayBuffer);
+    const vertexRegex = /vertex\s+([\d.+\-eE]+)\s+([\d.+\-eE]+)\s+([\d.+\-eE]+)/g;
+    let match, verts = [];
+    while ((match = vertexRegex.exec(fullText)) !== null) {
+      verts.push([parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3])]);
+      if (verts.length === 3) { tris.push(verts); verts = []; }
+    }
+  } else {
+    const dv = new DataView(arrayBuffer);
+    const numTris = dv.getUint32(80, true);
+    let offset = 84;
+    for (let i = 0; i < Math.min(numTris, 5000); i++) {
+      offset += 12; // skip normal
+      const v1 = [dv.getFloat32(offset, true), dv.getFloat32(offset+4, true), dv.getFloat32(offset+8, true)];
+      const v2 = [dv.getFloat32(offset+12, true), dv.getFloat32(offset+16, true), dv.getFloat32(offset+20, true)];
+      const v3 = [dv.getFloat32(offset+24, true), dv.getFloat32(offset+28, true), dv.getFloat32(offset+32, true)];
+      tris.push([v1, v2, v3]);
+      offset += 38;
+    }
+  }
+  if (tris.length > 0) {
+    state.stlTriangles = tris;
+    document.getElementById("senStlStatus").textContent = `Geüpload .STL model (${tris.length} driehoeken)`;
+    updateSimulation();
+  }
+}
+
+function transform3DPoint(pt, rxDeg, ryDeg, rzDeg, mirrorMode, phiDeg) {
+  let [x, y, z] = pt;
+  // 3D Spiegeloperaties
+  if (mirrorMode === "XY") z = -z;
+  else if (mirrorMode === "YZ") x = -x;
+  else if (mirrorMode === "XZ") y = -y;
+  else if (mirrorMode === "PHI") {
+    [x, y] = mirror2D(x, y, phiDeg);
+  }
+  // Rotatie X
+  const rx = rxDeg * Math.PI / 180;
+  let y1 = y * Math.cos(rx) - z * Math.sin(rx);
+  let z1 = y * Math.sin(rx) + z * Math.cos(rx);
+  y = y1; z = z1;
+  // Rotatie Y
+  const ry = ryDeg * Math.PI / 180;
+  let x2 = x * Math.cos(ry) + z * Math.sin(ry);
+  let z2 = -x * Math.sin(ry) + z * Math.cos(ry);
+  x = x2; z = z2;
+  // Rotatie Z (globale rotatie)
+  [x, y] = rot2D(x, y, rzDeg);
+  return [x, y, z];
+}
+
+// ============================================================================
+// 5. HOOFDCANVAS RENDERING (AR CAMERA + ROOSTER + G1-G6 + ASTROMETRIE + STL)
+// ============================================================================
+function updateSimulation() {
+  state.lat = parseFloat(document.getElementById("inpLat").value) || 43.7886;
+  state.lon = parseFloat(document.getElementById("inpLon").value) || 4.8317;
+  state.timeOffsetHours = parseFloat(document.getElementById("rngTime").value) || 0;
+  state.wallpaper = document.getElementById("selWallpaper").value;
+  state.latticeA = parseFloat(document.getElementById("selLatticeA").value) || 95.26;
+  state.mirrorPhi = parseFloat(document.getElementById("rngMirrorPhi").value) || 95.26;
+  state.globalRot = parseFloat(document.getElementById("rngGlobalRot").value) || 0;
+  state.stlRotX = parseFloat(document.getElementById("rngStlX").value) || 25;
+  state.stlRotY = parseFloat(document.getElementById("rngStlY").value) || 40;
+  state.stlMirror = document.getElementById("selStlMirror").value;
+
+  document.getElementById("lblTimeOffset").textContent = `${state.timeOffsetHours >= 0 ? '+' : ''}${state.timeOffsetHours.toFixed(2)} h`;
+  document.getElementById("lblLatticeA").textContent = `${state.latticeA.toFixed(2)} nm`;
+  document.getElementById("lblMirrorPhi").textContent = `${state.mirrorPhi.toFixed(2)}°`;
+  document.getElementById("lblGlobalRot").textContent = `${state.globalRot.toFixed(1)}°`;
+
+  const currentJD = state.baseJD + state.timeOffsetHours / 24.0;
+  const astro = computeRScriptAstrometry(currentJD, state.lat, state.lon);
+  renderAstroTable(astro);
+  drawMainCanvas(astro, currentJD);
+  drawSpectralCanvas();
+}
+
+function drawMainCanvas(astro, currentJD) {
+  const canvas = document.getElementById("mainCanvas");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+
+  ctx.save();
+  ctx.clearRect(0, 0, W, H);
+
+  // Globale Canvas Spiegel- & Rotatie-Transformatie
+  ctx.translate(cx, cy);
+  if (state.flipH) ctx.scale(-1, 1);
+  if (state.flipV) ctx.scale(1, -1);
+  ctx.rotate(state.globalRot * Math.PI / 180);
+  ctx.translate(-cx, -cy);
+
+  // 1. Achtergrond: Camera AR of Geüpload Beeld of Schemeringsgradiënt
+  const video = document.getElementById("camVideo");
+  if (state.camActive && video.readyState >= 2) {
+    ctx.globalAlpha = 0.65;
+    ctx.drawImage(video, 0, 0, W, H);
+    ctx.globalAlpha = 1.0;
+  } else {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#030714");
+    grad.addColorStop(0.65, "#0b1936");
+    grad.addColorStop(1, "#1d2942");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  if (state.uploadedImage) {
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.drawImage(state.uploadedImage, cx - 220, cy - 160, 440, 320);
+    ctx.restore();
+  }
+
+  // 2. Kristallografisch Behangrooster (17 groepen, p3 120% & p6 60%)
+  const ops = getWallpaperSymmetryOps(state.wallpaper);
+  const scalePx = state.latticeA * 0.82; // 1 nm ~ 0.82 px op scherm
+  const gammaRad = ops.gamma * Math.PI / 180;
+  const a1 = [scalePx, 0];
+  const a2 = [Math.cos(gammaRad) * scalePx, Math.sin(gammaRad) * scalePx];
+
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Teken spiegelassen M(φ)
+  if (state.flipPhi) {
+    const mirrorList = ops.mirrors && ops.mirrors.length ? ops.mirrors : [0];
+    mirrorList.forEach(mOff => {
+      const ang = (state.mirrorPhi + mOff) * Math.PI / 180;
+      ctx.strokeStyle = "rgba(236, 72, 153, 0.35)";
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-600 * Math.cos(ang), -600 * Math.sin(ang));
+      ctx.lineTo(600 * Math.cos(ang), 600 * Math.sin(ang));
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  // Teken Bravais-rooster cellen en p3/p6 motieven
+  for (let i = -3; i <= 3; i++) {
+    for (let j = -3; j <= 3; j++) {
+      const ox = i * a1[0] + j * a2[0];
+      const oy = i * a1[1] + j * a2[1];
+
+      // Roosterknoop
+      ctx.fillStyle = "rgba(0, 240, 255, 0.25)";
+      ctx.beginPath();
+      ctx.arc(ox, oy, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      const baseMotif = [0.28 * scalePx, 0.12 * scalePx];
+
+      if (ops.combinedP3P6) {
+        // p3: 120°, schaal 120%
+        [0, 120, 240].forEach(ang => {
+          let [mx, my] = rot2D(baseMotif[0] * 1.20, baseMotif[1] * 1.20, ang);
+          ctx.strokeStyle = "rgba(245, 185, 66, 0.55)";
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + mx, oy + my);
+          ctx.stroke();
+          if (state.flipPhi) {
+            let [sx, sy] = mirror2D(mx, my, state.mirrorPhi);
+            ctx.strokeStyle = "rgba(236, 72, 153, 0.45)";
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox + sx, oy + sy);
+            ctx.stroke();
+          }
+        });
+        // p6: 60°, schaal 60%
+        [0, 60, 120, 180, 240, 300].forEach(ang => {
+          let [mx, my] = rot2D(baseMotif[0] * 0.60, baseMotif[1] * 0.60, ang);
+          ctx.fillStyle = "rgba(0, 240, 255, 0.7)";
+          ctx.beginPath();
+          ctx.arc(ox + mx, oy + my, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        ops.rots.forEach(ang => {
+          let [mx, my] = rot2D(baseMotif[0] * ops.scale, baseMotif[1] * ops.scale, ang);
+          ctx.strokeStyle = "rgba(0, 240, 255, 0.65)";
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + mx, oy + my);
+          ctx.stroke();
+          if (state.flipPhi && ops.mirrors.length > 0) {
+            let [sx, sy] = mirror2D(mx, my, state.mirrorPhi + ops.mirrors[0]);
+            ctx.strokeStyle = "rgba(236, 72, 153, 0.5)";
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox + sx, oy + sy);
+            ctx.stroke();
+          }
+        });
+      }
+    }
+  }
+
+  // 3. VORTEX AR Fotonisch Kristalrooster (G1 t/m G6, a=110 nm, s=55 nm) + Leptonen
+  if (state.showG1G6) {
+    const gRadius = 125;
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.75)";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, gRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    const anti = document.getElementById("chkAntiParticles")?.checked;
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const deg = k * 60;
+      const rad = deg * Math.PI / 180;
+      const gx = gRadius * Math.cos(rad);
+      const gy = gRadius * Math.sin(rad);
+      if (k === 0) ctx.moveTo(gx, gy);
+      else ctx.lineTo(gx, gy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
+    ctx.stroke();
+
+    for (let k = 0; k < 6; k++) {
+      const deg = k * 60;
+      const rad = deg * Math.PI / 180;
+      const gx = gRadius * Math.cos(rad);
+      const gy = gRadius * Math.sin(rad);
+      const p = standardModelParticles[k];
+
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(gx, gy, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "11px monospace";
+      const symText = anti ? p.antiSym : p.sym;
+      const lVal = anti ? -1 : +1;
+      ctx.fillText(`G${k+1} (${deg}°) [${symText}, L=${lVal}]`, gx + 10, gy + 4);
+    }
+  }
+
+  // 4. 3D .STL Wireframe Projectie
+  if (state.stlTriangles.length > 0) {
+    ctx.strokeStyle = "rgba(245, 185, 66, 0.42)";
+    ctx.lineWidth = 1;
+    state.stlTriangles.forEach(tri => {
+      const p1 = transform3DPoint(tri[0], state.stlRotX, state.stlRotY, state.globalRot, state.stlMirror, state.mirrorPhi);
+      const p2 = transform3DPoint(tri[1], state.stlRotX, state.stlRotY, state.globalRot, state.stlMirror, state.mirrorPhi);
+      const p3 = transform3DPoint(tri[2], state.stlRotX, state.stlRotY, state.globalRot, state.stlMirror, state.mirrorPhi);
+      ctx.beginPath();
+      ctx.moveTo(p1[0] * 1.4, p1[1] * 1.4);
+      ctx.lineTo(p2[0] * 1.4, p2[1] * 1.4);
+      ctx.lineTo(p3[0] * 1.4, p3[1] * 1.4);
+      ctx.closePath();
+      ctx.stroke();
+    });
+  }
+
+  ctx.restore();
+
+  // 5. Astrometrische Horizon & Hemellichamen (22 juli 2041 - 04:00 UTC)
+  const horizY = H * 0.78;
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, horizY);
+  ctx.lineTo(W, horizY);
+  ctx.stroke();
+  ctx.fillStyle = "#38bdf8";
+  ctx.font = "11px monospace";
+  ctx.fillText("OOSTELIJKE HORIZON (h = 0° | Az 45° — 115°)", 14, horizY - 6);
+
+  // Projecteer Azimut (45° tot 115°) op X, en Hoogte (-10° tot +40°) op Y
+  astro.bodies.forEach(b => {
+    const px = ((b.az - 45) / 70) * (W - 120) + 60;
+    const py = horizY - (b.alt / 40) * (horizY - 50);
+
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.arc(px, py, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.beginPath();
+    ctx.arc(px, py, b.radius + 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "bold 11px monospace";
+    ctx.fillText(`${b.name}`, px + 13, py - 2);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "10px monospace";
+    ctx.fillText(`h=${b.alt.toFixed(2)}° | Az=${b.az.toFixed(2)}° | H=${b.ha.toFixed(2)}°`, px + 13, py + 11);
+  });
+
+  // 6. Groene Spectrale Signaalgrafiek (VORTEX AR Overlay, d=70 μm, a=95.26 nm)
+  if (state.showG1G6) {
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 20; x < W - 20; x += 4) {
+      const wl = 400 + ((x - 20) / (W - 40)) * 400; // 400-800 nm
+      const redPeak = Math.exp(-Math.pow((wl - 665) / 38, 2)) * 55;
+      const BraggMod = Math.sin(x * 0.12 + state.globalRot * 0.05) * 8;
+      const y = H - 35 - redPeak - BraggMod;
+      if (x === 20) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#10b981";
+    ctx.font = "11px monospace";
+    ctx.fillText("SPECTRALE RESPONS S↓ | d = 70 μm | a = 95.26 nm | TE/TM Roodverschuiving (620–750 nm) @ h ≈ 12.1°", 24, H - 12);
+  }
+
+  ctx.restore();
+
+  // Update HUD Tekst
+  document.getElementById("hudAstroText").innerHTML =
+    `Locatie: <strong>${state.locName}</strong> (${state.lat.toFixed(4)}°N, ${state.lon.toFixed(4)}°E)<br>` +
+    `JD: ${currentJD.toFixed(5)} | GMST: ${astro.GMST.toFixed(2)}° | LST: ${astro.LST.toFixed(2)}°<br>` +
+    `Groep: <strong>${state.wallpaper}</strong> | a = ${state.latticeA} nm | s = ${(state.latticeA/2).toFixed(2)} nm<br>` +
+    `Spiegelas M(φ₀): ${state.mirrorPhi.toFixed(2)}° | Efficiëntie η > 94.2%`;
+}
+
+// Live Nanosonde bij muisbeweging
+document.getElementById("mainCanvas").addEventListener("mousemove", (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const mx = e.clientX - rect.left - e.target.width / 2;
+  const my = -(e.clientY - rect.top - e.target.height / 2);
+  const scalePx = state.latticeA * 0.82;
+  const xNm = (mx / scalePx) * state.latticeA;
+  const yNm = (my / scalePx) * state.latticeA;
+  const [sxNm, syNm] = mirror2D(xNm, yNm, state.mirrorPhi);
+
+  document.getElementById("hudProbeText").innerHTML =
+    `Positie: X = <strong>${xNm.toFixed(2)} nm</strong>, Y = <strong>${yNm.toFixed(2)} nm</strong><br>` +
+    `Spiegel M(${state.mirrorPhi.toFixed(2)}°): X' = ${sxNm.toFixed(2)} nm, Y' = ${syNm.toFixed(2)} nm<br>` +
+    `Eenheidscel A (110 nm): <strong>7859.14 nm²</strong> (d = 70 μm)<br>` +
+    `p3 (120°, 120%) | p6 (60°, 60%)`;
+});
+
+function drawSpectralCanvas() {
+  const c = document.getElementById("specCanvas");
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = "#00f0ff";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 0; x < c.width; x++) {
+    const wl = 380 + (x / c.width) * 420;
+    const teMode = Math.exp(-Math.pow((wl - 650) / 42, 2)) * 60;
+    const tmMode = Math.exp(-Math.pow((wl - 510) / 30, 2)) * 22;
+    const y = c.height - 12 - (teMode + tmMode);
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "10px monospace";
+  ctx.fillText("400 nm", 6, c.height - 2);
+  ctx.fillText("TE/TM Pieken (620-750 nm)", 110, 14);
+  ctx.fillText("800 nm", c.width - 42, c.height - 2);
+}
+
+// ============================================================================
+// 6. TABELLEN RENDERING (ASTROMETRIE & DEELTJES/LEPTONEN)
+// ============================================================================
+function renderAstroTable(astro) {
+  const tbody = document.getElementById("astroTableBody");
+  tbody.innerHTML = astro.bodies.map(b => `
+    <tr>
+      <td><strong style="color:${b.color}">${b.name}</strong></td>
+      <td>${b.ra.toFixed(2)}°</td>
+      <td>+${b.dec.toFixed(2)}°</td>
+      <td><strong>${b.alt >= 0 ? '+' : ''}${b.alt.toFixed(2)}°</strong></td>
+      <td><strong>${b.az.toFixed(2)}°</strong></td>
+      <td>${b.ha.toFixed(2)}°</td>
+      <td>${b.note}</td>
+    </tr>
+  `).join("");
+}
+
+function renderParticleTable() {
+  const anti = document.getElementById("chkAntiParticles")?.checked;
+  const mult = anti ? -1 : 1;
+  const tbody = document.getElementById("particleTableBody");
+  tbody.innerHTML = standardModelParticles.map(p => {
+    const sym = anti ? p.antiSym : p.sym;
+    const qStr = typeof p.q === "number" ? (p.q * mult === 0 ? "0" : (p.q * mult > 0 ? `+${p.q*mult}` : `${p.q*mult}`)) : (anti ? "-2/3, +1/3" : p.q);
+    const le = p.le * mult, lmu = p.lmu * mult, ltau = p.ltau * mult;
+    const ltot = le + lmu + ltau;
+    const bVal = (p.b * mult).toFixed(p.b === 0 ? 0 : 2);
+    return `
+      <tr>
+        <td><span class="badge badge-cyan">${p.node}</span></td>
+        <td><strong style="color:${p.color}">${anti && p.le+p.lmu+p.ltau+p.b !== 0 ? 'Anti-' + p.name : p.name}</strong></td>
+        <td><strong>${sym}</strong></td>
+        <td>${p.fam}</td>
+        <td>${p.mass}</td>
+        <td>${qStr}</td>
+        <td>${p.spin}</td>
+        <td>${le}</td>
+        <td>${lmu}</td>
+        <td>${ltau}</td>
+        <td><strong>${ltot}</strong></td>
+        <td>${bVal}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// ============================================================================
+// 7. WEBRTC P2P DATACHANNELS & SENSORNET / CAMERA AR
+// ============================================================================
+let localPC = null, remotePC = null, dataChannel = null;
+
+function logRTC(msg) {
+  const box = document.getElementById("rtcLog");
+  const ts = new Date().toISOString().split("T")[1].slice(0, 8);
+  box.innerHTML = `[${ts}] ${msg}<br>` + box.innerHTML;
+}
+
+async function startWebRTCLoopback() {
+  localPC = new RTCPeerConnection();
+  remotePC = new RTCPeerConnection();
+
+  dataChannel = localPC.createDataChannel("vortex-astrometry-9526nm");
+  dataChannel.onopen = () => {
+    document.getElementById("rtcStatusBadge").textContent = "VERBONDEN (P2P)";
+    logRTC("DataChannel 'vortex-astrometry-9526nm' OPEN.");
+    broadcastStateOverRTC();
+  };
+
+  remotePC.ondatachannel = (e) => {
+    e.channel.onmessage = (ev) => {
+      state.rtcBytes += ev.data.length;
+      document.getElementById("lblRtcBytes").textContent = `${state.rtcBytes} bytes`;
+      const parsed = JSON.parse(ev.data);
+      logRTC(`RX Pakket: JD=${parsed.jd.toFixed(2)} | Groep=${parsed.wallpaper} | a=${parsed.latticeA}nm`);
+    };
+  };
+
+  localPC.onicecandidate = e => e.candidate && remotePC.addIceCandidate(e.candidate);
+  remotePC.onicecandidate = e => e.candidate && localPC.addIceCandidate(e.candidate);
+
+  const offer = await localPC.createOffer();
+  await localPC.setLocalDescription(offer);
+  await remotePC.setRemoteDescription(offer);
+  const answer = await remotePC.createAnswer();
+  await remotePC.setLocalDescription(answer);
+  await localPC.setRemoteDescription(answer);
+}
+
+function broadcastStateOverRTC() {
+  const payload = JSON.stringify({
+    ts_anchor_1: "2026-10-28T08:05:00+01:00",
+    ts_anchor_2: "2026-10-31T14:04:00+01:00",
+    smtp_exim_id: "1xM5CT-00AzoK-Ar",
+    smtp_postfix_id: "4jF9cv2Mlzz5K",
+    jd: state.baseJD + state.timeOffsetHours / 24,
+    lat: state.lat,
+    lon: state.lon,
+    wallpaper: state.wallpaper,
+    latticeA: state.latticeA,
+    mirrorPhi: state.mirrorPhi
+  });
+  document.getElementById("rtcSignalBox").value = payload;
+  if (dataChannel && dataChannel.readyState === "open") {
+    dataChannel.send(payload);
+    logRTC(`TX Verzonden (${payload.length} bytes)`);
+  } else {
+    logRTC("Payload klaar in inspector (klik 'Start P2P Loopback' voor live overdracht).");
+  }
+}
+
+async function createManualOffer() {
+  localPC = new RTCPeerConnection();
+  dataChannel = localPC.createDataChannel("vortex-manual-p2p");
+  dataChannel.onopen = () => logRTC("Handmatig P2P DataChannel OPEN!");
+  dataChannel.onmessage = e => logRTC("RX: " + e.data);
+  localPC.onicecandidate = () => {
+    if (localPC.iceGatheringState === "complete") {
+      document.getElementById("rtcSignalBox").value = JSON.stringify(localPC.localDescription);
+      logRTC("SDP Offer gegenereerd in tekstvak.");
+    }
+  };
+  const offer = await localPC.createOffer();
+  await localPC.setLocalDescription(offer);
+}
+
+async function acceptManualSignal() {
+  try {
+    const desc = JSON.parse(document.getElementById("rtcSignalBox").value);
+    if (!localPC) localPC = new RTCPeerConnection();
+    await localPC.setRemoteDescription(desc);
+    if (desc.type === "offer") {
+      const answer = await localPC.createAnswer();
+      await localPC.setLocalDescription(answer);
+      document.getElementById("rtcSignalBox").value = JSON.stringify(localPC.localDescription);
+      logRTC("SDP Answer gegenereerd.");
+    } else {
+      logRTC("Remote SDP Answer geaccepteerd.");
+    }
+  } catch (err) {
+    logRTC("Fout bij verwerken SDP: " + err.message);
+  }
+}
+
+// Camera AR & SensorNet
+async function toggleCameraAR() {
+  const video = document.getElementById("camVideo");
+  const btn = document.getElementById("btnCam");
+  if (!state.camActive) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      video.srcObject = stream;
+      state.camActive = true;
+      btn.classList.add("active");
+      btn.textContent = "📷 Stop Camera AR";
+      requestAnimationFrame(arLoop);
+    } catch (err) {
+      logRTC("Camera niet beschikbaar of geweigerd: " + err.message);
+    }
+  } else {
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    state.camActive = false;
+    btn.classList.remove("active");
+    btn.textContent = "📷 Start Camera AR";
+    updateSimulation();
+  }
+}
+
+function arLoop() {
+  if (state.camActive) {
+    updateSimulation();
+    requestAnimationFrame(arLoop);
+  }
+}
+
+function activateGPS() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      setPresetLocation(pos.coords.latitude, pos.coords.longitude, "Live Mobiele GPS");
+      logRTC(`GPS Lock: ${pos.coords.latitude.toFixed(4)}°N, ${pos.coords.longitude.toFixed(4)}°E`);
+    });
+  }
+  window.addEventListener("deviceorientation", e => {
+    if (e.alpha !== null) {
+      state.sensorAlpha = e.alpha;
+      state.sensorBeta = e.beta;
+      state.sensorGamma = e.gamma;
+      document.getElementById("senOrient").textContent = `${e.alpha.toFixed(1)}° / ${e.beta.toFixed(1)}° / ${e.gamma.toFixed(1)}°`;
+    }
+  });
+}
+
+// ============================================================================
+// 8. HULPFUNCTIES, UPLOADER & SLIDE-DECK GENERATOR
+// ============================================================================
+function setPresetLocation(lat, lon, name) {
+  state.locName = name;
+  document.getElementById("inpLat").value = lat;
+  document.getElementById("inpLon").value = lon;
+  updateSimulation();
+}
+
+function toggleMirror(mode) {
+  if (mode === "H") { state.flipH = !state.flipH; document.getElementById("btnFlipH").classList.toggle("active", state.flipH); }
+  if (mode === "V") { state.flipV = !state.flipV; document.getElementById("btnFlipV").classList.toggle("active", state.flipV); }
+  if (mode === "PHI") { state.flipPhi = !state.flipPhi; document.getElementById("btnFlipPhi").classList.toggle("active", state.flipPhi); }
+  if (mode === "KALEIDO") {
+    state.wallpaper = "p6m";
+    document.getElementById("selWallpaper").value = "p6m";
+    document.getElementById("btnKaleido").classList.toggle("active");
+  }
+  if (mode === "G1G6") { state.showG1G6 = !state.showG1G6; document.getElementById("btnPhotonicG").classList.toggle("active", state.showG1G6); }
+  updateSimulation();
+}
+
+function handleUniversalUpload(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (ext === "stl") {
+    const reader = new FileReader();
+    reader.onload = e => parseSTLFile(e.target.result);
+    reader.readAsArrayBuffer(file);
+  } else if (ext === "json") {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.lat) document.getElementById("inpLat").value = data.lat;
+        if (data.lon) document.getElementById("inpLon").value = data.lon;
+        if (data.mirrorPhi) document.getElementById("rngMirrorPhi").value = data.mirrorPhi;
+        logRTC(`JSON configuratie geladen (${file.name})`);
+        updateSimulation();
+      } catch (err) { logRTC("Ongeldig JSON-bestand."); }
+    };
+    reader.readAsText(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => { state.uploadedImage = img; updateSimulation(); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function exportCurrentStateJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "vortex_os_state_2041.json";
+  a.click();
+}
+
+function switchBottomTab(tabId, btn) {
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tabs button").forEach(el => el.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  btn.classList.add("active");
+}
+
+// Slide-Deck Presentatiemodus (5 Pijlers)
+const slides = [
+  {
+    title: "Pijler 1: Astrometrische R-Engine & 152-Jarige Hemelresonantie (1889 → 2041)",
+    items: [
+      "<strong>Exact Interval:</strong> 152 Juliaanse jaren = 55.517 dagen (22 juli 1889 → 22 juli 2041 om 04:00 UTC, JD = 2466722.66667).",
+      "<strong>Commutatieve Resonantie (8 × 19 = 19 × 8):</strong> 8 Meton-cycli (1.880 synodische maanden, afwijking -12,2 uur) vallen exact samen met 19 Venus-pentagramcycli (95 synodische Venus-omlopen).",
+      "<strong>Geverifieerde Horizontale Coördinaten (Saint-Rémy-de-Provence):</strong> Zon (h = -4,00°, Az = 57,03°), Maan ~16% Sikkel (h = +20,93°, Az = 79,81°), Venus (h = +22,96°, Az = 83,06°), Aldebaran/Hyaden (h = +29,77°, Az = 95,22°)."
+    ]
+  },
+  {
+    title: "Pijler 2: Eclipsanalyse Tafelbergheide (12 Augustus 2026) — VSOP87 & ELP-2000/82",
+    items: [
+      "<strong>Analytische Ephemeriden:</strong> Zon via VSOP87 (Versie Da, Bretagnon & Francou 1988) en Maan via ELP-2000/82 (37.862 periodieke termen, Chapront-Touzé & Chapront 1983, foutmarge op contacttijden ca. 1/40 s).",
+      "<strong>Seculaire Versnelling & ΔT:</strong> LLR-gevalideerde maansversnelling van -25,858\"/cy² (+3,8 cm/jr baanexpansie) met polynomiale ΔT-correctieterm c = -0,000012932·(y - 1955)².",
+      "<strong>Micro-Meteorologie op de Tafelbergheide (52°13'N, 5°11'E):</strong> Omslag naar negatieve netto-straling (R_n < 0) boven dekzand en Calluna vulgaris, snelle 2m-temperatuurdaling, RH-stijging via Clausius-Clapeyron, Eclipse Calm (H → 0) en grondinversie (∂T/∂z > 0)."
+    ]
+  },
+  {
+    title: "Pijler 3: Nanogeometrie (95,26 nm & 110 nm), 17 Behanggroepen & Leptonclassificatie",
+    items: [
+      "<strong>Hexagonaal Bravais-Rooster (a = 95,26 nm):</strong> Gecombineerde p3 (120°, schaal 120%) en p6 (60°, schaal 60%) behanggroepen met actieve spiegelas M(φ₀ = 95,26°) gekoppeld aan het Hyaden-azimut.",
+      "<strong>VORTEX AR Fotonisch Kristal (G1 t/m G6):</strong> Periodiciteit a = 110 nm, segment s = 55 nm, eenheidscel A = 7859,14 nm² in SiO₂/TiO₂ multilagen (Δn_r = 1,45–2,10, η > 94,2%, d = 70 μm, roodverschuiving 620–750 nm bij h ≈ 12,1°).",
+      "<strong>Deeltjesfysica & Leptongetallen:</strong> Zesvoudige G1–G6 rotatieknooppunten representeren de 3 generaties Leptonen (e⁻/ν_e, μ⁻/ν_μ, τ⁻/ν_τ met L_e, L_μ, L_τ = ±1), p3-kernen de Quarks (B = ±1/3), en spiegeloperator M(φ) de CP-geconjugeerde antideeltjes."
+    ]
+  },
+  {
+    title: "Pijler 4: WebRTC P2P DataChannels, SensorNet & 3D .STL / .JSON Spiegel-Engine",
+    items: [
+      "<strong>Zero-Cloud WebRTC DataChannels:</strong> Directe peer-to-peer synchronisatie van astrometrische vectoren, nanosonde-coördinaten (X_nm, Y_nm) en roosterstaten.",
+      "<strong>Universele Spiegel- en Draai-Engine:</strong> Ondersteunt Mx, My, M(φ₀), p6-kaleidoscoop en 3D Rodrigues-rotaties voor live AR-camerabeelden, geüploade sterrenkaarten, .JSON-structuren en binaire/ASCII 3D .STL-modellen."
+    ]
+  },
+  {
+    title: "Pijler 5: Cryptografisch SMTP- & Tijdsanker-Register (Oktober 2026)",
+    items: [
+      "<strong>Tijdsanker TS-01:</strong> Woensdag 28 oktober 2026 om 08:05 CET (07:05 UTC).",
+      "<strong>SMTP Hop 1 (16:04:25 CET):</strong> ec2-34-250-253-130 (mail.zaaksysteem.nl) → mail-out.zaaksysteem.nl [149.210.141.108], Exim 4.95, Queue-ID 1xM5CT-00AzoK-Ar, TLSv1.3 ECDHE_RSA_WITH_AES_256_GCM_SHA384.",
+      "<strong>SMTP Hop 2 (16:04:31 CET):</strong> Ontvangst door mailinosl106.protonmail.ch via Postfix ESMTPS, Queue-ID 4jF9cv2Mlzz5K, TLSv1.3 AES_256_GCM_SHA384, x25519 key-exchange, RSA-PSS 4096-bit SHA512.",
+      "<strong>Tijdsanker TS-02:</strong> Zaterdag 31 oktober 2026 om 14:04 CET (13:04 UTC) — exact +70,0 uur (252.000 seconden) na SMTP-verificatie."
+    ]
+  }
+];
+
+let currentSlide = 0;
+function toggleSlideDeck(open) {
+  const modal = document.getElementById("slideModal");
+  modal.classList.toggle("open", open);
+  if (open) renderSlide();
+}
+function changeSlide(dir) {
+  currentSlide = (currentSlide + dir + slides.length) % slides.length;
+  renderSlide();
+}
+function renderSlide() {
+  const s = slides[currentSlide];
+  document.getElementById("slideCounter").textContent = `Slide ${currentSlide + 1} / ${slides.length}`;
+  document.getElementById("slideContent").innerHTML = `
+    <h2>${s.title}</h2>
+    <ul>${s.items.map(i => `<li>${i}</li>`).join("")}</ul>
+  `;
+}
+window.addEventListener("keydown", e => {
+  const modal = document.getElementById("slideModal");
+  if (!modal.classList.contains("open")) return;
+  if (e.key === "ArrowRight") changeSlide(1);
+  if (e.key === "ArrowLeft") changeSlide(-1);
+  if (e.key === "Escape") toggleSlideDeck(false);
+});
+
+// Initialisatie bij laden
+window.addEventListener("DOMContentLoaded", () => {
+  generateSampleSTL();
+  renderParticleTable();
+  updateSimulation();
+  logRTC("VORTEX OS v4.2 gereed. Klik 'Start P2P Loopback' voor live DataChannel test.");
+});
+</script>
+</body>
+</html>
