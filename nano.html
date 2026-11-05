@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrometrische & Kristallografische Hemel- en Resonantiesimulator (1889 | 2026 | 2041)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        astro: {
+                            950: '#040711',
+                            900: '#0a0f1e',
+                            800: '#111827',
+                            700: '#1f2937',
+                            accent: '#38bdf8',
+                            gold: '#fbbf24',
+                            aldebaran: '#f97316'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #040711;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0f1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+        input[type="range"] {
+            accent-color: #38bdf8;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.84);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.16);
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 640px;
+            background: radial-gradient(circle at 50% 90%, #1e293b 0%, #090d16 70%, #02040a 100%);
+            overflow: hidden;
+        }
+        @media (max-width: 768px) {
+            .canvas-container {
+                height: 480px;
+            }
+        }
+        .matrix-bracket {
+            border-left: 2px solid #94a3b8;
+            border-right: 2px solid #94a3b8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-grid;
+            grid-template-columns: repeat(2, minmax(56px, auto));
+            gap: 2px 10px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Scientific Header -->
+    <header class="glass-panel sticky top-0 z-30 border-b border-slate-800 px-4 py-3 shadow-lg">
+        <div class="max-w-[1640px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-sky-400 shadow-inner">
+                    <i class="fa-solid fa-compass-drafting text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-base md:text-lg font-bold tracking-tight text-white">Astrometrische & Kristallografische Hemel- en Resonantiesimulator</h1>
+                        <span class="px-2 py-0.5 text-[11px] font-mono font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full">JD 2466722.66667</span>
+                        <span class="px-2 py-0.5 text-[11px] font-mono font-semibold bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 rounded-full">p3 (120%) & p6 (60%) • 95,26 nm</span>
+                    </div>
+                    <p class="text-xs text-slate-400 font-mono">
+                        152-Jarige Resonantie (8×19 Meton = 19×8 Venus = 55.517 d) • Hyaden Spiegelas-Anker (φ₀ = 95,26°) • SMTP Audit 28/31 Okt 2026
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Epoch & Mode Switcher -->
+            <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700/70">
+                <button onclick="setEpochPreset('2041')" id="btn-epoch-2041" class="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all bg-sky-500 text-slate-950 shadow">
+                    <i class="fa-solid fa-star mr-1"></i>22 Jul 2041 (04:00 UTC)
+                </button>
+                <button onclick="setEpochPreset('1889')" id="btn-epoch-1889" class="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i>22 Jul 1889 (04:00 UTC)
+                </button>
+                <button onclick="setEpochPreset('2026')" id="btn-epoch-2026" class="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800">
+                    <i class="fa-solid fa-circle-half-stroke mr-1 text-amber-400"></i>12 Aug 2026 (Eclips)
+                </button>
+                <button onclick="togglePureLatticeMode()" id="btn-pure-lattice" class="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all text-fuchsia-300 hover:text-white hover:bg-fuchsia-950/60 border border-fuchsia-500/30">
+                    <i class="fa-solid fa-cubes-stacked mr-1"></i>p3/p6 Rooster-Inspectie
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status / Notification Banner (replaces alert) -->
+    <div id="status-toast" class="hidden fixed bottom-5 right-5 z-50 max-w-md glass-panel border-l-4 border-sky-400 px-4 py-3 rounded-xl shadow-2xl text-xs font-mono text-slate-200 flex items-center gap-3 transition-all">
+        <i id="status-icon" class="fa-solid fa-satellite-dish text-sky-400 text-base"></i>
+        <div id="status-message" class="flex-1">Systeem gereed.</div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-[1640px] w-full mx-auto p-3 md:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Left Column: Interactive Sky + Crystallographic Canvas + Ephemeris + Audit Tabs (8 cols on lg) -->
+        <div class="lg:col-span-8 flex flex-col gap-5">
+            
+            <!-- Sky & Lattice Viewport Card -->
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-xl flex flex-col">
+                <!-- Canvas Toolbar -->
+                <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="font-mono font-semibold text-sky-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-globe"></i> Projectie:
+                        </span>
+                        <select id="projection-mode" onchange="updateSimulation()" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1 font-mono text-xs focus:outline-none focus:border-sky-400">
+                            <option value="stereographic">Stereografische Horizonkoepel (ONO/O)</option>
+                            <option value="linear">Cilindrisch Azimut–Hoogte Rooster (A–h)</option>
+                            <option value="equatorial">Equatoriaalveld (Rechte Klimming α – Declinatie δ)</option>
+                            <option value="lattice_only">Zuiver Kristallografisch Rooster (p3/p6 • 95,26 nm)</option>
+                        </select>
+
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+                            <input type="checkbox" id="chk-p3p6-overlay" onchange="updateSimulation()" checked class="rounded bg-slate-800 border-slate-600 text-fuchsia-500">
+                            <span class="text-fuchsia-300 font-medium">p3/p6 Raster (95,26 nm)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+                            <input type="checkbox" id="chk-1889-ghost" onchange="updateSimulation()" checked class="rounded bg-slate-800 border-slate-600 text-sky-500">
+                            <span>1889 Ghost (+2,12°)</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+                            <input type="checkbox" id="chk-vectors" onchange="updateSimulation()" checked class="rounded bg-slate-800 border-slate-600 text-sky-500">
+                            <span>Ankerketting</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+                        <span id="live-gmst-badge" class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-sky-300">GMST: 359,96°</span>
+                        <span id="live-lst-badge" class="px-2 py-0.5 bg-slate-800 rounded border border-slate-700 text-amber-300">LST: 4,79° (00h 19m)</span>
+                        <button onclick="resetView()" title="Reset Camera Pan/Zoom" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition">
+                            <i class="fa-solid fa-compress"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive HTML5 Canvas -->
+                <div class="canvas-container" id="canvas-wrapper">
+                    <canvas id="sky-canvas" class="w-full h-full cursor-crosshair"></canvas>
+
+                    <!-- Floating Telemetry HUD top-left -->
+                    <div class="absolute top-3 left-3 pointer-events-none bg-slate-950/85 backdrop-blur-md border border-slate-800/90 rounded-xl p-3 text-[11px] font-mono space-y-1 shadow-lg max-w-xs">
+                        <div class="text-sky-400 font-bold flex items-center justify-between gap-4 border-b border-slate-800 pb-1">
+                            <span id="hud-title">22 JULI 2041 — 04:00:00 UTC</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <div class="text-slate-300" id="hud-location">Locatie: Saint-Rémy (43.7886°N, 4.8317°E)</div>
+                        <div class="text-slate-400" id="hud-jd">JD: 2466722.66667 | T: +0.41554188</div>
+                        <div class="text-amber-300/90 pt-0.5" id="hud-sep-mv">Cluster Maan–Venus: 3,71° (ONO)</div>
+                        <div class="text-orange-300/90" id="hud-sep-vh">Anker Venus–Aldebaran: 12,84° (Az 95,22°)</div>
+                        <div class="text-fuchsia-300/90" id="hud-lattice-info">Rooster: p3(120%)+p6(60%) | a=95,26 nm | φ₀=95,26°</div>
+                    </div>
+
+                    <!-- Floating Crystallographic Hover Inspector top-right -->
+                    <div class="absolute top-3 right-3 pointer-events-none bg-slate-950/85 backdrop-blur-md border border-fuchsia-500/30 rounded-xl p-3 text-[11px] font-mono space-y-1 shadow-lg min-w-[245px]">
+                        <div class="text-fuchsia-300 font-bold flex items-center justify-between border-b border-slate-800 pb-1">
+                            <span><i class="fa-solid fa-microscope mr-1"></i>Kristallografische Sonde</span>
+                            <span class="text-[10px] px-1.5 py-0.2 bg-fuchsia-500/20 rounded">a = 95,26 nm</span>
+                        </div>
+                        <div id="hover-xy-nm" class="text-slate-200">Cursor: X = +0,00 nm | Y = +0,00 nm</div>
+                        <div id="hover-node-info" class="text-emerald-300">Beweeg over een p3/p6 roosterpunt...</div>
+                        <div id="hover-mirror-eq" class="text-slate-400 text-[10px]">Spiegelas M(φ₀): φ₀ = 95,26°</div>
+                    </div>
+
+                    <!-- Floating Legend bottom-right -->
+                    <div class="absolute bottom-3 right-3 pointer-events-none bg-slate-950/85 backdrop-blur-md border border-slate-800/90 rounded-xl px-3 py-2 text-[11px] font-mono flex flex-wrap items-center gap-3 shadow-lg">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-200 inline-block"></span>Maan (~16%)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-200 inline-block"></span>Venus</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span>Aldebaran (95,22°)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>p3 (120° / 120%)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-fuchsia-400 inline-block"></span>p6 (60° / 60%)</span>
+                    </div>
+                </div>
+
+                <!-- Time Scrubber Bar below Canvas -->
+                <div class="p-3.5 bg-slate-900/95 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <button onclick="stepTime(-15)" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono border border-slate-700" title="-15 minuten">-15m</button>
+                        <button onclick="togglePlay()" id="btn-play" class="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-play mr-1"></i>Simuleer
+                        </button>
+                        <button onclick="stepTime(15)" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono border border-slate-700" title="+15 minuten">+15m</button>
+                    </div>
+                    <div class="flex-1 w-full flex items-center gap-3">
+                        <span class="text-xs font-mono text-slate-400 whitespace-nowrap">Tijd (UTC):</span>
+                        <input type="range" id="time-slider" min="0" max="1439" value="240" oninput="onTimeSliderChange(this.value)" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
+                        <span id="time-slider-label" class="text-xs font-mono font-bold text-sky-400 w-16 text-right">04:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculated Celestial Coordinates & R-Script Output Table -->
+            <div class="glass-panel rounded-2xl p-4 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                        <h2 class="text-sm md:text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-table-list text-sky-400"></i>
+                            Berekende Hemelcoördinaten & R-Script Verificatiematrix (Epoch 2041)
+                        </h2>
+                        <p class="text-xs text-slate-400 font-mono">
+                            JD = 2466722.66667 • T = +0.41554188 • GMST = 359,96° • LST = 4,79° (bij lon = 4,8317°E)
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="snapToReference2041()" class="px-2.5 py-1 bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-crosshairs mr-1"></i>Herstel Exacte 04:00 UTC Ankerdata
+                        </button>
+                        <button onclick="exportDataJSON()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-file-code mr-1"></i>Export JSON
+                        </button>
+                        <button onclick="exportLatticeCSV()" class="px-2.5 py-1 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/30 rounded-lg text-xs font-mono transition">
+                            <i class="fa-solid fa-file-csv mr-1"></i>Export p3/p6 CSV (nm)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse font-mono text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-700/80 text-slate-400 bg-slate-900/60">
+                                <th class="py-2.5 px-3"># Object</th>
+                                <th class="py-2.5 px-3">RA_deg ($\alpha$)</th>
+                                <th class="py-2.5 px-3">Dec_deg ($\delta$)</th>
+                                <th class="py-2.5 px-3">Alt_deg ($h$)</th>
+                                <th class="py-2.5 px-3">Az_deg ($A$)</th>
+                                <th class="py-2.5 px-3">Uurhoek_deg ($H$)</th>
+                                <th class="py-2.5 px-3">Hemelrichting & Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ephemeris-tbody" class="divide-y divide-slate-800/70">
+                            <!-- Wordt dynamisch gevuld door JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Geometric Morning Analysis Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-800/80 text-xs">
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
+                        <div class="font-semibold text-sky-400 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sun"></i> 1. Ideale Ochtendschemering
+                        </div>
+                        <p class="text-slate-300 leading-relaxed">
+                            Om 04:00 UTC staat de Zon op <span class="font-mono text-amber-300">-4,00°</span> (Azimut <span class="font-mono text-amber-300">57,03°</span>, Uurhoek <span class="font-mono">-116,98°</span>). Binnen de civiele schemering tekenen de sterren en planeten haarscherp af tegen de diepblauwe ochtendlucht.
+                        </p>
+                    </div>
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
+                        <div class="font-semibold text-amber-300 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-moon"></i> 2. Nauw Cluster Maan & Venus
+                        </div>
+                        <p class="text-slate-300 leading-relaxed">
+                            De afnemende maansikkel (~16%, <span class="font-mono text-amber-200">Alt +20,93°, Az 79,81°</span>) en Venus (<span class="font-mono text-sky-200">Alt +22,96°, Az 83,06°</span>) vormen een nauw paar op <span class="font-mono text-emerald-300">3,7°</span> in het Oost-Noordoosten.
+                        </p>
+                    </div>
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-3">
+                        <div class="font-semibold text-orange-400 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-diagram-project"></i> 3. Hyaden & 95,26 nm Spiegelanker
+                        </div>
+                        <p class="text-slate-300 leading-relaxed">
+                            Aldebaran en de Hyaden staan op <span class="font-mono text-orange-300">Alt +29,77°, Az 95,22°</span> (Uurhoek <span class="font-mono">-64,46°</span>) en verankeren de primaire kristallografische spiegelas $\mathbf{M}(95{,}26^\circ)$ van het $95{,}26\text{ nm}$ rooster.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 4 (Bottom Left): Formeel Tijdstempel-, SMTP-Audit-, R-Script & Linux Desktop-Paneel -->
+            <div class="glass-panel rounded-2xl p-4 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400 text-base"></i>
+                        <h2 class="text-sm md:text-base font-bold text-white">
+                            Formeel Tijdstempel-, SMTP-Audit- & Systeemintegratie-Register
+                        </h2>
+                    </div>
+                    <!-- Tab Buttons -->
+                    <div class="flex flex-wrap gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-mono">
+                        <button onclick="switchAuditTab('smtp')" id="tab-btn-smtp" class="px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold transition">
+                            <i class="fa-solid fa-envelope-circle-check mr-1"></i>SMTP & Tijdstempels (28/31 Okt 2026)
+                        </button>
+                        <button onclick="switchAuditTab('rcode')" id="tab-btn-rcode" class="px-3 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <i class="fa-brands fa-r-project mr-1"></i>R-Script (Astrometrie + p3/p6)
+                        </button>
+                        <button onclick="switchAuditTab('desktop')" id="tab-btn-desktop" class="px-3 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <i class="fa-brands fa-linux mr-1"></i>Vivaldi / Linux .desktop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: SMTP Audit & Chronological Log -->
+                <div id="tab-content-smtp" class="space-y-3">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse font-mono text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-700 text-slate-400 bg-slate-900/70">
+                                    <th class="py-2 px-3">Anker-ID</th>
+                                    <th class="py-2 px-3">Datum & Tijd (CET / Lokaal)</th>
+                                    <th class="py-2 px-3">Datum & Tijd (UTC)</th>
+                                    <th class="py-2 px-3">Server Hop / Systeemroute</th>
+                                    <th class="py-2 px-3">Cryptografie, Queue-ID & Envelope</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/80 text-[11px]">
+                                <tr class="hover:bg-slate-800/40">
+                                    <td class="py-2.5 px-3 font-bold text-amber-300">TS-01</td>
+                                    <td class="py-2.5 px-3 text-white">Wo 28-10-2026 08:05:00 CET</td>
+                                    <td class="py-2.5 px-3 text-slate-300">2026-10-28 07:05:00 UTC</td>
+                                    <td class="py-2.5 px-3 text-slate-300">Primair ochtend-tijdsanker</td>
+                                    <td class="py-2.5 px-3 text-emerald-300">Initiële chronologische registratie (woensdag 28 oktober 2026 om 08:05)</td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40">
+                                    <td class="py-2.5 px-3 font-bold text-sky-400">SMTP-HOP-01</td>
+                                    <td class="py-2.5 px-3 text-white">Wo 28-10-2026 16:04:25 +0100</td>
+                                    <td class="py-2.5 px-3 text-slate-300">2026-10-28 15:04:25 UTC</td>
+                                    <td class="py-2.5 px-3 text-slate-200">
+                                        <span class="text-sky-300">ec2-34-250-253-130.eu-west-1.compute.amazonaws.com</span> ([34.250.253.130] helo=mail.zaaksysteem.nl) → <span class="text-emerald-300">mail-out.zaaksysteem.nl</span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-slate-300">
+                                        Exim 4.95 | Queue-ID: <span class="text-amber-300 font-bold">1xM5CT-00AzoK-Ar</span> | TLS1.3 <span class="text-sky-300">TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384</span> | envelope-from: <span class="text-white">&lt;mail-zaaksysteem@tholen.nl&gt;</span>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40">
+                                    <td class="py-2.5 px-3 font-bold text-fuchsia-400">SMTP-HOP-02</td>
+                                    <td class="py-2.5 px-3 text-white">Wo 28-10-2026 16:04:31 +0100</td>
+                                    <td class="py-2.5 px-3 text-slate-300">2026-10-28 15:04:31 UTC</td>
+                                    <td class="py-2.5 px-3 text-slate-200">
+                                        <span class="text-emerald-300">mail-out.zaaksysteem.nl</span> ([149.210.141.108]) → <span class="text-fuchsia-300">mailinosl106.protonmail.ch</span> (Postfix ESMTPS)
+                                    </td>
+                                    <td class="py-2.5 px-3 text-slate-300">
+                                        Queue-ID: <span class="text-amber-300 font-bold">4jF9cv2Mlzz5K</span> | TLSv1.3 <span class="text-sky-300">TLS_AES_256_GCM_SHA384</span> (256/256 bits) | key-exchange <span class="text-emerald-300">x25519</span> | RSA-PSS (4096 bits) SHA512 (Δt = +6s)
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-800/40">
+                                    <td class="py-2.5 px-3 font-bold text-amber-300">TS-02</td>
+                                    <td class="py-2.5 px-3 text-white">Za 31-10-2026 14:04:00 CET</td>
+                                    <td class="py-2.5 px-3 text-slate-300">2026-10-31 13:04:00 UTC</td>
+                                    <td class="py-2.5 px-3 text-slate-300">Secundair vervolg-tijdsanker</td>
+                                    <td class="py-2.5 px-3 text-emerald-300">Exact interval Δt = +70 uur (252.000 seconden na 28-10-2026 16:04)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Raw Header Box with Copy Button -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-300 relative">
+                        <div class="flex items-center justify-between mb-1.5 border-b border-slate-800 pb-1">
+                            <span class="text-slate-400 font-semibold">Originele Cryptografische RFC-5322 Received Headers:</span>
+                            <button onclick="copyTextById('raw-smtp-headers')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-sky-300 rounded border border-slate-700 text-[10px]">
+                                <i class="fa-regular fa-copy mr-1"></i>Kopieer Headers
+                            </button>
+                        </div>
+                        <pre id="raw-smtp-headers" class="whitespace-pre-wrap text-[10px] leading-relaxed text-slate-400">Received: from mail-out.zaaksysteem.nl (mail-out.zaaksysteem.nl [149.210.141.108]) (using
+ TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+  key-exchange x25519 server-signature RSA-PSS (4096 bits) server-digest SHA512) (No
+ client certificate requested) by mailinosl106.protonmail.ch (Postfix) with ESMTPS id
+ 4jF9cv2Mlzz5K; Wed, 28 Oct 2026 15:04:31 +0000 (UTC)
+Received: from ec2-34-250-253-130.eu-west-1.compute.amazonaws.com ([34.250.253.130]
+ helo=mail.zaaksysteem.nl) by mail-out.zaaksysteem.nl with esmtps
+  (TLS1.3) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 (Exim 4.95) (envelope-from
+ &lt;mail-zaaksysteem@tholen.nl&gt;) id 1xM5CT-00AzoK-Ar; Wed, 28 Oct 2026 16:04:25 +0100</pre>
+                    </div>
+                </div>
+
+                <!-- Tab 2: R-Code (Astrometrie + p3/p6 Spiegelas-functie) -->
+                <div id="tab-content-rcode" class="hidden space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono text-slate-400">Volledig uitvoerbaar R-script (Saint-Rémy 2041 + p3/p6 95,26 nm Spiegelas-generator):</span>
+                        <button onclick="copyTextById('r-code-block')" class="px-2.5 py-1 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 rounded-lg border border-sky-500/30 text-xs font-mono">
+                            <i class="fa-regular fa-copy mr-1"></i>Kopieer R-Script
+                        </button>
+                    </div>
+                    <pre id="r-code-block" class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-emerald-300 overflow-x-auto max-h-72 leading-relaxed"># --- 1. OBSERVATIE- EN TIJDCOÖRDINATEN ----------------------------------------
+lat &lt;- 43.7886  # Breedtegraad Saint-Rémy-de-Provence (°N)
+lon &lt;- 4.8317   # Lengtegraad Saint-Rémy-de-Provence (°E)
+lat_rad &lt;- lat * pi / 180
+
+# Juliaanse Datum (JD) voor 22 juli 2041 om 04:00 UTC
+JD &lt;- 2466722.66667
+T  &lt;- (JD - 2451545.0) / 36525.0
+
+# Greenwich Middelbare Sterrentijd (GMST) en Lokale Sterrentijd (LST)
+GMST &lt;- (280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T^2) %% 360
+LST  &lt;- (GMST + lon) %% 360
+
+# --- 2. POSITIES AAN DE HEMEL (Rechte Klimming & Declinatie - Epoch 2041) -----
+eq_to_horiz &lt;- function(ra_deg, dec_deg, lst_deg, lat_r) {
+  ha_deg &lt;- ((lst_deg - ra_deg + 180) %% 360) - 180
+  ha_rad &lt;- ha_deg * pi / 180
+  dec_rad &lt;- dec_deg * pi / 180
+  sin_alt &lt;- sin(dec_rad) * sin(lat_r) + cos(dec_rad) * cos(lat_r) * cos(ha_rad)
+  alt_rad &lt;- asin(pmax(pmin(sin_alt, 1), -1))
+  y &lt;- -sin(ha_rad) * cos(dec_rad)
+  x &lt;- sin(dec_rad) * cos(lat_r) - cos(dec_rad) * sin(lat_r) * cos(ha_rad)
+  az_deg &lt;- (atan2(y, x) * 180 / pi) %% 360
+  c(Alt_deg = round(alt_rad * 180 / pi, 2), Az_deg = round(az_deg, 2), Uurhoek_deg = round(ha_deg, 2))
+}
+
+bodies &lt;- data.frame(
+  Object  = c("Zon (Ochtendschemering)", "Maan (~16% Sikkel)", "Venus (Morgenster)", "Aldebaran / Hyaden"),
+  RA_deg  = c(122.10, 86.25, 82.50, 69.58),
+  Dec_deg = c(20.10,  21.50, 20.50, 16.65)
+)
+results &lt;- as.data.frame(t(mapply(eq_to_horiz, bodies$RA_deg, bodies$Dec_deg, MoreArgs = list(lst_deg = LST, lat_r = lat_rad))))
+output_table &lt;- cbind(bodies, results)
+print(output_table)
+
+# --- 3. SPIEGELAS- & BEHANGGROEP-FUNCTIE p3 (120%, 120°) EN p6 (60%, 60°) -----
+rot_matrix_2d &lt;- function(theta_deg) {
+  th &lt;- theta_deg * pi / 180
+  matrix(c(cos(th), sin(th), -sin(th), cos(th)), 2, 2)
+}
+mirror_matrix_2d &lt;- function(phi_deg) {
+  ph2 &lt;- 2 * phi_deg * pi / 180
+  matrix(c(cos(ph2), sin(ph2), sin(ph2), -cos(ph2)), 2, 2)
+}</pre>
+                </div>
+
+                <!-- Tab 3: Vivaldi Social & Local Linux .desktop Entry -->
+                <div id="tab-content-desktop" class="hidden space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono text-slate-400">Linux Desktop Launcher Configuratie (Vivaldi Social + Simulator):</span>
+                        <button onclick="copyTextById('desktop-code-block')" class="px-2.5 py-1 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 rounded-lg border border-fuchsia-500/30 text-xs font-mono">
+                            <i class="fa-regular fa-copy mr-1"></i>Kopieer .desktop
+                        </button>
+                    </div>
+                    <pre id="desktop-code-block" class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-sky-300 overflow-x-auto max-h-72 leading-relaxed">[Desktop Entry]
+Version=1.0
+Terminal=false
+Type=Application
+Name=Vivaldi Social
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app-id=dbbilopofoppfadmjolkgmoopfmehcne
+Icon=vivaldi-dbbilopofoppfadmjolkgmoopfmehcne-Default
+StartupWMClass=crx_dbbilopofoppfadmjolkgmoopfmehcne
+Actions=Compose-new-post;Explore;Notifications;Launch-Astro-Lattice
+
+[Desktop Action Compose-new-post]
+Name=Compose new post
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app-id=dbbilopofoppfadmjolkgmoopfmehcne --app-launch-url-for-shortcuts-menu-item=https://social.vivaldi.net/publish
+
+[Desktop Action Explore]
+Name=Explore
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app-id=dbbilopofoppfadmjolkgmoopfmehcne --app-launch-url-for-shortcuts-menu-item=https://social.vivaldi.net/explore
+
+[Desktop Action Notifications]
+Name=Notifications
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app-id=dbbilopofoppfadmjolkgmoopfmehcne --app-launch-url-for-shortcuts-menu-item=https://social.vivaldi.net/notifications
+
+[Desktop Action Launch-Astro-Lattice]
+Name=Hemel & p3/p6 Rooster Simulator (95.26 nm)
+Exec=/opt/vivaldi/vivaldi --profile-directory=Default --app=file:///home/ontwerp/hemel_simulatie_2041.html</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Controls for Crystallography (p3/p6), Geo-Location, Sky Map Upload & Resonance (4 cols on lg) -->
+        <div class="lg:col-span-4 flex flex-col gap-5">
+
+            <!-- Panel 1: Kristallografische Spiegelas- & Behanggroep-Engine (p3 & p6 - 95.26 nm) -->
+            <div class="glass-panel rounded-2xl p-4 shadow-xl space-y-3.5 border-fuchsia-500/30">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-hexagon-nodes text-fuchsia-400"></i>
+                        1. Spiegelas- & Behanggroep-Engine (p3 / p6)
+                    </h2>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30">a = 95,26 nm</span>
+                </div>
+
+                <!-- Symmetry Group Selector -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-mono text-slate-400 block">Actieve Symmetriegroep & Schaalverhouding:</label>
+                    <div class="grid grid-cols-3 gap-1.5 font-mono text-xs">
+                        <button onclick="setLatticeGroup('p3')" id="btn-grp-p3" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white transition text-center">
+                            <div class="font-bold text-emerald-400">p3 (120°)</div>
+                            <div class="text-[10px] text-slate-400">3-voud • 120%</div>
+                        </button>
+                        <button onclick="setLatticeGroup('p6')" id="btn-grp-p6" class="py-2 px-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white transition text-center">
+                            <div class="font-bold text-fuchsia-400">p6 (60°)</div>
+                            <div class="text-[10px] text-slate-400">6-voud • 60%</div>
+                        </button>
+                        <button onclick="setLatticeGroup('both')" id="btn-grp-both" class="py-2 px-2 rounded-xl border border-fuchsia-500/60 bg-fuchsia-500/15 text-white shadow transition text-center">
+                            <div class="font-bold text-sky-300">p3 + p6</div>
+                            <div class="text-[10px] text-fuchsia-200">120% & 60%</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mirror Axis Toggle & Angle Slider (phi_0 = 95.26°) -->
+                <div class="space-y-2 pt-1 font-mono text-xs">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-200 select-none">
+                            <input type="checkbox" id="chk-mirror-axes" onchange="updateSimulation()" checked class="rounded bg-slate-800 border-slate-600 text-fuchsia-500">
+                            <span>Spiegelassen $\mathbf{M}(\phi)$ (p3m1 / p6m)</span>
+                        </label>
+                        <button onclick="resetMirrorAngle()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 text-[10px]">
+                            Reset 95,26°
+                        </button>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-slate-400">Primaire Spiegelas-Hoek ($\phi_0$):</span>
+                            <span id="lbl-mirror-phi" class="text-amber-300 font-bold">95,26° (Hyaden-Anker)</span>
+                        </div>
+                        <input type="range" id="inp-mirror-phi" min="0" max="180" step="0.02" value="95.26" oninput="onMirrorAngleChange(this.value)" class="w-full h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-slate-400">p3 Schaal (120°):</span>
+                                <span id="lbl-scale-p3" class="text-emerald-400">120% (114,31 nm)</span>
+                            </div>
+                            <input type="range" id="inp-scale-p3" min="40" max="200" value="120" oninput="onLatticeScaleChange()" class="w-full h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-slate-400">p6 Schaal (60°):</span>
+                                <span id="lbl-scale-p6" class="text-fuchsia-400">60% (57,16 nm)</span>
+                            </div>
+                            <input type="range" id="inp-scale-p6" min="20" max="150" value="60" oninput="onLatticeScaleChange()" class="w-full h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live 2x2 Transformation Matrices R(theta) and M(phi) -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 font-mono text-[11px] space-y-2">
+                    <div class="text-[10px] text-slate-400 flex justify-between border-b border-slate-800/80 pb-1">
+                        <span>Basisvectoren ($\gamma = 120^\circ$):</span>
+                        <span class="text-slate-300">$\mathbf{a}_1=(95.26, 0)$, $\mathbf{a}_2=(-47.63, 82.50)$ nm</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 items-center pt-0.5">
+                        <div>
+                            <div class="text-[10px] text-emerald-400 mb-1" id="mat-rot-title">Rotatie R(120°):</div>
+                            <div class="matrix-bracket text-slate-200 text-[11px]" id="mat-rot-values">
+                                <span>-0.5000</span><span>-0.8660</span>
+                                <span>+0.8660</span><span>-0.5000</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-fuchsia-400 mb-1" id="mat-mir-title">Spiegel M(95,26°):</div>
+                            <div class="matrix-bracket text-slate-200 text-[11px]" id="mat-mir-values">
+                                <span>-0.9832</span><span>-0.1826</span>
+                                <span>-0.1826</span><span>+0.9832</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/80" id="active-mirror-axes-readout">
+                        p6m Assen: 95,26° • 125,26° • 155,26° • 5,26° • 35,26° • 65,26°
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 2: Geo-Plaatsbepaling (Mobiel GPS + R-Script & Anker Presets) -->
+            <div class="glass-panel rounded-2xl p-4 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs text-emerald-400"></i>
+                        2. Geo-Plaatsbepaling & Sterrentijd
+                    </h2>
+                    <span id="gps-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">R-Script Anker</span>
+                </div>
+
+                <!-- Mobile GPS & Compass Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="requestMobileGPS()" class="w-full py-2 px-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition shadow">
+                        <i class="fa-solid fa-location-dot"></i> Mobiele GPS
+                    </button>
+                    <button onclick="toggleDeviceCompass()" id="btn-compass" class="w-full py-2 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-compass"></i> Kompas/Gyro
+                    </button>
+                </div>
+
+                <!-- Preset Locations -->
+                <div class="space-y-1.5">
+                    <button onclick="setLocationPreset('saint-remy-r')" id="loc-btn-remy-r" class="w-full text-left p-2 rounded-xl border border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/15 transition flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-white">Saint-Rémy (R-Script Coördinaten)</div>
+                            <div class="text-[10px] font-mono text-sky-300">lat = 43.7886° N, lon = 4.8317° E • JD 2466722.66667</div>
+                        </div>
+                        <i class="fa-solid fa-check text-sky-400"></i>
+                    </button>
+                    <button onclick="setLocationPreset('saint-remy-utm')" id="loc-btn-remy-utm" class="w-full text-left p-2 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 transition flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Saint-Rémy (UTM 31T Ankerpunt)</div>
+                            <div class="text-[10px] font-mono text-slate-400">43° 46′ 36.01″ N, 4° 50′ 6.57″ E (43.776669, 4.835158)</div>
+                        </div>
+                        <i class="fa-solid fa-location-arrow text-slate-500"></i>
+                    </button>
+                    <button onclick="setLocationPreset('tafelberg')" id="loc-btn-tafelberg" class="w-full text-left p-2 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 transition flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Tafelbergheide (Eclips 12 Aug 2026)</div>
+                            <div class="text-[10px] font-mono text-slate-400">52° 13′ 00″ N, 5° 11′ 00″ E (52.2167, 5.1833) • +35m NAP</div>
+                        </div>
+                        <i class="fa-solid fa-location-arrow text-slate-500"></i>
+                    </button>
+                </div>
+
+                <!-- Coordinate Input Fields -->
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[10px] font-mono text-slate-400 block mb-1">Breedte ($\phi$ °N)</label>
+                        <input type="number" id="inp-lat" step="0.0001" value="43.7886" oninput="onManualGeoChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-white focus:border-sky-400 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-mono text-slate-400 block mb-1">Lengte ($\lambda$ °E)</label>
+                        <input type="number" id="inp-lon" step="0.0001" value="4.8317" oninput="onManualGeoChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-white focus:border-sky-400 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-mono text-slate-400 block mb-1">Hoogte ($h$ m)</label>
+                        <input type="number" id="inp-elev" step="1" value="102" oninput="onManualGeoChange()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-white focus:border-sky-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- DMS & UTM Readout Box -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-2 font-mono text-[10px] text-slate-300 space-y-0.5">
+                    <div id="dms-readout">DMS: 43° 47′ 18.96″ N | 4° 49′ 54.12″ E</div>
+                    <div id="utm-readout" class="text-sky-400">UTM: 31T 647684 4848705 (Schaal ± 1:10000)</div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Upload Hemelkaarten & Schilderij Kalibratie Overlay -->
+            <div class="glass-panel rounded-2xl p-4 shadow-xl space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-amber-400"></i>
+                        3. Upload Hemelkaart / Schilderij-Overlay
+                    </h2>
+                    <button onclick="clearOverlayImage()" class="text-[11px] font-mono text-slate-400 hover:text-rose-400 transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i>Wis
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="map-upload" class="cursor-pointer border-2 border-dashed border-slate-700 hover:border-sky-400 bg-slate-900/50 hover:bg-slate-900/90 transition rounded-xl p-2.5 text-center flex flex-col items-center justify-center gap-1">
+                        <i class="fa-solid fa-cloud-arrow-up text-base text-sky-400"></i>
+                        <span class="text-xs font-semibold text-slate-200">Upload Hemelkaart of Schilderij (PNG/JPG/SVG)</span>
+                        <input type="file" id="map-upload" accept="image/*" onchange="handleImageUpload(event)" class="hidden">
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="loadSyntheticStarryNightOverlay()" class="py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-mono transition">
+                            <i class="fa-solid fa-palette mr-1"></i>1889 Schilderij-Laag
+                        </button>
+                        <button onclick="document.getElementById('json-upload').click()" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-mono transition">
+                            <i class="fa-solid fa-file-import mr-1"></i>Import JSON Data
+                        </button>
+                        <input type="file" id="json-upload" accept=".json" onchange="handleDataFileUpload(event)" class="hidden">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 pt-1 text-xs font-mono">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400">Transparantie:</span>
+                        <span id="lbl-ov-opacity" class="text-sky-400">45%</span>
+                    </div>
+                    <input type="range" id="ov-opacity" min="0" max="100" value="45" oninput="updateOverlayParams()" class="w-full h-1.5 bg-slate-800 rounded-lg">
+
+                    <div class="grid grid-cols-2 gap-2 pt-0.5">
+                        <div>
+                            <div class="flex justify-between text-[10px]"><span class="text-slate-400">Schaal:</span><span id="lbl-ov-scale" class="text-sky-400">100%</span></div>
+                            <input type="range" id="ov-scale" min="20" max="250" value="100" oninput="updateOverlayParams()" class="w-full h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px]"><span class="text-slate-400">Rotatie:</span><span id="lbl-ov-rot" class="text-sky-400">0°</span></div>
+                            <input type="range" id="ov-rot" min="-180" max="180" value="0" oninput="updateOverlayParams()" class="w-full h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ============================================================================
+        // ASTROMETRISCHE & KRISTALLOGRAFISCHE KERNENGINE (R-SCRIPT + p3/p6 95.26 nm)
+        // ============================================================================
+
+        const DEG2RAD = Math.PI / 180;
+        const RAD2DEG = 180 / Math.PI;
+
+        const state = {
+            epochPreset: '2041', // '2041', '1889', '2026'
+            lat: 43.7886,        // Exacte R-script breedtegraad Saint-Rémy-de-Provence (°N)
+            lon: 4.8317,         // Exacte R-script lengtegraad Saint-Rémy-de-Provence (°E)
+            elev: 102,
+            locationName: 'Saint-Rémy-de-Provence (R-Ref)',
+            dateStr: '2041-07-22',
+            timeMinutes: 240,    // 04:00 UTC = 240 minuten
+            jdBase: 2466722.66667, // Exacte JD voor 22 juli 2041 04:00 UTC
+            projection: 'stereographic',
+            show1889Ghost: true,
+            showVectors: true,
+            // Kristallografische p3 / p6 Roosterparameters (95.26 nm)
+            showLatticeOverlay: true,
+            latticeGroup: 'both', // 'p3', 'p6', 'both'
+            showMirrorAxes: true,
+            latticeA_nm: 95.26,
+            mirrorPhi0: 95.26,    // Verankerd op het Hyaden-azimut (95.22° - 95.26°)
+            scaleP3Pct: 120,      // 3-voudig 120° = 120%
+            scaleP6Pct: 60,       // 6-voudig 60° = 60%
+            renderedLatticeNodes: [],
+            hoveredNode: null,
+            // Animatie & Mobiele sensoren
+            isPlaying: false,
+            playTimer: null,
+            compassActive: false,
+            // Camera pan & zoom
+            panAzOffset: 0,
+            panAltOffset: 0,
+            zoom: 1.0,
+            // Overlay Image State
+            overlayImg: null,
+            ovOpacity: 0.45,
+            ovScale: 1.0,
+            ovRot: 0,
+            ovX: 0,
+            ovY: 0
+        };
+
+        // Exacte Epoch 2041 Hemelobjecten zoals gedefinieerd in het R-script:
+        const CATALOG_2041 = [
+            {
+                id: 'sun',
+                name: 'Zon (Ochtendschemering)',
+                raDeg: 122.10,
+                raStr: '122,10° (08h 08m)',
+                decDeg: 20.10,
+                decStr: '+20,10°',
+                rAlt: -4.00,
+                rAz: 57.03,
+                rHa: -116.98,
+                dirStr: 'Noordoosten (Onder horizon)',
+                color: '#fbbf24',
+                radius: 11
+            },
+            {
+                id: 'moon',
+                name: 'Maan (~16% Sikkel)',
+                raDeg: 86.25,
+                raStr: '86,25° (05h 45m)',
+                decDeg: 21.50,
+                decStr: '+21,50°',
+                rAlt: 20.93,
+                rAz: 79.81,
+                rHa: -81.13,
+                dirStr: 'Oost-Noordoosten',
+                color: '#fef08a',
+                radius: 13,
+                illum: 0.16
+            },
+            {
+                id: 'venus',
+                name: 'Venus (Morgenster)',
+                raDeg: 82.50,
+                raStr: '82,50° (05h 30m)',
+                decDeg: 20.50,
+                decStr: '+20,50°',
+                rAlt: 22.96,
+                rAz: 83.06,
+                rHa: -77.38,
+                dirStr: 'Oost-Noordoosten',
+                color: '#e0f2fe',
+                radius: 7.5
+            },
+            {
+                id: 'aldebaran',
+                name: 'Aldebaran / Hyaden',
+                raDeg: 69.58,
+                raStr: '69,58° (04h 38m)',
+                decDeg: 16.65,
+                decStr: '+16,65°',
+                rAlt: 29.77,
+                rAz: 95.22,
+                rHa: -64.46,
+                dirStr: 'Oosten (95,26 nm Anker)',
+                color: '#f97316',
+                radius: 6
+            }
+        ];
+
+        const TAURUS_STARS = [
+            { name: 'θ² Tauri (Hyaden)', raDeg: 67.16, decDeg: 15.87, mag: 3.4, color: '#fed7aa' },
+            { name: 'γ Tauri (Hyadum I)', raDeg: 64.95, decDeg: 15.63, mag: 3.65, color: '#fed7aa' },
+            { name: 'δ¹ Tauri (Hyadum II)', raDeg: 65.73, decDeg: 17.54, mag: 3.77, color: '#fed7aa' },
+            { name: 'ε Tauri (Ain)', raDeg: 67.15, decDeg: 19.18, mag: 3.53, color: '#fdba74' },
+            { name: 'β Tauri (Elnath)', raDeg: 81.57, decDeg: 28.61, mag: 1.65, color: '#bae6fd' },
+            { name: 'ζ Tauri (Tianguan)', raDeg: 84.41, decDeg: 21.14, mag: 3.0, color: '#bae6fd' },
+            { name: 'Pleiaden (M45 / Alcyone)', raDeg: 56.87, decDeg: 24.11, mag: 2.87, color: '#93c5fd', isCluster: true }
+        ];
+
+        const PRECESSION_SHIFT_DEG = -2.123;
+
+        // ============================================================================
+        // R-SCRIPT SFERISCHE TRIGONOMETRIE IMPLEMENTATIE
+        // ============================================================================
+
+        function computeRScriptAstro(raDeg, decDeg, jdCurrent, latDeg, lonDeg) {
+            const T = (jdCurrent - 2451545.0) / 36525.0;
+            const gmstRaw = 280.46061837 + 360.98564736629 * (jdCurrent - 2451545.0) + 0.000387933 * T * T;
+            const GMST = ((gmstRaw % 360) + 360) % 360;
+            const LST = ((GMST + lonDeg) % 360 + 360) % 360;
+
+            let haDeg = ((LST - raDeg + 180) % 360 + 360) % 360 - 180;
+            // Houd uurhoek in hetzelfde [-180, 0] bereik als de R-tabel
+            if (LST - raDeg < 0 && haDeg > 0) haDeg -= 360;
+
+            const haRad = (LST - raDeg) * DEG2RAD;
+            const decRad = decDeg * DEG2RAD;
+            const latRad = latDeg * DEG2RAD;
+
+            const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
+            const altRad = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+
+            const y = -Math.sin(haRad) * Math.cos(decRad);
+            const x = Math.sin(decRad) * Math.cos(latRad) - Math.cos(decRad) * Math.sin(latRad) * Math.cos(haRad);
+            const azDeg = ((Math.atan2(y, x) * RAD2DEG) % 360 + 360) % 360;
+
+            return {
+                alt: altRad * RAD2DEG,
+                az: azDeg,
+                uurhoek: LST - raDeg,
+                GMST,
+                LST,
+                JD: jdCurrent,
+                T
+            };
+        }
+
+        function getCurrentJD() {
+            const deltaMinutes = state.timeMinutes - 240; // t.o.v. 04:00 UTC
+            if (state.epochPreset === '1889') {
+                return (2466722.66667 - 55517.0) + (deltaMinutes / 1440.0);
+            }
+            if (state.epochPreset === '2026') {
+                // 12 Augustus 2026 18:08 UTC ≈ JD 2461265.25556
+                return 2461264.66667 + (state.timeMinutes / 1440.0);
+            }
+            return 2466722.66667 + (deltaMinutes / 1440.0);
+        }
+
+        function getCurrentSkyObjects() {
+            const jd = getCurrentJD();
+
+            if (state.epochPreset === '2026') {
+                const dtMin = state.timeMinutes - 1088;
+                const objs2026 = [
+                    { id: 'sun', name: 'Zon (Fotosfeer Eclips)', raDeg: 142.35, raStr: '142.35', decDeg: 14.82, decStr: '14.82', color: '#fbbf24', radius: 13 },
+                    { id: 'moon', name: 'Maan (Umbra/Limb)', raDeg: 142.30 + dtMin * 0.008, raStr: (142.30 + dtMin * 0.008).toFixed(2), decDeg: 14.75, decStr: '14.75', color: '#334155', radius: 13.2, isEclipse: true },
+                    { id: 'venus', name: 'Venus (Avondster)', raDeg: 172.40, raStr: '172.40', decDeg: 3.20, decStr: '3.20', color: '#e0f2fe', radius: 7 },
+                    { id: 'aldebaran', name: 'Aldebaran / Hyaden', raDeg: 69.27, raStr: '69.27', decDeg: 16.52, decStr: '16.52', color: '#f97316', radius: 6 }
+                ];
+                return objs2026.map(o => {
+                    const c = computeRScriptAstro(o.raDeg, o.decDeg, jd, state.lat, state.lon);
+                    return { ...o, alt: c.alt, az: c.az, uurhoek: c.uurhoek, GMST: c.GMST, LST: c.LST, JD: c.JD, T: c.T, dirStr: azimuthToCompassDutch(c.az) };
+                });
+            }
+
+            const precess = (state.epochPreset === '1889') ? PRECESSION_SHIFT_DEG : 0;
+            return CATALOG_2041.map(item => {
+                const ra = item.raDeg + precess;
+                const dec = item.decDeg + (precess * 0.18);
+                const c = computeRScriptAstro(ra, dec, jd, state.lat, state.lon);
+                return {
+                    ...item,
+                    raDeg: ra,
+                    decDeg: dec,
+                    alt: c.alt,
+                    az: c.az,
+                    uurhoek: c.uurhoek,
+                    GMST: c.GMST,
+                    LST: c.LST,
+                    JD: c.JD,
+                    T: c.T,
+                    dirStr: (Math.abs(state.lat - 43.7886) < 0.02 && state.timeMinutes === 240 && state.epochPreset === '2041') ? item.dirStr : azimuthToCompassDutch(c.az)
+                };
+            });
+        }
+
+        // ============================================================================
+        // KRISTALLOGRAFISCHE p3 & p6 SPIEGELAS- & BEHANGGROEP-GENERATOR (95.26 nm)
+        // ============================================================================
+
+        function rotMatrix2D(thetaDeg) {
+            const th = thetaDeg * DEG2RAD;
+            return [
+                [Math.cos(th), -Math.sin(th)],
+                [Math.sin(th),  Math.cos(th)]
+            ];
+        }
+
+        function mirrorMatrix2D(phiDeg) {
+            const ph2 = 2 * phiDeg * DEG2RAD;
+            return [
+                [Math.cos(ph2),  Math.sin(ph2)],
+                [Math.sin(ph2), -Math.cos(ph2)]
+            ];
+        }
+
+        function applyMat2D(mat, vec) {
+            return [
+                mat[0][0] * vec[0] + mat[0][1] * vec[1],
+                mat[1][0] * vec[0] + mat[1][1] * vec[1]
+            ];
+        }
+
+        // Genereert het volledige p3 (120°, schaal 120%) en p6 (60°, schaal 60%) rooster in nanometers
+        function generateP3P6LatticeNodes(nCells = 2) {
+            const a = state.latticeA_nm; // 95.26 nm
+            const a1 = [a, 0];
+            const a2 = [-0.5 * a, (Math.sqrt(3) / 2) * a]; // (-47.63, 82.4976) nm
+
+            const scaleP3 = state.scaleP3Pct / 100.0; // 1.20 (120%)
+            const scaleP6 = state.scaleP6Pct / 100.0; // 0.60 (60%)
+            const motifBase = [0.28 * a, 0.12 * a];
+            const phi0 = state.mirrorPhi0;
+
+            const anglesP3 = [0, 120, 240];
+            const anglesP6 = [0, 60, 120, 180, 240, 300];
+            const nodes = [];
+
+            for (let i = -nCells; i <= nCells; i++) {
+                for (let j = -nCells; j <= nCells; j++) {
+                    const ox = i * a1[0] + j * a2[0];
+                    const oy = i * a1[1] + j * a2[1];
+
+                    // Roosterknooppunt (Bravais-centrum)
+                    nodes.push({
+                        group: 'Bravais',
+                        op: `Cel(${i},${j})`,
+                        scalePct: 100,
+                        x_nm: ox,
+                        y_nm: oy,
+                        isCenter: true
+                    });
+
+                    // Groep p3: 3-voudig (120°), 120%
+                    if (state.latticeGroup === 'p3' || state.latticeGroup === 'both') {
+                        anglesP3.forEach(ang => {
+                            const rVec = applyMat2D(rotMatrix2D(ang), motifBase);
+                            nodes.push({
+                                group: 'p3',
+                                op: `R(${ang}°)`,
+                                scalePct: state.scaleP3Pct,
+                                x_nm: ox + scaleP3 * rVec[0],
+                                y_nm: oy + scaleP3 * rVec[1]
+                            });
+                            if (state.showMirrorAxes) {
+                                const mVec = applyMat2D(mirrorMatrix2D(phi0), rVec);
+                                nodes.push({
+                                    group: 'p3m1',
+                                    op: `M(${phi0.toFixed(2)}°)·R(${ang}°)`,
+                                    scalePct: state.scaleP3Pct,
+                                    x_nm: ox + scaleP3 * mVec[0],
+                                    y_nm: oy + scaleP3 * mVec[1],
+                                    isMirror: true
+                                });
+                            }
+                        });
+                    }
+
+                    // Groep p6: 6-voudig (60°), 60%
+                    if (state.latticeGroup === 'p6' || state.latticeGroup === 'both') {
+                        anglesP6.forEach(ang => {
+                            const rVec = applyMat2D(rotMatrix2D(ang), motifBase);
+                            nodes.push({
+                                group: 'p6',
+                                op: `R(${ang}°)`,
+                                scalePct: state.scaleP6Pct,
+                                x_nm: ox + scaleP6 * rVec[0],
+                                y_nm: oy + scaleP6 * rVec[1]
+                            });
+                            if (state.showMirrorAxes) {
+                                const mVec = applyMat2D(mirrorMatrix2D(phi0), rVec);
+                                nodes.push({
+                                    group: 'p6m',
+                                    op: `M(${phi0.toFixed(2)}°)·R(${ang}°)`,
+                                    scalePct: state.scaleP6Pct,
+                                    x_nm: ox + scaleP6 * mVec[0],
+                                    y_nm: oy + scaleP6 * mVec[1],
+                                    isMirror: true
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+            return nodes;
+        }
+
+        // ============================================================================
+        // CANVAS RENDERING ENGINE (HEMEL + KRISTALLOGRAFISCH p3/p6 RASTER)
+        // ============================================================================
+
+        const canvas = document.getElementById('sky-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function projectToCanvas(azOrRa, altOrDec, width, height) {
+            const mode = state.projection;
+            const centerAz = (state.epochPreset === '2026' ? 265 : 82) + state.panAzOffset;
+            const centerAlt = 16 + state.panAltOffset;
+            const scale = Math.min(width, height) * 0.0115 * state.zoom;
+
+            if (mode === 'equatorial') {
+                const centerRA = 88 - state.panAzOffset;
+                const centerDec = 18 + state.panAltOffset;
+                const x = width * 0.5 - (azOrRa - centerRA) * scale * 1.15;
+                const y = height * 0.55 - (altOrDec - centerDec) * scale * 1.35;
+                return { x, y };
+            }
+
+            if (mode === 'stereographic') {
+                const dAz = (azOrRa - centerAz) * DEG2RAD;
+                const altRad = altOrDec * DEG2RAD;
+                const alt0Rad = centerAlt * DEG2RAD;
+                const cosC = Math.sin(alt0Rad) * Math.sin(altRad) + Math.cos(alt0Rad) * Math.cos(altRad) * Math.cos(dAz);
+                const k = 2.0 / (1.0 + Math.max(0.15, cosC));
+                const x = width * 0.5 + k * Math.cos(altRad) * Math.sin(dAz) * RAD2DEG * scale * 1.25;
+                const y = height * 0.56 - k * (Math.cos(alt0Rad) * Math.sin(altRad) - Math.sin(alt0Rad) * Math.cos(altRad) * Math.cos(dAz)) * RAD2DEG * scale * 1.25;
+                return { x, y };
+            }
+
+            const x = width * 0.5 + (azOrRa - centerAz) * scale * 1.25;
+            const y = height * 0.56 - (altOrDec - centerAlt) * scale * 1.25;
+            return { x, y };
+        }
+
+        function renderSkyCanvas(objects) {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
+                canvas.width = Math.floor(rect.width * dpr);
+                canvas.height = Math.floor(rect.height * dpr);
+            }
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            const W = rect.width;
+            const H = rect.height;
+
+            const sunObj = objects.find(o => o.id === 'sun');
+            const moonObj = objects.find(o => o.id === 'moon');
+            const venusObj = objects.find(o => o.id === 'venus');
+            const aldObj = objects.find(o => o.id === 'aldebaran');
+
+            // 1. Achtergrond Hemelgradiënt
+            const sunAlt = sunObj ? sunObj.alt : -4.0;
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+            if (state.projection === 'lattice_only') {
+                skyGrad.addColorStop(0, '#040711');
+                skyGrad.addColorStop(1, '#0a0f1d');
+            } else if (sunAlt <= -6) {
+                skyGrad.addColorStop(0, '#020617');
+                skyGrad.addColorStop(0.65, '#0b1736');
+                skyGrad.addColorStop(1, '#1e293b');
+            } else if (sunAlt <= 0) {
+                skyGrad.addColorStop(0, '#040b24');
+                skyGrad.addColorStop(0.52, '#0c214e');
+                skyGrad.addColorStop(0.82, '#1d3b6e');
+                skyGrad.addColorStop(1, '#473d54');
+            } else {
+                skyGrad.addColorStop(0, '#0f2952');
+                skyGrad.addColorStop(0.7, '#285282');
+                skyGrad.addColorStop(1, '#7c6f64');
+            }
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, W, H);
+
+            // 2. Ochtendschemeringsgloed
+            if (sunObj && state.projection !== 'lattice_only') {
+                const sunPos = projectToCanvas(
+                    state.projection === 'equatorial' ? sunObj.raDeg : sunObj.az,
+                    state.projection === 'equatorial' ? sunObj.decDeg : sunObj.alt,
+                    W, H
+                );
+                const glowRadius = Math.max(W, H) * 0.55;
+                const sunGlow = ctx.createRadialGradient(sunPos.x, sunPos.y, 5, sunPos.x, sunPos.y, glowRadius);
+                sunGlow.addColorStop(0, 'rgba(251, 191, 36, 0.36)');
+                sunGlow.addColorStop(0.35, 'rgba(249, 115, 22, 0.16)');
+                sunGlow.addColorStop(0.7, 'rgba(56, 189, 248, 0.05)');
+                sunGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = sunGlow;
+                ctx.fillRect(0, 0, W, H);
+            }
+
+            // 3. Geüploade Hemelkaart / Schilderij Overlay
+            if (state.overlayImg) {
+                ctx.save();
+                ctx.globalAlpha = state.ovOpacity;
+                ctx.translate(W * 0.5 + state.ovX, H * 0.5 + state.ovY);
+                ctx.rotate(state.ovRot * DEG2RAD);
+                const imgW = state.overlayImg.width || 600;
+                const imgH = state.overlayImg.height || 450;
+                const baseScale = Math.min(W / imgW, H / imgH) * state.ovScale;
+                ctx.drawImage(state.overlayImg, (-imgW * baseScale) / 2, (-imgH * baseScale) / 2, imgW * baseScale, imgH * baseScale);
+                ctx.restore();
+            }
+
+            // 4. Hemelrooster (indien niet in zuivere rooster-modus)
+            if (state.projection !== 'lattice_only') {
+                drawSkyCoordinateGrid(W, H);
+            }
+
+            // 5. KRISTALLOGRAFISCH p3 (120% / 120°) & p6 (60% / 60°) HEXAGONAAL ROOSTER (95.26 nm)
+            if (state.showLatticeOverlay || state.projection === 'lattice_only') {
+                const anchorPos = (state.projection === 'lattice_only' || !aldObj)
+                    ? { x: W * 0.5, y: H * 0.5 }
+                    : projectToCanvas(
+                        state.projection === 'equatorial' ? aldObj.raDeg : aldObj.az,
+                        state.projection === 'equatorial' ? aldObj.decDeg : aldObj.alt,
+                        W, H
+                    );
+                drawCrystallographicLattice(W, H, anchorPos);
+            } else {
+                state.renderedLatticeNodes = [];
+            }
+
+            if (state.projection !== 'lattice_only') {
+                // 6. Sterrenbeeld Stier, Hyaden & Pleiaden
+                drawTaurusAndHyadesCluster(W, H);
+
+                // 7. Hoekvectoren & Diagonale Ankerketting
+                if (state.showVectors && moonObj && venusObj && aldObj) {
+                    const pSun = projectToCanvas(state.projection === 'equatorial' ? sunObj.raDeg : sunObj.az, state.projection === 'equatorial' ? sunObj.decDeg : sunObj.alt, W, H);
+                    const pMoon = projectToCanvas(state.projection === 'equatorial' ? moonObj.raDeg : moonObj.az, state.projection === 'equatorial' ? moonObj.decDeg : moonObj.alt, W, H);
+                    const pVenus = projectToCanvas(state.projection === 'equatorial' ? venusObj.raDeg : venusObj.az, state.projection === 'equatorial' ? venusObj.decDeg : venusObj.alt, W, H);
+                    const pAld = projectToCanvas(state.projection === 'equatorial' ? aldObj.raDeg : aldObj.az, state.projection === 'equatorial' ? aldObj.decDeg : aldObj.alt, W, H);
+
+                    ctx.save();
+                    ctx.setLineDash([5, 4]);
+                    ctx.lineWidth = 1.5;
+
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                    ctx.beginPath(); ctx.moveTo(pMoon.x, pMoon.y); ctx.lineTo(pVenus.x, pVenus.y); ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(249, 115, 22, 0.75)';
+                    ctx.beginPath(); ctx.moveTo(pVenus.x, pVenus.y); ctx.lineTo(pAld.x, pAld.y); ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+                    ctx.beginPath(); ctx.moveTo(pSun.x, pSun.y); ctx.lineTo(pMoon.x, pMoon.y); ctx.stroke();
+                    ctx.restore();
+
+                    const sepMV = angularSeparation(moonObj.az, moonObj.alt, venusObj.az, venusObj.alt);
+                    const sepVA = angularSeparation(venusObj.az, venusObj.alt, aldObj.az, aldObj.alt);
+
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 11px "JetBrains Mono", monospace';
+                    ctx.fillText(`Δ = ${sepMV.toFixed(2).replace('.', ',')}°`, (pMoon.x + pVenus.x) / 2 + 10, (pMoon.y + pVenus.y) / 2 + 14);
+
+                    ctx.fillStyle = '#fb923c';
+                    ctx.fillText(`Δ = ${sepVA.toFixed(2).replace('.', ',')}° (Ankerketting)`, (pVenus.x + pAld.x) / 2 + 8, (pVenus.y + pAld.y) / 2 - 8);
+                }
+
+                // 8. 1889 Precessie-Ghost Posities
+                if (state.show1889Ghost && state.epochPreset === '2041') {
+                    objects.forEach(obj => {
+                        const ghostAz = obj.az - (obj.id === 'aldebaran' ? 1.8 : 0.6);
+                        const ghostAlt = obj.alt - (obj.id === 'aldebaran' ? 1.4 : 0.3);
+                        const ghostRa = obj.raDeg + PRECESSION_SHIFT_DEG;
+                        const ghostDec = obj.decDeg + PRECESSION_SHIFT_DEG * 0.18;
+                        const pGhost = projectToCanvas(
+                            state.projection === 'equatorial' ? ghostRa : ghostAz,
+                            state.projection === 'equatorial' ? ghostDec : ghostAlt,
+                            W, H
+                        );
+                        ctx.save();
+                        ctx.strokeStyle = 'rgba(232, 121, 249, 0.75)';
+                        ctx.setLineDash([3, 3]);
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath();
+                        ctx.arc(pGhost.x, pGhost.y, obj.radius + 3, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.fillStyle = 'rgba(232, 121, 249, 0.75)';
+                        ctx.font = '9px "JetBrains Mono", monospace';
+                        ctx.fillText(`1889`, pGhost.x - 12, pGhost.y - obj.radius - 6);
+                        ctx.restore();
+                    });
+                }
+
+                // 9. Hoofd-Hemellichamen (Zon, Maan, Venus, Aldebaran)
+                objects.forEach(obj => {
+                    const p = projectToCanvas(
+                        state.projection === 'equatorial' ? obj.raDeg : obj.az,
+                        state.projection === 'equatorial' ? obj.decDeg : obj.alt,
+                        W, H
+                    );
+                    if (obj.id === 'sun') drawSun(p.x, p.y, obj);
+                    else if (obj.id === 'moon') {
+                        const sunPos = projectToCanvas(
+                            state.projection === 'equatorial' ? sunObj.raDeg : sunObj.az,
+                            state.projection === 'equatorial' ? sunObj.decDeg : sunObj.alt,
+                            W, H
+                        );
+                        drawCrescentMoon(p.x, p.y, obj, sunPos);
+                    } else if (obj.id === 'venus') drawVenus(p.x, p.y, obj);
+                    else if (obj.id === 'aldebaran') drawAldebaran(p.x, p.y, obj);
+                });
+
+                // 10. Horizon-silhouet
+                if (state.projection !== 'equatorial') {
+                    drawHorizonSilhouette(W, H);
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawCrystallographicLattice(W, H, originPx) {
+            const pxPerNm = (state.projection === 'lattice_only' ? 1.55 : 0.92) * state.zoom;
+            const a = state.latticeA_nm;
+            const a1 = [a, 0];
+            const a2 = [-0.5 * a, (Math.sqrt(3) / 2) * a];
+
+            ctx.save();
+            // 1. Teken Hexagonale Bravais-roosterlijnen rond het ankerpunt (Aldebaran / Hyaden of Centrum)
+            const nGrid = state.projection === 'lattice_only' ? 3 : 2;
+            ctx.strokeStyle = 'rgba(217, 70, 239, 0.22)';
+            ctx.lineWidth = 1;
+
+            for (let i = -nGrid; i <= nGrid; i++) {
+                for (let j = -nGrid; j <= nGrid; j++) {
+                    const cx = originPx.x + (i * a1[0] + j * a2[0]) * pxPerNm;
+                    const cy = originPx.y - (i * a1[1] + j * a2[1]) * pxPerNm;
+
+                    // Verbind met buren a1, a2 en a1+a2 (gelijkzijdige driehoeken van het hexagonale rooster)
+                    [[1, 0], [0, 1], [1, 1]].forEach(([di, dj]) => {
+                        if (i + di <= nGrid && j + dj <= nGrid) {
+                            const nx = originPx.x + ((i + di) * a1[0] + (j + dj) * a2[0]) * pxPerNm;
+                            const ny = originPx.y - ((i + di) * a1[1] + (j + dj) * a2[1]) * pxPerNm;
+                            ctx.beginPath();
+                            ctx.moveTo(cx, cy);
+                            ctx.lineTo(nx, ny);
+                            ctx.stroke();
+                        }
+                    });
+                }
+            }
+
+            // 2. Teken Spiegelassen M(phi) vanuit het ankerpunt (p3m1: om de 60°, p6m: om de 30°)
+            if (state.showMirrorAxes) {
+                const stepDeg = (state.latticeGroup === 'p3') ? 60 : 30;
+                const numAxes = 180 / stepDeg;
+                const rayLen = Math.max(W, H) * 0.75;
+
+                for (let k = 0; k < numAxes; k++) {
+                    const axisDeg = (state.mirrorPhi0 + k * stepDeg) % 180;
+                    const rad = axisDeg * DEG2RAD;
+                    const isPrimary = (k === 0);
+
+                    ctx.save();
+                    ctx.strokeStyle = isPrimary ? 'rgba(251, 191, 36, 0.85)' : 'rgba(232, 121, 249, 0.42)';
+                    ctx.lineWidth = isPrimary ? 1.8 : 1.1;
+                    ctx.setLineDash(isPrimary ? [8, 4] : [4, 4]);
+
+                    ctx.beginPath();
+                    ctx.moveTo(originPx.x - Math.cos(rad) * rayLen, originPx.y + Math.sin(rad) * rayLen);
+                    ctx.lineTo(originPx.x + Math.cos(rad) * rayLen, originPx.y - Math.sin(rad) * rayLen);
+                    ctx.stroke();
+
+                    if (isPrimary || state.projection === 'lattice_only') {
+                        const lx = originPx.x + Math.cos(rad) * 145 * state.zoom;
+                        const ly = originPx.y - Math.sin(rad) * 145 * state.zoom;
+                        ctx.fillStyle = isPrimary ? '#fbbf24' : '#e879f9';
+                        ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                        ctx.fillText(`M(${axisDeg.toFixed(2)}°)`, lx + 4, ly - 4);
+                    }
+                    ctx.restore();
+                }
+            }
+
+            // 3. Teken de p3 (120°, schaal 120%) en p6 (60°, schaal 60%) motiefpunten
+            const nodes = generateP3P6LatticeNodes(nGrid);
+            const screenNodes = [];
+
+            nodes.forEach(nd => {
+                const sx = originPx.x + nd.x_nm * pxPerNm;
+                const sy = originPx.y - nd.y_nm * pxPerNm;
+                screenNodes.push({ ...nd, sx, sy });
+
+                if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) return;
+
+                ctx.beginPath();
+                if (nd.isCenter) {
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.arc(sx, sy, 3.2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (nd.group.startsWith('p3')) {
+                    ctx.fillStyle = nd.isMirror ? '#6ee7b7' : '#10b981';
+                    ctx.arc(sx, sy, nd.isMirror ? 3.0 : 4.0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (nd.group.startsWith('p6')) {
+                    ctx.fillStyle = nd.isMirror ? '#f5d0fe' : '#d946ef';
+                    ctx.arc(sx, sy, nd.isMirror ? 2.6 : 3.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Highlight gehoverd roosterpunt
+            if (state.hoveredNode) {
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(state.hoveredNode.sx, state.hoveredNode.sy, 8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            state.renderedLatticeNodes = screenNodes;
+            state.lastLatticeOriginPx = originPx;
+            state.lastPxPerNm = pxPerNm;
+            ctx.restore();
+        }
+
+        function drawSkyCoordinateGrid(W, H) {
+            ctx.lineWidth = 1;
+            ctx.font = '10px "JetBrains Mono", monospace';
+            if (state.projection === 'equatorial') {
+                for (let ra = 45; ra <= 135; ra += 15) {
+                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+                    ctx.beginPath();
+                    for (let dec = -10; dec <= 50; dec += 2) {
+                        const p = projectToCanvas(ra, dec, W, H);
+                        if (dec === -10) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke();
+                    const lblPos = projectToCanvas(ra, 42, W, H);
+                    ctx.fillStyle = 'rgba(148, 163, 184, 0.65)';
+                    ctx.fillText(`α ${ra}°`, lblPos.x - 16, lblPos.y);
+                }
+                for (let dec = -10; dec <= 45; dec += 10) {
+                    ctx.strokeStyle = dec === 0 ? 'rgba(56, 189, 248, 0.35)' : 'rgba(56, 189, 248, 0.14)';
+                    ctx.beginPath();
+                    for (let ra = 45; ra <= 135; ra += 2) {
+                        const p = projectToCanvas(ra, dec, W, H);
+                        if (ra === 45) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke();
+                    const lblPos = projectToCanvas(130, dec, W, H);
+                    ctx.fillStyle = 'rgba(148, 163, 184, 0.65)';
+                    ctx.fillText(`δ ${dec >= 0 ? '+' : ''}${dec}°`, lblPos.x + 6, lblPos.y + 3);
+                }
+            } else {
+                for (let az = 30; az <= 135; az += 15) {
+                    ctx.strokeStyle = (az === 90) ? 'rgba(56, 189, 248, 0.30)' : 'rgba(148, 163, 184, 0.14)';
+                    ctx.beginPath();
+                    for (let alt = -10; alt <= 50; alt += 2) {
+                        const p = projectToCanvas(az, alt, W, H);
+                        if (alt === -10) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke();
+                    const pTop = projectToCanvas(az, 44, W, H);
+                    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+                    ctx.fillText(`A ${az}°`, pTop.x - 14, pTop.y);
+                }
+                for (let alt = -10; alt <= 45; alt += 10) {
+                    ctx.strokeStyle = (alt === 0) ? 'rgba(16, 185, 129, 0.65)' : 'rgba(148, 163, 184, 0.14)';
+                    ctx.lineWidth = (alt === 0) ? 1.8 : 1;
+                    ctx.beginPath();
+                    for (let az = 20; az <= 145; az += 2) {
+                        const p = projectToCanvas(az, alt, W, H);
+                        if (az === 20) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke();
+                    const pLeft = projectToCanvas(35, alt, W, H);
+                    ctx.fillStyle = (alt === 0) ? '#34d399' : 'rgba(148, 163, 184, 0.7)';
+                    ctx.fillText(`h ${alt >= 0 ? '+' : ''}${alt}°`, pLeft.x + 4, pLeft.y - 4);
+                }
+            }
+        }
+
+        function drawTaurusAndHyadesCluster(W, H) {
+            const jd = getCurrentJD();
+            const precess = (state.epochPreset === '1889') ? PRECESSION_SHIFT_DEG : 0;
+            const projectedStars = TAURUS_STARS.map(s => {
+                const ra = s.raDeg + precess;
+                const dec = s.decDeg + precess * 0.18;
+                const c = computeRScriptAstro(ra, dec, jd, state.lat, state.lon);
+                const p = projectToCanvas(
+                    state.projection === 'equatorial' ? ra : c.az,
+                    state.projection === 'equatorial' ? dec : c.alt,
+                    W, H
+                );
+                return { ...s, x: p.x, y: p.y, alt: c.alt, az: c.az };
+            });
+
+            const aldObj = getCurrentSkyObjects().find(o => o.id === 'aldebaran');
+            const pAld = projectToCanvas(
+                state.projection === 'equatorial' ? aldObj.raDeg : aldObj.az,
+                state.projection === 'equatorial' ? aldObj.decDeg : aldObj.alt,
+                W, H
+            );
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.38)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(pAld.x, pAld.y);
+            ctx.lineTo(projectedStars[0].x, projectedStars[0].y);
+            ctx.lineTo(projectedStars[1].x, projectedStars[1].y);
+            ctx.lineTo(projectedStars[2].x, projectedStars[2].y);
+            ctx.lineTo(projectedStars[3].x, projectedStars[3].y);
+            ctx.stroke();
+            ctx.restore();
+
+            projectedStars.forEach(s => {
+                ctx.save();
+                if (s.isCluster) {
+                    const g = ctx.createRadialGradient(s.x, s.y, 1, s.x, s.y, 16);
+                    g.addColorStop(0, 'rgba(147, 197, 253, 0.45)');
+                    g.addColorStop(1, 'rgba(147, 197, 253, 0)');
+                    ctx.fillStyle = g;
+                    ctx.beginPath(); ctx.arc(s.x, s.y, 16, 0, Math.PI * 2); ctx.fill();
+                    [[-4,-3],[3,-2],[0,3],[-3,4],[5,2],[1,-5]].forEach(([dx,dy]) => {
+                        ctx.fillStyle = '#e0f2fe';
+                        ctx.beginPath(); ctx.arc(s.x + dx, s.y + dy, 1.4, 0, Math.PI * 2); ctx.fill();
+                    });
+                } else {
+                    const r = Math.max(1.8, 4.8 - s.mag * 0.7);
+                    ctx.fillStyle = s.color;
+                    ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.fillStyle = 'rgba(203, 213, 225, 0.75)';
+                ctx.font = '10px "JetBrains Mono", monospace';
+                ctx.fillText(s.name, s.x + 6, s.y + 3);
+                ctx.restore();
+            });
+        }
+
+        function drawSun(x, y, obj) {
+            ctx.save();
+            const g = ctx.createRadialGradient(x, y, 2, x, y, 34);
+            g.addColorStop(0, 'rgba(253, 224, 71, 0.95)');
+            g.addColorStop(0.4, 'rgba(251, 146, 60, 0.45)');
+            g.addColorStop(1, 'rgba(251, 146, 60, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(x, y, 34, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath(); ctx.arc(x, y, obj.radius, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#fde047';
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            ctx.fillText(`${obj.name} [Alt=${obj.alt.toFixed(2)}°, Az=${obj.az.toFixed(2)}°]`, x + 16, y + 4);
+            ctx.restore();
+        }
+
+        function drawCrescentMoon(x, y, obj, sunPos) {
+            ctx.save();
+            const R = obj.radius;
+            const halo = ctx.createRadialGradient(x, y, R * 0.5, x, y, R * 3.2);
+            halo.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+            halo.addColorStop(1, 'rgba(254, 240, 138, 0)');
+            ctx.fillStyle = halo;
+            ctx.beginPath(); ctx.arc(x, y, R * 3.2, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+            ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
+
+            if (!obj.isEclipse) {
+                const angleToSun = Math.atan2(sunPos.y - y, sunPos.x - x);
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angleToSun);
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(0, 0, R, -Math.PI / 2, Math.PI / 2, false);
+                ctx.ellipse(0, 0, R * 0.68, R, 0, Math.PI / 2, -Math.PI / 2, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            } else {
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+            }
+
+            ctx.fillStyle = '#fef08a';
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            ctx.fillText(`${obj.name}`, x + R + 6, y - 4);
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillText(`Alt=${obj.alt.toFixed(2)}° | Az=${obj.az.toFixed(2)}°`, x + R + 6, y + 10);
+            ctx.restore();
+        }
+
+        function drawVenus(x, y, obj) {
+            ctx.save();
+            const glow = ctx.createRadialGradient(x, y, 1, x, y, 26);
+            glow.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            glow.addColorStop(0.3, 'rgba(186, 230, 253, 0.65)');
+            glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = 'rgba(224, 242, 254, 0.85)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x - 16, y); ctx.lineTo(x + 16, y);
+            ctx.moveTo(x, y - 16); ctx.lineTo(x, y + 16);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(x, y, obj.radius, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#bae6fd';
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            ctx.fillText(`${obj.name}`, x + 12, y - 4);
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillText(`Alt=${obj.alt.toFixed(2)}° | Az=${obj.az.toFixed(2)}°`, x + 12, y + 10);
+            ctx.restore();
+        }
+
+        function drawAldebaran(x, y, obj) {
+            ctx.save();
+            const glow = ctx.createRadialGradient(x, y, 1, x, y, 20);
+            glow.addColorStop(0, 'rgba(251, 146, 60, 0.95)');
+            glow.addColorStop(0.4, 'rgba(234, 88, 12, 0.35)');
+            glow.addColorStop(1, 'rgba(234, 88, 12, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#fb923c';
+            ctx.beginPath(); ctx.arc(x, y, obj.radius, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#fdba74';
+            ctx.font = 'bold 11px "JetBrains Mono", monospace';
+            ctx.fillText(`${obj.name}`, x + 10, y - 3);
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillText(`Alt=${obj.alt.toFixed(2)}° | Az=${obj.az.toFixed(2)}°`, x + 10, y + 10);
+            ctx.restore();
+        }
+
+        function drawHorizonSilhouette(W, H) {
+            ctx.save();
+            ctx.beginPath();
+            const steps = 60;
+            for (let i = 0; i <= steps; i++) {
+                const az = 20 + (i / steps) * 130;
+                const isRemy = state.lat < 46;
+                const hillHeight = isRemy
+                    ? (1.2 * Math.sin(az * 0.14) + 0.8 * Math.cos(az * 0.31) + 1.1)
+                    : (0.25 * Math.sin(az * 0.2) + 0.2);
+                const p = projectToCanvas(az, hillHeight, W, H);
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            const pRight = projectToCanvas(150, -15, W, H);
+            const pLeft = projectToCanvas(20, -15, W, H);
+            ctx.lineTo(pRight.x, H + 20);
+            ctx.lineTo(pLeft.x, H + 20);
+            ctx.closePath();
+
+            ctx.fillStyle = 'rgba(4, 7, 17, 0.76)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+
+            [
+                { az: 45, lbl: 'NO (45°)' },
+                { az: 67.5, lbl: 'ONO (67,5°)' },
+                { az: 90, lbl: 'OOST (90°)' },
+                { az: 95.26, lbl: 'φ₀ (95,26°)' }
+            ].forEach(c => {
+                const p = projectToCanvas(c.az, 0, W, H);
+                ctx.fillStyle = c.az === 95.26 ? '#fbbf24' : '#34d399';
+                ctx.font = 'bold 10px "JetBrains Mono", monospace';
+                ctx.fillText(c.lbl, p.x - 20, p.y + 15);
+            });
+            ctx.restore();
+        }
+
+        // ============================================================================
+        // UI, TABEL & MATRIX SYNCHRONISATIE
+        // ============================================================================
+
+        function updateSimulation() {
+            state.projection = document.getElementById('projection-mode').value;
+            state.showLatticeOverlay = document.getElementById('chk-p3p6-overlay').checked;
+            state.show1889Ghost = document.getElementById('chk-1889-ghost').checked;
+            state.showVectors = document.getElementById('chk-vectors').checked;
+            state.showMirrorAxes = document.getElementById('chk-mirror-axes').checked;
+
+            const objects = getCurrentSkyObjects();
+
+            // 1. Update R-Script Ephemeris Tabel
+            const tbody = document.getElementById('ephemeris-tbody');
+            tbody.innerHTML = objects.map((obj, idx) => {
+                const badgeColor = obj.alt < 0
+                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+
+                return `
+                    <tr class="hover:bg-slate-800/50 transition">
+                        <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                            <span class="text-slate-500">${idx + 1}</span>
+                            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${obj.color}"></span>
+                            ${obj.name}
+                        </td>
+                        <td class="py-2.5 px-3 text-slate-300">${obj.raDeg.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 text-slate-300">${obj.decDeg.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 font-bold text-sky-300">${obj.alt.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 font-bold text-amber-300">${obj.az.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 font-bold text-fuchsia-300">${obj.uurhoek.toFixed(2)}</td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[11px] border ${badgeColor}">${obj.dirStr}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 2. Update GMST, LST & HUD
+            const sunObj = objects[0];
+            const moonObj = objects[1];
+            const venusObj = objects[2];
+            const aldObj = objects[3];
+
+            document.getElementById('live-gmst-badge').textContent = `GMST: ${sunObj.GMST.toFixed(2)}°`;
+            const lstHours = ((sunObj.LST / 15) + 24) % 24;
+            const lh = String(Math.floor(lstHours)).padStart(2, '0');
+            const lm = String(Math.floor((lstHours % 1) * 60)).padStart(2, '0');
+            document.getElementById('live-lst-badge').textContent = `LST: ${sunObj.LST.toFixed(2)}° (${lh}h ${lm}m)`;
+
+            const hh = String(Math.floor(state.timeMinutes / 60)).padStart(2, '0');
+            const mm = String(state.timeMinutes % 60).padStart(2, '0');
+            document.getElementById('hud-title').textContent = `${state.dateStr} — ${hh}:${mm}:00 UTC`;
+            document.getElementById('hud-location').textContent = `Locatie: ${state.locationName} (${state.lat.toFixed(4)}°N, ${state.lon.toFixed(4)}°E)`;
+            document.getElementById('hud-jd').textContent = `JD: ${sunObj.JD.toFixed(5)} | T: +${sunObj.T.toFixed(7)}`;
+
+            const sepMV = angularSeparation(moonObj.az, moonObj.alt, venusObj.az, venusObj.alt);
+            const sepVA = angularSeparation(venusObj.az, venusObj.alt, aldObj.az, aldObj.alt);
+            document.getElementById('hud-sep-mv').textContent = `Cluster Maan–Venus: ${sepMV.toFixed(2).replace('.', ',')}° (ONO)`;
+            document.getElementById('hud-sep-vh').textContent = `Anker Venus–Aldebaran: ${sepVA.toFixed(2).replace('.', ',')}° (Az ${aldObj.az.toFixed(2)}°)`;
+            document.getElementById('hud-lattice-info').textContent =
+                `Rooster: ${state.latticeGroup.toUpperCase()} | a=${state.latticeA_nm} nm | φ₀=${state.mirrorPhi0.toFixed(2)}°`;
+
+            // 3. Update 2x2 Rotatie- en Spiegelmatrices in rechterpaneel
+            const rotAngle = (state.latticeGroup === 'p6') ? 60 : 120;
+            const rMat = rotMatrix2D(rotAngle);
+            document.getElementById('mat-rot-title').textContent = `Rotatie R(${rotAngle}°):`;
+            document.getElementById('mat-rot-values').innerHTML = `
+                <span>${rMat[0][0] >= 0 ? '+' : ''}${rMat[0][0].toFixed(4)}</span><span>${rMat[0][1] >= 0 ? '+' : ''}${rMat[0][1].toFixed(4)}</span>
+                <span>${rMat[1][0] >= 0 ? '+' : ''}${rMat[1][0].toFixed(4)}</span><span>${rMat[1][1] >= 0 ? '+' : ''}${rMat[1][1].toFixed(4)}</span>
+            `;
+
+            const mMat = mirrorMatrix2D(state.mirrorPhi0);
+            document.getElementById('mat-mir-title').textContent = `Spiegel M(${state.mirrorPhi0.toFixed(2)}°):`;
+            document.getElementById('mat-mir-values').innerHTML = `
+                <span>${mMat[0][0] >= 0 ? '+' : ''}${mMat[0][0].toFixed(4)}</span><span>${mMat[0][1] >= 0 ? '+' : ''}${mMat[0][1].toFixed(4)}</span>
+                <span>${mMat[1][0] >= 0 ? '+' : ''}${mMat[1][0].toFixed(4)}</span><span>${mMat[1][1] >= 0 ? '+' : ''}${mMat[1][1].toFixed(4)}</span>
+            `;
+
+            const step = state.latticeGroup === 'p3' ? 60 : 30;
+            const axesList = [];
+            for (let k = 0; k < 180 / step; k++) {
+                axesList.push(((state.mirrorPhi0 + k * step) % 180).toFixed(2) + '°');
+            }
+            document.getElementById('active-mirror-axes-readout').textContent =
+                `${state.latticeGroup === 'p3' ? 'p3m1' : 'p6m'} Assen: ${axesList.join(' • ')}`;
+
+            document.getElementById('dms-readout').textContent = `DMS: ${toDMS(state.lat, true)} | ${toDMS(state.lon, false)}`;
+            document.getElementById('utm-readout').textContent = `UTM: ${latLonToUTM(state.lat, state.lon)}`;
+
+            renderSkyCanvas(objects);
+        }
+
+        // ============================================================================
+        // HULPFUNCTIES VOOR SYMMETRIEGROEPEN, AUDIT-TABS & CONTROLS
+        // ============================================================================
+
+        function setLatticeGroup(grp) {
+            state.latticeGroup = grp;
+            ['p3', 'p6', 'both'].forEach(g => {
+                const btn = document.getElementById(`btn-grp-${g}`);
+                if (g === grp) {
+                    btn.className = 'py-2 px-2 rounded-xl border border-fuchsia-500/60 bg-fuchsia-500/15 text-white shadow transition text-center';
+                } else {
+                    btn.className = 'py-2 px-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white transition text-center';
+                }
+            });
+            updateSimulation();
+        }
+
+        function onMirrorAngleChange(val) {
+            state.mirrorPhi0 = parseFloat(val);
+            document.getElementById('lbl-mirror-phi').textContent =
+                `${state.mirrorPhi0.toFixed(2).replace('.', ',')}°${Math.abs(state.mirrorPhi0 - 95.26) < 0.05 ? ' (Hyaden-Anker)' : ''}`;
+            document.getElementById('hover-mirror-eq').textContent = `Spiegelas M(φ₀): φ₀ = ${state.mirrorPhi0.toFixed(2)}°`;
+            updateSimulation();
+        }
+
+        function resetMirrorAngle() {
+            state.mirrorPhi0 = 95.26;
+            document.getElementById('inp-mirror-phi').value = 95.26;
+            onMirrorAngleChange(95.26);
+            showToast('Spiegelas-oriëntatie hersteld naar φ₀ = 95,26° (Hyaden-azimutanker).');
+        }
+
+        function onLatticeScaleChange() {
+            state.scaleP3Pct = parseInt(document.getElementById('inp-scale-p3').value, 10);
+            state.scaleP6Pct = parseInt(document.getElementById('inp-scale-p6').value, 10);
+            const p3Nm = (state.latticeA_nm * state.scaleP3Pct / 100).toFixed(2).replace('.', ',');
+            const p6Nm = (state.latticeA_nm * state.scaleP6Pct / 100).toFixed(2).replace('.', ',');
+            document.getElementById('lbl-scale-p3').textContent = `${state.scaleP3Pct}% (${p3Nm} nm)`;
+            document.getElementById('lbl-scale-p6').textContent = `${state.scaleP6Pct}% (${p6Nm} nm)`;
+            updateSimulation();
+        }
+
+        function togglePureLatticeMode() {
+            const sel = document.getElementById('projection-mode');
+            if (sel.value === 'lattice_only') {
+                sel.value = 'stereographic';
+                showToast('Teruggeschakeld naar Gecombineerde Hemel- & Roosterkoepel.');
+            } else {
+                sel.value = 'lattice_only';
+                showToast('Zuivere Kristallografische p3/p6 Rooster-Inspectie geactiveerd (a = 95,26 nm).');
+            }
+            updateSimulation();
+        }
+
+        function switchAuditTab(tabKey) {
+            ['smtp', 'rcode', 'desktop'].forEach(k => {
+                const content = document.getElementById(`tab-content-${k}`);
+                const btn = document.getElementById(`tab-btn-${k}`);
+                if (k === tabKey) {
+                    content.classList.remove('hidden');
+                    btn.className = 'px-3 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold transition';
+                } else {
+                    content.classList.add('hidden');
+                    btn.className = 'px-3 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition';
+                }
+            });
+        }
+
+        function copyTextById(elId) {
+            const text = document.getElementById(elId).innerText;
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Inhoud naar klembord gekopieerd!', 'fa-check text-emerald-400');
+        }
+
+        function exportLatticeCSV() {
+            const nodes = generateP3P6LatticeNodes(2);
+            const header = 'Groep,Operatie,Schaal_pct,X_nm,Y_nm,Spiegelas_phi0_deg\n';
+            const rows = nodes.map(n =>
+                `${n.group},${n.op},${n.scalePct},${n.x_nm.toFixed(4)},${n.y_nm.toFixed(4)},${state.mirrorPhi0.toFixed(2)}`
+            ).join('\n');
+            const blob = new Blob([header + rows], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `p3_p6_rooster_95_26nm_${state.dateStr}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Kristallografisch p3/p6 rooster (95,26 nm) geëxporteerd als CSV.');
+        }
+
+        // ============================================================================
+        // STANDAARD ASTRO-HULPFUNCTIES (DMS, UTM, GPS, OVERLAYS)
+        // ============================================================================
+
+        function showToast(msg, iconClass = 'fa-satellite-dish text-sky-400') {
+            const toast = document.getElementById('status-toast');
+            document.getElementById('status-icon').className = `fa-solid ${iconClass} text-base`;
+            document.getElementById('status-message').textContent = msg;
+            toast.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(hideToast, 4500);
+        }
+
+        function hideToast() {
+            document.getElementById('status-toast').classList.add('hidden');
+        }
+
+        function toDMS(deg, isLat) {
+            const dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'E' : 'W');
+            const abs = Math.abs(deg);
+            const d = Math.floor(abs);
+            const mFull = (abs - d) * 60;
+            const m = Math.floor(mFull);
+            const s = ((mFull - m) * 60).toFixed(2);
+            return `${d}° ${String(m).padStart(2, '0')}′ ${String(s).padStart(5, '0')}″ ${dir}`;
+        }
+
+        function latLonToUTM(lat, lon) {
+            if (Math.abs(lat - 43.78) < 0.02 && Math.abs(lon - 4.83) < 0.02) {
+                return '31T 647684 4848705 (Schaal ± 1:10000)';
+            }
+            const zone = Math.floor((lon + 180) / 6) + 1;
+            return `Zone ${zone}T (${lat.toFixed(4)}N, ${lon.toFixed(4)}E)`;
+        }
+
+        function azimuthToCompassDutch(az) {
+            const norm = ((az % 360) + 360) % 360;
+            if (norm >= 337.5 || norm < 22.5) return 'Noorden (N)';
+            if (norm < 67.5) return 'Noordoosten (NO)';
+            if (norm < 90.0) return 'Oost-Noordoosten';
+            if (norm < 112.5) return 'Oosten (O)';
+            if (norm < 157.5) return 'Zuidoosten (ZO)';
+            if (norm < 202.5) return 'Zuiden (Z)';
+            if (norm < 247.5) return 'Zuidwesten (ZW)';
+            if (norm < 292.5) return 'Westen (W)';
+            return 'Noordwesten (NW)';
+        }
+
+        function angularSeparation(az1, alt1, az2, alt2) {
+            const h1 = alt1 * DEG2RAD, h2 = alt2 * DEG2RAD;
+            const dAz = (az1 - az2) * DEG2RAD;
+            const cosD = Math.sin(h1) * Math.sin(h2) + Math.cos(h1) * Math.cos(h2) * Math.cos(dAz);
+            return Math.acos(Math.min(1, Math.max(-1, cosD))) * RAD2DEG;
+        }
+
+        function setEpochPreset(preset) {
+            state.epochPreset = preset;
+            ['2041', '1889', '2026'].forEach(p => {
+                const btn = document.getElementById(`btn-epoch-${p}`);
+                btn.className = (p === preset)
+                    ? 'px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all bg-sky-500 text-slate-950 shadow'
+                    : 'px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
+            });
+            if (preset === '2041') {
+                state.dateStr = '2041-07-22';
+                state.timeMinutes = 240;
+                state.panAzOffset = 0;
+            } else if (preset === '1889') {
+                state.dateStr = '1889-07-22';
+                state.timeMinutes = 240;
+                state.panAzOffset = 0;
+            } else if (preset === '2026') {
+                state.dateStr = '2026-08-12';
+                state.timeMinutes = 1088;
+                setLocationPreset('tafelberg', false);
+            }
+            syncTimeUI();
+            updateSimulation();
+        }
+
+        function snapToReference2041() {
+            setLocationPreset('saint-remy-r', false);
+            setEpochPreset('2041');
+            resetMirrorAngle();
+        }
+
+        function setLocationPreset(key, notify = true) {
+            const btns = {
+                'saint-remy-r': document.getElementById('loc-btn-remy-r'),
+                'saint-remy-utm': document.getElementById('loc-btn-remy-utm'),
+                'tafelberg': document.getElementById('loc-btn-tafelberg')
+            };
+            Object.keys(btns).forEach(k => {
+                btns[k].className = (k === key)
+                    ? 'w-full text-left p-2 rounded-xl border border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/15 transition flex items-center justify-between'
+                    : 'w-full text-left p-2 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 transition flex items-center justify-between';
+            });
+
+            if (key === 'saint-remy-r') {
+                state.lat = 43.7886; state.lon = 4.8317; state.elev = 102;
+                state.locationName = 'Saint-Rémy (R-Ref)';
+                document.getElementById('gps-badge').textContent = 'R-Script Anker';
+            } else if (key === 'saint-remy-utm') {
+                state.lat = 43.776669; state.lon = 4.835158; state.elev = 102;
+                state.locationName = 'Saint-Rémy (UTM 31T)';
+                document.getElementById('gps-badge').textContent = 'UTM 31T Anker';
+            } else if (key === 'tafelberg') {
+                state.lat = 52.2167; state.lon = 5.1833; state.elev = 35;
+                state.locationName = 'Tafelbergheide (NH)';
+                document.getElementById('gps-badge').textContent = 'Eclips 2026';
+            }
+            document.getElementById('inp-lat').value = state.lat;
+            document.getElementById('inp-lon').value = state.lon;
+            document.getElementById('inp-elev').value = state.elev;
+            if (notify) showToast(`Locatie ingesteld op ${state.locationName}`);
+            updateSimulation();
+        }
+
+        function onManualGeoChange() {
+            const lat = parseFloat(document.getElementById('inp-lat').value);
+            const lon = parseFloat(document.getElementById('inp-lon').value);
+            const elev = parseFloat(document.getElementById('inp-elev').value);
+            if (!isNaN(lat)) state.lat = Math.max(-90, Math.min(90, lat));
+            if (!isNaN(lon)) state.lon = Math.max(-180, Math.min(180, lon));
+            if (!isNaN(elev)) state.elev = elev;
+            state.locationName = 'Handmatige Geo';
+            updateSimulation();
+        }
+
+        function requestMobileGPS() {
+            if (!navigator.geolocation) {
+                showToast('Geolocation API niet ondersteund.', 'fa-triangle-exclamation text-amber-400');
+                return;
+            }
+            showToast('Mobiele GPS-positie bepalen...');
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    state.lat = parseFloat(pos.coords.latitude.toFixed(6));
+                    state.lon = parseFloat(pos.coords.longitude.toFixed(6));
+                    document.getElementById('inp-lat').value = state.lat;
+                    document.getElementById('inp-lon').value = state.lon;
+                    state.locationName = 'Live Mobiele GPS';
+                    document.getElementById('gps-badge').textContent = `GPS ±${Math.round(pos.coords.accuracy)}m`;
+                    showToast(`GPS gekoppeld: ${state.lat.toFixed(4)}°N, ${state.lon.toFixed(4)}°E`);
+                    updateSimulation();
+                },
+                (err) => showToast(`GPS niet beschikbaar (${err.message}).`, 'fa-circle-info text-amber-400')
+            );
+        }
+
+        function toggleDeviceCompass() {
+            const btn = document.getElementById('btn-compass');
+            state.compassActive = !state.compassActive;
+            if (state.compassActive) {
+                btn.classList.add('bg-sky-500/20', 'border-sky-400', 'text-sky-300');
+                window.addEventListener('deviceorientation', handleOrientation);
+                showToast('Mobiel kompas/gyroscoop geactiveerd.');
+            } else {
+                btn.classList.remove('bg-sky-500/20', 'border-sky-400', 'text-sky-300');
+                window.removeEventListener('deviceorientation', handleOrientation);
+                showToast('Mobiel kompas gedeactiveerd.');
+            }
+        }
+
+        function handleOrientation(event) {
+            if (!state.compassActive || event.alpha === null) return;
+            const heading = event.webkitCompassHeading || (360 - event.alpha);
+            state.panAzOffset = ((heading - 82 + 540) % 360) - 180;
+            updateSimulation();
+        }
+
+        function onTimeSliderChange(val) {
+            state.timeMinutes = parseInt(val, 10);
+            syncTimeUI();
+            updateSimulation();
+        }
+
+        function stepTime(deltaMin) {
+            state.timeMinutes = (state.timeMinutes + deltaMin + 1440) % 1440;
+            syncTimeUI();
+            updateSimulation();
+        }
+
+        function syncTimeUI() {
+            const hh = String(Math.floor(state.timeMinutes / 60)).padStart(2, '0');
+            const mm = String(state.timeMinutes % 60).padStart(2, '0');
+            document.getElementById('time-slider').value = state.timeMinutes;
+            document.getElementById('time-slider-label').textContent = `${hh}:${mm}`;
+        }
+
+        function togglePlay() {
+            const btn = document.getElementById('btn-play');
+            state.isPlaying = !state.isPlaying;
+            if (state.isPlaying) {
+                btn.innerHTML = '<i class="fa-solid fa-pause mr-1"></i>Pauze';
+                state.playTimer = setInterval(() => stepTime(2), 80);
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-play mr-1"></i>Simuleer';
+                clearInterval(state.playTimer);
+            }
+        }
+
+        function resetView() {
+            state.panAzOffset = 0;
+            state.panAltOffset = 0;
+            state.zoom = 1.0;
+            updateSimulation();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    state.overlayImg = img;
+                    showToast(`Hemelkaart "${file.name}" geladen.`);
+                    updateSimulation();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadSyntheticStarryNightOverlay() {
+            const svgStr = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+                <defs>
+                    <radialGradient id="mGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#fde047" stop-opacity="0.8"/>
+                        <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="vGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+                        <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.5"/>
+                        <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+                <path d="M 100 320 Q 280 200 440 250 T 720 140" fill="none" stroke="#38bdf8" stroke-width="6" stroke-dasharray="18 10" opacity="0.45"/>
+                <circle cx="385" cy="245" r="55" fill="url(#mGlow)"/>
+                <circle cx="425" cy="222" r="42" fill="url(#vGlow)"/>
+                <path d="M 140 500 Q 125 320 150 120 Q 175 320 165 500 Z" fill="#091526" stroke="#1e293b" stroke-width="2" opacity="0.85"/>
+                <text x="24" y="40" fill="#fbbf24" font-family="monospace" font-size="15">Referentie-Compositie: Saint-Rémy Ochtendhemel (22 Juli 1889 / 2041)</text>
+            </svg>`;
+            const img = new Image();
+            img.onload = function() {
+                state.overlayImg = img;
+                showToast('1889 Schilderij-referentielaag geladen.');
+                updateSimulation();
+            };
+            img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgStr);
+        }
+
+        function updateOverlayParams() {
+            state.ovOpacity = parseInt(document.getElementById('ov-opacity').value, 10) / 100;
+            state.ovScale = parseInt(document.getElementById('ov-scale').value, 10) / 100;
+            state.ovRot = parseInt(document.getElementById('ov-rot').value, 10);
+            document.getElementById('lbl-ov-opacity').textContent = `${Math.round(state.ovOpacity * 100)}%`;
+            document.getElementById('lbl-ov-scale').textContent = `${Math.round(state.ovScale * 100)}%`;
+            document.getElementById('lbl-ov-rot').textContent = `${state.ovRot}°`;
+            updateSimulation();
+        }
+
+        function clearOverlayImage() {
+            state.overlayImg = null;
+            updateSimulation();
+        }
+
+        function exportDataJSON() {
+            const payload = {
+                metadata: {
+                    title: 'Astrometrische & Kristallografische Simulatie (2041 / 95.26 nm)',
+                    JD: getCurrentJD(),
+                    observer: { name: state.locationName, lat: state.lat, lon: state.lon, elev: state.elev },
+                    crystallography: { a_nm: state.latticeA_nm, mirrorPhi0_deg: state.mirrorPhi0, scaleP3Pct: state.scaleP3Pct, scaleP6Pct: state.scaleP6Pct },
+                    auditTimestamps: [
+                        '2026-10-28T08:05:00+01:00',
+                        '2026-10-28T16:04:25+01:00 (Exim 1xM5CT-00AzoK-Ar)',
+                        '2026-10-28T15:04:31Z (Postfix 4jF9cv2Mlzz5K)',
+                        '2026-10-31T14:04:00+01:00'
+                    ]
+                },
+                skyObjects: getCurrentSkyObjects(),
+                latticeSample: generateP3P6LatticeNodes(1)
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hemel_p3p6_simulatie_${state.dateStr}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Volledige JSON-dataset (Hemel + p3/p6 + Audit) geëxporteerd.');
+        }
+
+        function handleDataFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.metadata && data.metadata.observer) {
+                        state.lat = data.metadata.observer.lat ?? state.lat;
+                        state.lon = data.metadata.observer.lon ?? state.lon;
+                        document.getElementById('inp-lat').value = state.lat;
+                        document.getElementById('inp-lon').value = state.lon;
+                    }
+                    showToast(`Dataset "${file.name}" geïmporteerd.`);
+                    updateSimulation();
+                } catch (err) {
+                    showToast('Ongeldig JSON-bestand.', 'fa-triangle-exclamation text-rose-400');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================================================
+        // CANVAS INTERACTIE: PAN, ZOOM & LIVE KRISTALLOGRAFISCHE (X_nm, Y_nm) SONDE
+        // ============================================================================
+
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Live (X_nm, Y_nm) Sonde Uitlezing bij bewegen over het canvas
+            if (mx >= 0 && mx <= rect.width && my >= 0 && my <= rect.height && state.lastLatticeOriginPx && state.lastPxPerNm) {
+                const xNm = (mx - state.lastLatticeOriginPx.x) / state.lastPxPerNm;
+                const yNm = (state.lastLatticeOriginPx.y - my) / state.lastPxPerNm;
+                document.getElementById('hover-xy-nm').textContent =
+                    `Cursor: X = ${xNm >= 0 ? '+' : ''}${xNm.toFixed(2)} nm | Y = ${yNm >= 0 ? '+' : ''}${yNm.toFixed(2)} nm`;
+
+                // Zoek dichtstbijzijnde p3/p6 roosterpunt
+                let closest = null;
+                let minDist = 14;
+                for (const nd of state.renderedLatticeNodes) {
+                    const d = Math.hypot(mx - nd.sx, my - nd.sy);
+                    if (d < minDist) {
+                        minDist = d;
+                        closest = nd;
+                    }
+                }
+                if (closest !== state.hoveredNode) {
+                    state.hoveredNode = closest;
+                    if (closest) {
+                        document.getElementById('hover-node-info').textContent =
+                            `${closest.group} [${closest.op}] • Schaal ${closest.scalePct}% (${closest.x_nm.toFixed(1)}, ${closest.y_nm.toFixed(1)} nm)`;
+                    } else {
+                        document.getElementById('hover-node-info').textContent = 'Beweeg over een p3/p6 roosterpunt...';
+                    }
+                    renderSkyCanvas(getCurrentSkyObjects());
+                }
+            }
+
+            if (!isDragging) return;
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            state.panAzOffset -= dx * 0.12 / state.zoom;
+            state.panAltOffset += dy * 0.12 / state.zoom;
+            updateSimulation();
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.08 : 0.92;
+            state.zoom = Math.max(0.45, Math.min(4.0, state.zoom * factor));
+            updateSimulation();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => updateSimulation());
+
+        window.onload = function() {
+            syncTimeUI();
+            updateSimulation();
+        };
+    </script>
+</body>
+</html>
