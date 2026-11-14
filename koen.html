@@ -1,0 +1,2930 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rekenkamer v0.2: Quaternions op De Kubus, de Bol & Het Kaarten-Arsenaal van Willem & Joan Blaeu (1583–1959)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: Cinzel, Cormorant Garamond, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-slate: #0b0e14;
+      --bg-panel: #121722;
+      --gold-accent: #d4af37;
+      --copper-accent: #c87d55;
+      --parchment: #f4ecd8;
+      --chalk: #eef2f6;
+    }
+    body {
+      background-color: var(--bg-slate);
+      color: var(--chalk);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-serif-title {
+      font-family: 'Cinzel', serif;
+    }
+    .font-historic {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0e14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2e384d;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #d4af37;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: #262f42;
+      border: 1px solid #3a4660;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #d4af37;
+      border: 2px solid #0b0e14;
+      margin-top: -6px;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+    }
+    .active-tab {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(200, 125, 85, 0.12));
+      border-color: #d4af37;
+      color: #f9e8a2;
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.18);
+    }
+    .btn-preset {
+      transition: all 0.2s ease;
+    }
+    .btn-preset:hover {
+      border-color: #d4af37;
+      transform: translateY(-1px);
+    }
+    .btn-preset.active {
+      background-color: rgba(212, 175, 55, 0.25);
+      border-color: #d4af37;
+      color: #fde68a;
+    }
+    canvas {
+      display: block;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP HEADER & MODE SWITCHER -->
+  <header class="border-b border-slate-800 bg-[#0d121b]/95 backdrop-blur sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-amber-400 font-serif-title font-bold text-lg shadow-inner">
+          ℍ
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] uppercase tracking-widest text-amber-400/90 font-semibold font-mono-code">Versie 0.2 • Quaternionen-Rekenkamer (ℍ / SO(3)) • Blaeu &amp; Waghenaer Arsenaal</span>
+            <span class="px-2 py-0.5 text-[10px] font-mono-code font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v0.2 BLAEU &amp; ℍ ENGINE</span>
+          </div>
+          <h1 class="font-serif-title text-lg sm:text-xl font-bold text-slate-100 tracking-wide">
+            De Kubus, de Bol &amp; Het Kaarten-Arsenaal van Willem &amp; Joan Blaeu en Waghenaer
+          </h1>
+        </div>
+      </div>
+
+      <!-- Mode Switch Buttons -->
+      <nav class="flex flex-wrap items-center gap-2 w-full lg:w-auto" aria-label="Weergavemodus">
+        <button id="tab-russell" onclick="switchMainMode('russell')" class="px-3.5 py-2 rounded-lg border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+          <span class="text-amber-400 font-mono-code">I.</span>
+          <span>Russell Kubus-Bol &amp; Quaternions v0.2</span>
+        </button>
+        <button id="tab-waghenaer" onclick="switchMainMode('waghenaer')" class="px-3.5 py-2 rounded-lg border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+          <span class="text-amber-400 font-mono-code">II.</span>
+          <span>Blaeu &amp; Waghenaer Kaarten-Arsenaal (10 Kaarten)</span>
+        </button>
+        <button id="tab-split" onclick="switchMainMode('split')" class="active-tab px-3.5 py-2 rounded-lg border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2">
+          <span class="text-amber-400 font-mono-code">III.</span>
+          <span>Synthese: Quaternion ℍ ⟷ Blaeu &amp; Waghenaer (Split-View)</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main id="main-grid" class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+
+    <!-- ===================================================================== -->
+    <!-- MODULE 1: WALTER RUSSELL (1959) + QUATERNIONS v0.2 (3D)               -->
+    <!-- ===================================================================== -->
+    <section id="panel-russell" class="xl:col-span-6 flex flex-col bg-[#111622] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <!-- Module Header -->
+      <div class="p-3.5 border-b border-slate-800 bg-[#151c2c] flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-[11px] font-mono-code uppercase tracking-wider text-amber-400 block">Module 01 • Walter Russell (1959) &amp; Sir W.R. Hamilton (ℍ)</span>
+          <h2 class="font-serif-title text-base sm:text-lg text-slate-100 font-semibold">
+            The Cube and the Sphere — Quaternions op <span class="font-mono-code text-xs text-amber-300">S³ → SO(3)</span>
+          </h2>
+        </div>
+        <!-- Style Toggle -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-700/80">
+          <button id="style-chalk" onclick="setRussellStyle('chalk')" class="px-2.5 py-1 rounded text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-500/40 transition">
+            1959 Krijttekening
+          </button>
+          <button id="style-color" onclick="setRussellStyle('color')" class="px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition">
+            ±X ±Y ±Z Kleur
+          </button>
+        </div>
+      </div>
+
+      <!-- 6 Diagram Preset Matrix -->
+      <div class="p-3 bg-[#0e131d] border-b border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono-code">
+          <span>RIJ 01: VLAKKE GEOMETRIE (L∞ CHEBYSHEV)</span>
+          <span>RIJ 02: GEKROMDE GEOMETRIE (L₂ EUCLIDISCH)</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-1.5">
+          <button onclick="setRussellPreset('A')" id="preset-A" class="btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-amber-400">A. Constructie</div>
+            <div class="text-[10px] text-slate-400 truncate">Diagonalen in O</div>
+          </button>
+          <button onclick="setRussellPreset('B')" id="preset-B" class="btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-amber-400">B. 6 Piramides</div>
+            <div class="text-[10px] text-slate-400 truncate">Vlakke sectoren</div>
+          </button>
+          <button onclick="setRussellPreset('BB')" id="preset-BB" class="btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-amber-400">B.B. Axiaal</div>
+            <div class="text-[10px] text-slate-400 truncate">Geëxplodeerd</div>
+          </button>
+          <button onclick="setRussellPreset('C')" id="preset-C" class="btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-sky-400">C. Cirkels</div>
+            <div class="text-[10px] text-slate-400 truncate">Grootcirkels</div>
+          </button>
+          <button onclick="setRussellPreset('D')" id="preset-D" class="btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-sky-400">D. 6 Kegels</div>
+            <div class="text-[10px] text-slate-400 truncate">Halve hoek 45°</div>
+          </button>
+          <button onclick="setRussellPreset('DD')" id="preset-DD" class="btn-preset active px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left">
+            <div class="text-[11px] font-bold font-mono-code text-sky-400">D.D. Dualiteit</div>
+            <div class="text-[10px] text-slate-400 truncate">Kubus + Kegels</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D Viewport Container -->
+      <div class="relative w-full h-[360px] sm:h-[400px] bg-[#07090e] overflow-hidden" id="three-container">
+        <!-- Overlay HUD Top-Left -->
+        <div class="absolute top-3 left-3 z-10 pointer-events-none bg-slate-950/85 backdrop-blur-sm border border-slate-800 rounded-lg px-3 py-2 text-xs space-y-1 max-w-[275px]">
+          <div id="russell-view-title" class="font-serif-title font-bold text-amber-300 text-sm">
+            D.D. Gecombineerde Dualiteit + ℍ
+          </div>
+          <div id="russell-view-desc" class="text-[11px] text-slate-300 leading-snug">
+            Sandwich-product <span class="font-mono-code text-emerald-300">p' = q · p · q⁻¹</span> roteert kubus &amp; kegels over SLERP-geodeet op <span class="font-mono-code text-sky-300">S²</span>.
+          </div>
+        </div>
+
+        <!-- Overlay HUD Top-Right: Active Vector & Quaternion Sector -->
+        <div class="absolute top-3 right-3 z-10 pointer-events-none bg-slate-950/85 backdrop-blur-sm border border-slate-800 rounded-lg px-3 py-2 text-[11px] font-mono-code space-y-0.5 text-right">
+          <div class="text-slate-400">Actieve Voronoi-sector: <span id="hud-sector" class="text-amber-300 font-bold">+X (ORIENS)</span></div>
+          <div class="text-slate-400">q ∈ S³: <span id="hud-quat-short" class="text-emerald-300">1.00 + 0.00i + 0.00j + 0.00k</span></div>
+          <div class="text-slate-400">p_bol (L₂): <span id="hud-p-sphere" class="text-sky-300">(0.82, 0.41, 0.40)</span></div>
+          <div class="text-slate-400">p_kubus (L∞): <span id="hud-p-cube" class="text-amber-200">(1.00, 0.50, 0.49)</span></div>
+          <div class="text-slate-400">Verhouding ‖p_kubus‖/‖p_bol‖: <span id="hud-norm-ratio" class="text-emerald-300">1.221×</span></div>
+        </div>
+
+        <!-- Bottom-Left Camera Help -->
+        <div class="absolute bottom-2.5 left-3 z-10 pointer-events-none text-[11px] text-slate-400 bg-slate-950/70 px-2.5 py-1 rounded border border-slate-800/70">
+          Sleep om 3D-camera te roteren • Paarse as = Rotatie-as <strong>u</strong> • Roze boog = SLERP(1, q, t)
+        </div>
+      </div>
+
+      <!-- =================================================================== -->
+      <!-- QUATERNIONS OP DE KUBUS & BOL ENGINE (ℍ / 2O OCTAHEDRAL GROUP)      -->
+      <!-- =================================================================== -->
+      <div class="p-3.5 bg-[#0e1522] border-t border-slate-800 space-y-2.5">
+        <div class="bg-slate-950/90 border border-emerald-500/35 rounded-xl p-3 space-y-2.5 shadow-inner">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/90 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-mono-code text-[10px] font-bold">
+                v0.2 ℍ • QUATERNIONS
+              </span>
+              <span class="text-xs font-serif-title font-semibold text-slate-100">
+                Hamilton Quaternion Rotatie op Kubus &amp; Bol: <span class="font-mono-code text-amber-300">q = cos(α/2) + sin(α/2)(uₓi + uᵧj + u_zk)</span>
+              </span>
+            </div>
+            <span id="quat-preset-label" class="text-[10px] font-mono-code text-sky-300">
+              Octaëdrische groep 2O ⊂ SU(2)
+            </span>
+          </div>
+
+          <!-- Live 4-Component Quaternion Readout (w, x, y, z) + Norm Check -->
+          <div class="grid grid-cols-5 gap-1.5 text-center font-mono-code text-[11px]">
+            <div class="bg-slate-900/90 py-1 px-1.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[9px] block">SCALAR w = cos(α/2)</span>
+              <span id="q-comp-w" class="text-emerald-300 font-bold">+1.0000</span>
+            </div>
+            <div class="bg-slate-900/90 py-1 px-1.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[9px] block">BI-VECTOR x·i (Oost)</span>
+              <span id="q-comp-x" class="text-rose-300 font-bold">+0.0000i</span>
+            </div>
+            <div class="bg-slate-900/90 py-1 px-1.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[9px] block">BI-VECTOR y·j (Zenit)</span>
+              <span id="q-comp-y" class="text-amber-300 font-bold">+0.0000j</span>
+            </div>
+            <div class="bg-slate-900/90 py-1 px-1.5 rounded border border-slate-800">
+              <span class="text-slate-500 text-[9px] block">BI-VECTOR z·k (Zuid)</span>
+              <span id="q-comp-z" class="text-sky-300 font-bold">+0.0000k</span>
+            </div>
+            <div class="bg-slate-900/90 py-1 px-1.5 rounded border border-emerald-500/30">
+              <span class="text-slate-500 text-[9px] block">NORM ‖q‖₂ (S³)</span>
+              <span id="q-comp-norm" class="text-emerald-400 font-bold">1.0000</span>
+            </div>
+          </div>
+
+          <!-- 24 Hurwitz / Octahedral Cube Symmetry Presets -->
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            <button onclick="applyQuaternionPreset('IDENTITY')" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-emerald-300">q = 1 (Identiteit)</div>
+              <div class="text-[9px] text-slate-400">α = 0° (Rustpunt)</div>
+            </button>
+            <button onclick="applyQuaternionPreset('FACE_X_90')" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-rose-300">(1+i)/√2</div>
+              <div class="text-[9px] text-slate-400">90° om +X (Oost)</div>
+            </button>
+            <button onclick="applyQuaternionPreset('FACE_Y_90')" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-amber-300">(1+j)/√2</div>
+              <div class="text-[9px] text-slate-400">90° om +Y (Zenit)</div>
+            </button>
+            <button onclick="applyQuaternionPreset('HURWITZ_120')" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-purple-300">½(1+i+j+k)</div>
+              <div class="text-[9px] text-slate-400">120° Diagonaal X→Y→Z</div>
+            </button>
+            <button onclick="applyQuaternionPreset('EDGE_180')" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-sky-300">(i+j)/√2</div>
+              <div class="text-[9px] text-slate-400">180° Vlakdiagonaal</div>
+            </button>
+            <button onclick="applyQuaternionPreset('SHIP_LOCK')" class="btn-preset px-2 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-left font-mono-code">
+              <div class="text-[10px] font-bold text-amber-300">⚓ Scheepskoers q</div>
+              <div class="text-[9px] text-slate-400">Koppel aan Paskaart</div>
+            </button>
+          </div>
+
+          <!-- Quaternion Sliders: Angle alpha, Axis Azimuth, Axis Elevation, SLERP t -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <div class="bg-slate-900/90 p-2 rounded border border-slate-800">
+              <div class="flex justify-between text-[10px] mb-1 font-mono-code">
+                <span class="text-slate-300">Rotatiehoek α:</span>
+                <span id="val-quat-angle" class="text-emerald-300">0.0°</span>
+              </div>
+              <input id="slider-quat-angle" type="range" min="0" max="360" step="1" value="0" class="w-full" oninput="onQuaternionSliderInput()" />
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded border border-slate-800">
+              <div class="flex justify-between text-[10px] mb-1 font-mono-code">
+                <span class="text-slate-300">As u Azimut:</span>
+                <span id="val-quat-az" class="text-amber-300">45.0°</span>
+              </div>
+              <input id="slider-quat-az" type="range" min="0" max="360" step="1" value="45" class="w-full" oninput="onQuaternionSliderInput()" />
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded border border-slate-800">
+              <div class="flex justify-between text-[10px] mb-1 font-mono-code">
+                <span class="text-slate-300">As u Elevatie:</span>
+                <span id="val-quat-el" class="text-sky-300">35.3°</span>
+              </div>
+              <input id="slider-quat-el" type="range" min="-90" max="90" step="0.5" value="35.3" class="w-full" oninput="onQuaternionSliderInput()" />
+            </div>
+            <div class="bg-slate-900/90 p-2 rounded border border-slate-800">
+              <div class="flex justify-between text-[10px] mb-1 font-mono-code">
+                <span class="text-slate-300">SLERP(1,q,t):</span>
+                <span id="val-slerp-t" class="text-pink-300">t = 1.00</span>
+              </div>
+              <input id="slider-slerp-t" type="range" min="0" max="1" step="0.01" value="1.0" class="w-full" oninput="onQuaternionSliderInput()" />
+            </div>
+          </div>
+
+          <!-- Hamilton Product Compositor (q <- q * dq) & SO(3) Matrix Toggle -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-800/80 text-[10px] font-mono-code">
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-slate-400 mr-1">Hamilton-product <span class="text-amber-300">q ← q ⊗ Δq</span>:</span>
+              <button onclick="multiplyActiveQuaternionBy(0, 1, 0, 0, '⊗ i (90° X)')" class="px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 transition">⊗ i</button>
+              <button onclick="multiplyActiveQuaternionBy(0, 0, 1, 0, '⊗ j (90° Y)')" class="px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 transition">⊗ j</button>
+              <button onclick="multiplyActiveQuaternionBy(0, 0, 0, 1, '⊗ k (90° Z)')" class="px-2 py-0.5 rounded bg-sky-500/15 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 transition">⊗ k</button>
+              <button onclick="multiplyActiveQuaternionBy(0.5, 0.5, 0.5, 0.5, '⊗ ½(1+i+j+k)')" class="px-2 py-0.5 rounded bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 transition">⊗ ½(1+i+j+k)</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="inline-flex items-center gap-1 cursor-pointer text-slate-300">
+                <input type="checkbox" id="chk-quat-rotate-mesh" checked onchange="updateVectorRay3D()" class="rounded bg-slate-800 border-slate-600 text-emerald-500 focus:ring-0" />
+                <span>Roteer 6 Kegels &amp; Piramides</span>
+              </label>
+              <button onclick="toggleSO3MatrixDrawer()" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-emerald-300 transition">
+                ⊞ 3×3 SO(3) Matrix &amp; Cayley
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible 3x3 SO(3) Rotation Matrix & Cayley Table -->
+          <div id="so3-matrix-drawer" class="hidden pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono-code">
+            <div class="bg-slate-950 p-2 rounded border border-slate-800">
+              <div class="text-amber-300 font-bold mb-1">Rotatiematrix R(q) ∈ SO(3):</div>
+              <div id="so3-matrix-grid" class="grid grid-cols-3 gap-1 text-center text-slate-200">
+                <span>+1.000</span><span>+0.000</span><span>+0.000</span>
+                <span>+0.000</span><span>+1.000</span><span>+0.000</span>
+                <span>+0.000</span><span>+0.000</span><span>+1.000</span>
+              </div>
+            </div>
+            <div class="bg-slate-950 p-2 rounded border border-slate-800">
+              <div class="text-emerald-300 font-bold mb-1">Hamilton Cayley-tabel (i² = j² = k² = ijk = −1):</div>
+              <div class="grid grid-cols-4 gap-0.5 text-center text-slate-300">
+                <span class="text-slate-500">⊗</span><span class="text-rose-300">i</span><span class="text-amber-300">j</span><span class="text-sky-300">k</span>
+                <span class="text-rose-300">i</span><span>−1</span><span class="text-sky-300">+k</span><span class="text-amber-300">−j</span>
+                <span class="text-amber-300">j</span><span class="text-sky-300">−k</span><span>−1</span><span class="text-rose-300">+i</span>
+                <span class="text-sky-300">k</span><span class="text-amber-300">+j</span><span class="text-rose-300">−i</span><span>−1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Russell Sliders & Interactive Parameters -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="slider-explode" class="text-slate-300 font-medium">Axiale Explosie (<span class="font-mono-code text-amber-300">Δd</span> langs ±X,±Y,±Z)</label>
+              <span id="val-explode" class="font-mono-code text-amber-400 text-xs">0.35 L</span>
+            </div>
+            <input id="slider-explode" type="range" min="0" max="1.2" step="0.01" value="0.35" class="w-full" oninput="updateRussellParams()" />
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="slider-morph" class="text-slate-300 font-medium">Geometrie-balans (Piramides ⟷ Kegels)</label>
+              <span id="val-morph" class="font-mono-code text-sky-400 text-xs">50% / 50%</span>
+            </div>
+            <input id="slider-morph" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full" oninput="updateRussellParams()" />
+          </div>
+        </div>
+
+        <!-- Vector Ray Azimuth & Elevation -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="slider-azimuth" class="text-slate-300 font-medium">Projectievector Azimut (<span class="font-mono-code text-amber-300">θ</span> / Kompas)</label>
+              <span id="val-azimuth" class="font-mono-code text-amber-300 text-xs">292.5° (WNW)</span>
+            </div>
+            <input id="slider-azimuth" type="range" min="0" max="360" step="0.5" value="292.5" class="w-full" oninput="onVectorSliderChange()" />
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="slider-elevation" class="text-slate-300 font-medium">Projectievector Elevatie (<span class="font-mono-code text-sky-300">ϕ</span>)</label>
+              <span id="val-elevation" class="font-mono-code text-sky-300 text-xs">+18.0°</span>
+            </div>
+            <input id="slider-elevation" type="range" min="-85" max="85" step="0.5" value="18" class="w-full" oninput="onVectorSliderChange()" />
+          </div>
+        </div>
+
+        <!-- Toggles for Axis Isolation & Spandrel -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="chk-wireframe" checked onchange="updateRussellParams()" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>Constructieribben &amp; Diagonalen (A/C)</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="chk-spandrel" onchange="updateRussellParams()" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>Toon Bol &amp; Hoekspandrillen (21,46%)</span>
+            </label>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-slate-400 mr-1">Assen:</span>
+            <button onclick="toggleAxisFilter('ALL')" id="axis-ALL" class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 text-amber-200 font-mono-code text-[11px]">Alle 6</button>
+            <button onclick="toggleAxisFilter('X')" id="axis-X" class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono-code text-[11px]">±X</button>
+            <button onclick="toggleAxisFilter('Y')" id="axis-Y" class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono-code text-[11px]">±Y</button>
+            <button onclick="toggleAxisFilter('Z')" id="axis-Z" class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono-code text-[11px]">±Z</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- MODULE 2: BLAEU & WAGHENAER KAARTEN-ARSENAAL (1583–1665)              -->
+    <!-- ===================================================================== -->
+    <section id="panel-waghenaer" class="xl:col-span-6 flex flex-col bg-[#111622] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <!-- Module Header -->
+      <div class="p-3.5 border-b border-slate-800 bg-[#151c2c] flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span id="chart-header-sub" class="text-[11px] font-mono-code uppercase tracking-wider text-amber-400 block">
+            Module 02 • Het Kaarten-Arsenaal van Willem &amp; Joan Blaeu (1604–1665) &amp; Lucas Jansz. Waghenaer (1583–1590)
+          </span>
+          <h2 id="chart-header-title" class="font-serif-title text-base sm:text-lg text-slate-100 font-semibold">
+            VII. Willem Jansz. Blaeu — Inferioris Germaniae Provinciarum Nova Descriptio (1604)
+          </h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button onclick="toggleBlaeuBioModal()" class="text-[11px] font-mono-code text-emerald-200 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 px-2.5 py-1 rounded transition">
+            🌍 Wikipedia: Willem &amp; Joan Blaeu
+          </button>
+          <button onclick="toggleWaghenaerBioModal()" class="text-[11px] font-mono-code text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 px-2.5 py-1 rounded transition">
+            📖 Wikipedia: Lucas Jansz. Waghenaer
+          </button>
+        </div>
+      </div>
+
+      <!-- KAARTEN-ARSENAAL: 4 BLAEU KAARTEN + 6 WAGHENAER PASKAARTEN -->
+      <div class="p-3 bg-[#0a0e17] border-b border-slate-800 space-y-2.5">
+        <!-- Row A: Willem & Joan Blaeu -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-mono-code">
+            <span class="text-emerald-400 font-bold">★ HET KAARTEN-ARSENAAL VAN WILLEM JANSZ. BLAEU &amp; JOAN BLAEU (AMSTERDAM, 1604–1665):</span>
+            <span id="chart-north-indicator" class="text-sky-300">Kompas-oriëntatie: Noord ↑ (0°)</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <button onclick="selectAtlasChart(6)" id="atlas-btn-6" class="btn-preset active px-2.5 py-1.5 rounded border border-emerald-500/50 bg-emerald-950/30 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-emerald-300">★ Blaeu I: 17 Provinciën (1604)</div>
+              <div class="text-[10px] text-slate-300 truncate">Inferioris Germaniae (Zonnewijser)</div>
+            </button>
+            <button onclick="selectAtlasChart(7)" id="atlas-btn-7" class="btn-preset px-2.5 py-1.5 rounded border border-emerald-500/50 bg-emerald-950/30 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-emerald-300">★ Blaeu II: Groninga (1635)</div>
+              <div class="text-[10px] text-slate-300 truncate">Barthold Wicheringe &amp; Dollert 1277</div>
+            </button>
+            <button onclick="selectAtlasChart(8)" id="atlas-btn-8" class="btn-preset px-2.5 py-1.5 rounded border border-emerald-500/50 bg-emerald-950/30 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-emerald-300">★ Blaeu III: Licht der Zee-vaert</div>
+              <div class="text-[10px] text-slate-300 truncate">Texel, 't Vlie &amp; Zuiderzee (1608)</div>
+            </button>
+            <button onclick="selectAtlasChart(9)" id="atlas-btn-9" class="btn-preset px-2.5 py-1.5 rounded border border-emerald-500/50 bg-emerald-950/30 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-emerald-300">★ Blaeu IV: Atlas Maior (1662)</div>
+              <div class="text-[10px] text-slate-300 truncate">Belgica Foederata &amp; Graadmeting</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row B: De 6 Paskaarten van Lucas Janszoon Waghenaer -->
+        <div class="space-y-1 pt-1 border-t border-slate-800/80">
+          <div class="text-[10px] text-amber-400/90 font-mono-code">
+            DE 6 PASKAARTEN UIT DE SPIEGHEL DER ZEEVAERDT — LUCAS JANSZ. WAGHENAER (1583–1590):
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-6 gap-1.5">
+            <button onclick="selectAtlasChart(0)" id="atlas-btn-0" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">1. Cornwall (1584)</div>
+              <div class="text-[10px] text-slate-400 truncate">Sorlinges–Pleijmondt</div>
+            </button>
+            <button onclick="selectAtlasChart(1)" id="atlas-btn-1" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">2. Portugal (1583)</div>
+              <div class="text-[10px] text-slate-400 truncate">Camino tot Montego</div>
+            </button>
+            <button onclick="selectAtlasChart(2)" id="atlas-btn-2" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">3. Biscaien (1584)</div>
+              <div class="text-[10px] text-slate-400 truncate">R. de Sella–Aviles</div>
+            </button>
+            <button onclick="selectAtlasChart(3)" id="atlas-btn-3" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">4. Zeelandt (1583)</div>
+              <div class="text-[10px] text-slate-400 truncate">Vlaenderen &amp; Hollant</div>
+            </button>
+            <button onclick="selectAtlasChart(4)" id="atlas-btn-4" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">5. Teemse (1584)</div>
+              <div class="text-[10px] text-slate-400 truncate">Douere–Orfordts nesse</div>
+            </button>
+            <button onclick="selectAtlasChart(5)" id="atlas-btn-5" class="btn-preset px-2 py-1 rounded border border-slate-700 bg-slate-900/80 text-left">
+              <div class="text-[11px] font-bold font-mono-code text-amber-300">6. Noordt Zee (1590)</div>
+              <div class="text-[10px] text-slate-400 truncate">Eemderlandt–Calis</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Historical Vertoningen / Vaarstations Preset Buttons -->
+      <div class="p-3 bg-[#0e131d] border-b border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono-code">
+          <span id="vertoning-bar-label">KIES EEN HISTORISCHE PEILING / VERTONING OP DEZE KAART (OF VERSLEEP HET 3D GALJOEN):</span>
+        </div>
+        <div id="vertoning-buttons-grid" class="grid grid-cols-2 sm:grid-cols-6 gap-1.5"></div>
+      </div>
+
+      <!-- BAND 1: HORIZONTAL COASTAL PROFILE ("VERTONING" ELEVATION VIEW FROM SHIP DECK) -->
+      <div class="relative w-full h-[125px] bg-[#efe5ce] border-b-2 border-[#8c734b] overflow-hidden">
+        <canvas id="profile-canvas" class="w-full h-full block"></canvas>
+        <div class="absolute top-1.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1 pointer-events-none">
+          <div id="vertoning-quote" class="font-historic italic font-bold text-xs sm:text-sm text-[#2c2013] bg-[#f4ecd8]/90 px-2 py-0.5 rounded border border-[#b59c72] shadow-sm">
+            „Gedruckt t'Amsterdam bij Willem Jansz inden gulden Zonnewijser Anno 1604”
+          </div>
+          <div id="vertoning-modern" class="font-mono-code text-[10px] text-[#3d2d1b] bg-[#f4ecd8]/90 px-2 py-0.5 rounded border border-[#b59c72]">
+            Peiling: 292,5° (WNW) • Afstand: 2,00 Duijtsche mijl
+          </div>
+        </div>
+      </div>
+
+      <!-- BAND 2: MAIN PASKAART 2D CANVAS + TRANSPARENT 3D THREE.JS SHIP OVERLAY -->
+      <div class="relative w-full h-[360px] sm:h-[400px] bg-[#e9dec3] overflow-hidden cursor-grab active:cursor-grabbing select-none" id="chart-container">
+        <canvas id="chart-canvas" class="w-full h-full block"></canvas>
+        <div id="ship-3d-overlay" class="absolute inset-0 pointer-events-none z-10"></div>
+
+        <!-- Top-Left Ship Controls Badge on Chart -->
+        <div class="absolute top-2.5 left-3 z-20 flex flex-wrap items-center gap-1.5">
+          <div class="bg-[#18120c]/90 text-[#f5ebd4] border border-amber-500/50 px-2.5 py-1 rounded-lg text-[11px] font-mono-code flex items-center gap-2 shadow-lg">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>3D Galjoen Koers: <strong id="ship-heading-hud" class="text-amber-300">292,5° (WNW)</strong></span>
+          </div>
+          <button onclick="fireBroadside()" class="bg-red-900/90 hover:bg-red-800 text-amber-100 border border-amber-500/50 px-2.5 py-1 rounded-lg text-[11px] font-mono-code transition shadow-lg pointer-events-auto">
+            💥 Saluutschot / Kanonnen
+          </button>
+          <button onclick="toggleSketchfabDrawer()" class="bg-amber-600/90 hover:bg-amber-500 text-slate-950 font-semibold border border-amber-300 px-2.5 py-1 rounded-lg text-[11px] font-mono-code transition shadow-lg pointer-events-auto">
+            ⛵ Open Sketchfab 3D Model (HMS Victory Spanish Design)
+          </button>
+        </div>
+
+        <!-- Floating Instruction Badge on Chart -->
+        <div id="chart-cartouche-badge" class="absolute bottom-2.5 left-3 z-20 pointer-events-none bg-[#1c1610]/90 text-[#f5ebd4] border border-amber-600/50 px-2.5 py-1 rounded text-[11px] font-historic tracking-wide shadow max-w-[92%] truncate">
+          ⚓ Versleep het <strong>3D Zeilschip (HMS Victory Spanish Design / Galjoen)</strong> vrij over de paskaart of gebruik WASD / Pijltoetsen
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE WIKIPEDIA BIOGRAPHY & ARSENAAL DOSSIER: WILLEM JANSZ. BLAEU & JOAN BLAEU -->
+      <div id="blaeu-bio-drawer" class="hidden bg-[#0b1518] border-t-2 border-emerald-500/60 p-4 space-y-3 text-xs text-slate-300">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div>
+            <span class="text-[10px] font-mono-code uppercase text-emerald-400 block">Wikipedia &amp; Cartografisch Dossier • Alkmaar / Uitgeest (1571) – Amsterdam (1638 / 1673)</span>
+            <h3 class="font-serif-title text-sm sm:text-base text-slate-100 font-bold">
+              Willem Janszoon Blaeu (1571–1638) &amp; Dr. Joan Blaeu (1596–1673) — „In den Vergulden Zonnewijser” &amp; Atlas Maior
+            </h3>
+          </div>
+          <button onclick="toggleBlaeuBioModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono-code text-xs">
+            ✕ Sluiten
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 leading-relaxed">
+          <div class="bg-slate-900/85 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-emerald-300 font-semibold mb-1">1. Leerling van Tycho Brahe op Hven</h4>
+            <p class="text-slate-400 text-[11px]">
+              <strong>Willem Janszoon (Blaeu)</strong> verbleef in de winter van 1595–1596 zes maanden op het Deense eiland <strong>Hven</strong> in het sterrenkundig observatorium <em>Uraniborg</em> van de beroemde astronoom <strong>Tycho Brahe</strong>. Daar leerde hij precisie-instrumenten, aard- en hemelglobes bouwen en astronomische plaatsbepaling verrichten.
+            </p>
+          </div>
+          <div class="bg-slate-900/85 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-amber-300 font-semibold mb-1">2. In den Vergulden Zonnewijser &amp; Zeevaart</h4>
+            <p class="text-slate-400 text-[11px]">
+              Gevestigd in Amsterdam op het Damrak (<em>Op 't Water, in den Vergulden Zonnewijser</em>) gaf hij in <strong>1604</strong> de kaart van de 17 Provinciën (<em>Inferioris Germaniae</em>) uit en in <strong>1608</strong> de stuurmansgids <em>Het Licht der Zee-vaert</em> (gevolgd door de <em>Zeespiegel</em> in 1623).
+            </p>
+          </div>
+          <div class="bg-slate-900/85 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-sky-300 font-semibold mb-1">3. Graadmeting &amp; VOC-Kaartmaker (1633)</h4>
+            <p class="text-slate-400 text-[11px]">
+              Willem Blaeu verrichtte een geodetische <strong>graadmeting</strong> langs de Noordzeekust tussen Texel en de Maas om de omtrek van de aardbol (1° = 15 Duitse mijlen) te bepalen. Op 3 januari <strong>1633</strong> werd hij benoemd tot officieel kaartmaker van de <strong>VOC</strong>.
+            </p>
+          </div>
+          <div class="bg-slate-900/85 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-purple-300 font-semibold mb-1">4. Joan Blaeu &amp; de Atlas Maior (1662)</h4>
+            <p class="text-slate-400 text-[11px]">
+              Samen met zijn zoon <strong>Dr. Joan Blaeu</strong> startte hij in 1635 de <em>Theatrum Orbis Terrarum, sive Atlas Novus</em> (waaronder Barthold Wicheringe's <em>Groninga Dominium</em>). Vanuit de drukkerij aan de <strong>Bloemgracht</strong> voltooide Joan Blaeu in 1662–1665 de elfdelige <strong>Atlas Maior</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE WIKIPEDIA BIOGRAPHY & ATLAS DOSSIER: LUCAS JANSZOON WAGHENAER -->
+      <div id="waghenaer-bio-drawer" class="hidden bg-[#0d131f] border-t-2 border-amber-500/60 p-4 space-y-3 text-xs text-slate-300">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div>
+            <span class="text-[10px] font-mono-code uppercase text-amber-400 block">Historisch &amp; Cartografisch Dossier • Enkhuizen (ca. 1533/1534 – 1606)</span>
+            <h3 class="font-serif-title text-sm sm:text-base text-slate-100 font-bold">
+              Lucas Janszoon Waghenaer — Grondlegger van de Gedrukte Maritieme Cartografie („Waggoners”)
+            </h3>
+          </div>
+          <button onclick="toggleWaghenaerBioModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono-code text-xs">
+            ✕ Sluiten
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 leading-relaxed">
+          <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-amber-300 font-semibold mb-1">Stuurman uit Enkhuizen</h4>
+            <p class="text-slate-400 text-[11px]">
+              <strong>Lucas Janszoon Waghenaer</strong> (Enkhuizen, ca. 1533/1534 – 1606) voer tussen 1550 en 1579 bijna dertig jaar als ervaren <em>stierman ter zee</em> op de Europese handelsroutes en werd daarna <em>collecteur der licenten</em> in Enkhuizen.
+            </p>
+          </div>
+          <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-sky-300 font-semibold mb-1">Spieghel der Zeevaerdt (1584–1585)</h4>
+            <p class="text-slate-400 text-[11px]">
+              Gedrukt bij Christoffel Plantijn te Leiden en gegraveerd door <strong>Joannes van Doetecum</strong>, verenigde de <em>Spieghel der Zeevaerdt</em> voor het eerst paskaarten en geschreven zeilaanwijzingen met ingetekende <em>vertoningen</em> (kustprofielen).
+            </p>
+          </div>
+          <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+            <h4 class="font-serif-title text-emerald-300 font-semibold mb-1">Thresoor (1592) &amp; Opvolging door Blaeu</h4>
+            <p class="text-slate-400 text-[11px]">
+              Na het <em>Thresoor der Zeevaert</em> (1592) en het <em>Enchuyser Zeecaertboeck</em> (1598) zette Willem Janszoon Blaeu de Nederlandse zeekaarttraditie voort met <em>Het Licht der Zee-vaert</em> (1608).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE SKETCHFAB 3D MODEL EMBED -->
+      <div id="sketchfab-drawer" class="hidden bg-[#0c1018] border-t-2 border-amber-500/60 p-3.5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <span class="text-[11px] font-mono-code uppercase text-amber-400 block">Originele 3D Referentie &amp; WebGL Scheepswerf</span>
+            <h3 class="font-serif-title text-sm sm:text-base text-slate-100 font-semibold">
+              HMS Victory Spanish Design (Mobile Game) — Sketchfab 3D Asset &amp; Live Kanaal-Galjoen
+            </h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="https://sketchfab.com/3d-models/hms-victory-spanish-design-mobile-game-0adb34f36e084f9bbbf3a0fdb241de0d" target="_blank" rel="noopener noreferrer" class="text-xs font-mono-code text-amber-300 hover:underline px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30">
+              ↗ Open op Sketchfab
+            </a>
+            <button onclick="toggleSketchfabDrawer()" class="text-xs font-mono-code text-slate-300 hover:text-white px-2.5 py-1 rounded bg-slate-800 border border-slate-700">
+              ✕ Sluiten
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div class="md:col-span-8 w-full h-[250px] rounded-lg overflow-hidden border border-amber-500/40 bg-black">
+            <iframe
+              title="HMS Victory Spanish Design (Mobile Game)"
+              class="w-full h-full"
+              frameborder="0"
+              allowfullscreen
+              mozallowfullscreen="true"
+              webkitallowfullscreen="true"
+              allow="autoplay; fullscreen; xr-spatial-tracking"
+              src="https://sketchfab.com/models/0adb34f36e084f9bbbf3a0fdb241de0d/embed?autostart=1&ui_theme=dark">
+            </iframe>
+          </div>
+          <div class="md:col-span-4 space-y-2 text-xs text-slate-300 bg-slate-900/80 p-3 rounded-lg border border-slate-800">
+            <div class="font-semibold text-amber-300 font-serif-title">3D Scheepsbesturing op de Paskaart</div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">
+              Het 3D-schip op de kaart is in Three.js gemodelleerd naar het <strong>HMS Victory Spanish Design</strong> galjoen met vergulde spiegel, drie masten en bolle razeilen.
+            </p>
+            <div class="pt-1 space-y-1.5">
+              <label class="flex items-center justify-between text-[11px] font-mono-code">
+                <span>Schip-schaal op kaart:</span>
+                <input id="slider-ship-scale" type="range" min="0.6" max="2.0" step="0.05" value="1.15" class="w-28" oninput="updateShipScale(this.value)" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Nautical & Cartographic Telemetry Footer -->
+      <div class="p-3.5 bg-[#121824] border-t border-slate-800 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="chk-rhumb" checked onchange="drawWaghenaerAll()" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>32-Streekse Loxodromen (Kompaslijnen)</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="chk-soundings" checked onchange="drawWaghenaerAll()" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>Dieptecijfers (Vademen) &amp; Klippen</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300">
+              <input type="checkbox" id="chk-fov" checked onchange="drawWaghenaerAll()" class="rounded bg-slate-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>Gezichtsveld-kegel (Horizon-sector)</span>
+            </label>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400">Doelbaken:</span>
+            <select id="select-landmark" onchange="onSelectLandmark()" class="bg-slate-900 border border-slate-700 text-amber-200 text-xs rounded px-2 py-1 font-mono-code"></select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div class="bg-[#0b0f17] p-2 rounded border border-slate-800/90">
+            <div class="text-[10px] text-slate-400 uppercase font-mono-code">Kompaspeiling (32 Streken)</div>
+            <div id="nav-wind-dutch" class="text-xs sm:text-sm font-mono-code text-amber-300 font-semibold mt-0.5 truncate">West-Noord-West</div>
+            <div id="nav-azimuth" class="text-[10px] text-slate-400 font-mono-code">Azimut θ = 292,5°</div>
+          </div>
+          <div class="bg-[#0b0f17] p-2 rounded border border-slate-800/90">
+            <div class="text-[10px] text-slate-400 uppercase font-mono-code">Duijtsche Mijlen (15/gr.)</div>
+            <div id="nav-dutch-miles" class="text-xs sm:text-sm font-mono-code text-emerald-300 font-semibold mt-0.5">2,00 mijl</div>
+            <div id="nav-km" class="text-[10px] text-slate-400 font-mono-code">≈ 14,8 km (8,0 NM)</div>
+          </div>
+          <div class="bg-[#0b0f17] p-2 rounded border border-slate-800/90">
+            <div class="text-[10px] text-slate-400 uppercase font-mono-code">Spaensche Mijlen (17½/gr.)</div>
+            <div id="nav-spanish-miles" class="text-xs sm:text-sm font-mono-code text-sky-300 font-semibold mt-0.5">2,33 mijl</div>
+            <div class="text-[10px] text-slate-400 font-mono-code">Verhouding 7 : 6</div>
+          </div>
+          <div class="bg-[#0b0f17] p-2 rounded border border-slate-800/90">
+            <div class="text-[10px] text-slate-400 uppercase font-mono-code">Russell Kubus-Sector</div>
+            <div id="nav-russell-sector" class="text-xs sm:text-sm font-mono-code text-purple-300 font-semibold mt-0.5">−X (OCCIDENS)</div>
+            <div id="nav-russell-proj" class="text-[10px] text-slate-400 font-mono-code">Gekoppeld aan 3D vector</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- SYNTHESIS & HISTORICAL TRANSCRIPTION REFERENCE DRAWER -->
+  <section class="max-w-[1600px] w-full mx-auto px-3 sm:px-4 pb-6">
+    <div class="bg-[#111622] border border-slate-800 rounded-xl p-4 shadow-xl">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+        <div>
+          <span class="text-[11px] font-mono-code uppercase tracking-wider text-amber-400">Wiskundige &amp; Cartografische Synthese</span>
+          <h3 class="font-serif-title text-base text-slate-100 font-semibold">
+            Van Waghenaer (1584) &amp; Willem en Joan Blaeu (1604–1665) naar Quaternions (ℍ) op Russells Kubus en Bol (1959)
+          </h3>
+        </div>
+        <div class="text-xs text-slate-400 font-mono-code">
+          1° breedte = 15 Duijtsche mijlen = 17½ Spaensche mijlen • p' = q · p · q⁻¹
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-3 text-xs leading-relaxed text-slate-300">
+        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+          <h4 class="font-semibold text-amber-300 font-serif-title mb-1">1. Radiale Ruimteverdeling &amp; Quaternions in O(0,0,0)</h4>
+          <p class="text-slate-400">
+            In Walter Russells <em class="text-slate-200">The Cube and the Sphere</em> (1959) snijden alle diagonalen en coördinaatassen elkaar in <span class="font-mono-code text-amber-200">O(0,0,0)</span>. De 24 rotatiesymmetrieën van de kubus vormen de binaire octaëdrische groep <span class="font-mono-code text-emerald-300">2O ⊂ SU(2)</span> van Hurwitz-eenheidsquaternionen <span class="font-mono-code">q = w + xi + yj + zk</span>.
+          </p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+          <h4 class="font-semibold text-sky-300 font-serif-title mb-1">2. Willem &amp; Joan Blaeu: Graadmeting, Globes &amp; Atlas Maior</h4>
+          <p class="text-slate-400">
+            Willem Janszoon Blaeu leerde bij Tycho Brahe op Hven sferische trigonometrie en verrichtte tussen Texel en de Maas een graadmeting op de aardbol. Van zijn kaart der 17 Provinciën (<em>Inferioris Germaniae</em>, 1604) en <em>Het Licht der Zee-vaert</em> (1608) tot Barthold Wicheringe's <em>Groninga Dominium</em> (met de Dollard-inbraak van 1277) en Joan Blaeu's <em>Atlas Maior</em> (1662) wordt de gekromde aardbol telkens op het platte kaartvlak geprojecteerd.
+          </p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
+          <h4 class="font-semibold text-emerald-300 font-serif-title mb-1">3. Overzicht van de 10 Ingebouwde Kaarten</h4>
+          <ul class="space-y-1 text-slate-400 font-mono-code text-[11px]">
+            <li><span class="text-emerald-300">★ Blaeu I–IV (1604–1662):</span> 17 Provinciën (1604), Groninga Dominium &amp; Dollert, Licht der Zee-vaert (Texel/'t Vlie), Atlas Maior (Belgica Foederata)</li>
+            <li><span class="text-amber-300">1–3. Waghenaer West-Europa:</span> Cornwall (1584), Portugal (1583), Biscaien (1584)</li>
+            <li><span class="text-amber-300">4–6. Waghenaer Noordzee:</span> Zeelandt &amp; Vlaenderen (1583), Teemse (1584), Noordt Zee &amp; Zuiderzee (1590)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================= -->
+  <!-- APPLICATION JAVASCRIPT: THREE.JS (RUSSELL + ℍ) + 2D CANVAS (BLAEU/WAGH.) -->
+  <!-- ======================================================================= -->
+  <script>
+    /* =========================================================================
+       GLOBAL SHARED STATE & MATHEMATICAL CONSTANTS
+       ========================================================================= */
+    const STATE = {
+      mainMode: 'split',
+      russellPreset: 'DD',
+      russellStyle: 'chalk',
+      explode: 0.35,
+      morph: 0.50,
+      showWireframe: true,
+      showSpandrel: false,
+      axisFilter: 'ALL',
+      azimuthDeg: 292.5,
+      elevationDeg: 18.0,
+      // Quaternion state q = cos(alpha/2) + sin(alpha/2)*(ux*i + uy*j + uz*k)
+      quatAngleDeg: 0.0,
+      quatAxisAzDeg: 45.0,
+      quatAxisElDeg: 35.264,
+      slerpT: 1.0,
+      quatNauticalLock: false,
+      currentQuat: { w: 1, x: 0, y: 0, z: 0 },
+      // Ship state on active chart
+      shipLon: -5.15,
+      shipLat: 50.32,
+      shipHeadingRad: -1.15,
+      targetHeadingRad: -1.15,
+      shipScale: 1.15,
+      shipWake: [],
+      cannonFlashTimer: 0,
+      selectedLandmarkIndex: 0,
+      activeVertoningIndex: 0
+    };
+
+    const DUTCH_32_WINDS = [
+      { code: "N",     old: "Noordt (SEPTENTRIO)" },
+      { code: "NtO",   old: "Noordt ten Oosten" },
+      { code: "NNO",   old: "Noordt-Noordt-Oost" },
+      { code: "NOtN",  old: "Noordt-Oost ten Noorden" },
+      { code: "NO",    old: "Noordt-Oost" },
+      { code: "NOtO",  old: "Noordt-Oost ten Oosten" },
+      { code: "ONO",   old: "Oost-Noordt-Oost" },
+      { code: "OtN",   old: "Oost ten Noorden" },
+      { code: "O",     old: "Oost (ORIENS)" },
+      { code: "OtZ",   old: "Oost ten Zuijden" },
+      { code: "OZO",   old: "Oost-Zuijdt-Oost" },
+      { code: "ZOtO",  old: "Zuijdt-Oost ten Oosten" },
+      { code: "ZO",    old: "Zuijdt-Oost" },
+      { code: "ZOtZ",  old: "Zuijdt-Oost ten Zuijden" },
+      { code: "ZZO",   old: "Zuijdt-Zuijdt-Oost" },
+      { code: "ZtO",   old: "Zuijdt ten Oosten" },
+      { code: "Z",     old: "Zuijdt (MERIDIES)" },
+      { code: "ZtW",   old: "Zuijdt ten Westen" },
+      { code: "ZZW",   old: "Zuijdt-Zuijdt-West" },
+      { code: "ZWtZ",  old: "Zuijdt-West ten Zuijden" },
+      { code: "ZW",    old: "Zuijdt-West" },
+      { code: "ZWtW",  old: "Zuijdt-West ten Westen" },
+      { code: "WZW",   old: "West-Zuijdt-West" },
+      { code: "WtZ",   old: "West ten Zuijden" },
+      { code: "W",     old: "West (OCCIDENS)" },
+      { code: "WtN",   old: "West ten Noorden" },
+      { code: "WNW",   old: "West-Noordt-West" },
+      { code: "NWtW",  old: "Noordt-West ten Westen" },
+      { code: "NW",    old: "Noordt-West" },
+      { code: "NWtN",  old: "Noordt-West ten Noorden" },
+      { code: "NNW",   old: "Noordt-Noordt-West" },
+      { code: "NtW",   old: "Noordt ten Westen" }
+    ];
+
+    /* =========================================================================
+       MODULE 1: THREE.JS — WALTER RUSSELL'S CUBE & SPHERE + QUATERNIONS (ℍ)
+       ========================================================================= */
+    let scene, camera, renderer;
+    let russellRootGroup, pyramidsGroup, conesGroup, constructionGroup, circlesGroup, spandrelSphere, vectorRayGroup, quatGizmoGroup;
+    const L = 1.4;
+    let isDragging3D = false;
+    let prevMouse3D = { x: 0, y: 0 };
+    let cameraSpherical = { radius: 5.8, theta: 0.72, phi: 1.05 };
+
+    const SIX_DIRECTIONS = [
+      { key: '+X', axis: 'X', dir: new THREE.Vector3( 1,  0,  0), color: 0xe05a47, label: '+X (ORIENS / OOST)' },
+      { key: '-X', axis: 'X', dir: new THREE.Vector3(-1,  0,  0), color: 0xd97736, label: '−X (OCCIDENS / WEST)' },
+      { key: '+Y', axis: 'Y', dir: new THREE.Vector3( 0,  1,  0), color: 0x46b883, label: '+Y (ZENIT)' },
+      { key: '-Y', axis: 'Y', dir: new THREE.Vector3( 0, -1,  0), color: 0x2f9e69, label: '−Y (NADIR)' },
+      { key: '+Z', axis: 'Z', dir: new THREE.Vector3( 0,  0,  1), color: 0x4b93e6, label: '+Z (MERIDIES / ZUID)' },
+      { key: '-Z', axis: 'Z', dir: new THREE.Vector3( 0,  0, -1), color: 0x7b68ee, label: '−Z (SEPTENTRIO / NOORD)' }
+    ];
+
+    function initRussell3D() {
+      const container = document.getElementById('three-container');
+      const w = container.clientWidth || 600;
+      const h = container.clientHeight || 400;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x07090e);
+
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      updateCameraPosition();
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xdbe4f3, 0.55);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0xfff6e5, 0.95);
+      dirLight1.position.set(5, 8, 6);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x6ba4ff, 0.45);
+      dirLight2.position.set(-6, -5, -4);
+      scene.add(dirLight2);
+
+      russellRootGroup = new THREE.Group();
+      scene.add(russellRootGroup);
+
+      buildConstructionGeometry();
+      buildCircularSectionsGeometry();
+      buildSixPyramids();
+      buildSixCones();
+      buildSpandrelSphere();
+      buildVectorRay();
+      buildQuaternionGizmos();
+
+      const dom = renderer.domElement;
+      dom.addEventListener('mousedown', (e) => {
+        isDragging3D = true;
+        prevMouse3D = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('mouseup', () => { isDragging3D = false; });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging3D) return;
+        const dx = e.clientX - prevMouse3D.x;
+        const dy = e.clientY - prevMouse3D.y;
+        prevMouse3D = { x: e.clientX, y: e.clientY };
+        cameraSpherical.theta -= dx * 0.0075;
+        cameraSpherical.phi = Math.max(0.15, Math.min(Math.PI - 0.15, cameraSpherical.phi - dy * 0.0075));
+        updateCameraPosition();
+      });
+
+      dom.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging3D = true;
+          prevMouse3D = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+      }, { passive: true });
+      window.addEventListener('touchend', () => { isDragging3D = false; });
+      window.addEventListener('touchmove', (e) => {
+        if (!isDragging3D || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - prevMouse3D.x;
+        const dy = e.touches[0].clientY - prevMouse3D.y;
+        prevMouse3D = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        cameraSpherical.theta -= dx * 0.0075;
+        cameraSpherical.phi = Math.max(0.15, Math.min(Math.PI - 0.15, cameraSpherical.phi - dy * 0.0075));
+        updateCameraPosition();
+      }, { passive: true });
+
+      dom.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        cameraSpherical.radius = Math.max(3.2, Math.min(10.5, cameraSpherical.radius + e.deltaY * 0.003));
+        updateCameraPosition();
+      }, { passive: false });
+
+      updateRussellParams();
+      updateVectorRay3D();
+    }
+
+    function updateCameraPosition() {
+      if (!camera) return;
+      const r = cameraSpherical.radius;
+      const sinPhi = Math.sin(cameraSpherical.phi);
+      camera.position.x = r * sinPhi * Math.sin(cameraSpherical.theta);
+      camera.position.y = r * Math.cos(cameraSpherical.phi);
+      camera.position.z = r * sinPhi * Math.cos(cameraSpherical.theta);
+      camera.lookAt(0, 0, 0);
+    }
+
+    function buildConstructionGeometry() {
+      constructionGroup = new THREE.Group();
+      const matOuter = new THREE.LineBasicMaterial({ color: 0xeef2f6, transparent: true, opacity: 0.78 });
+      const matInner = new THREE.LineBasicMaterial({ color: 0xd4af37, transparent: true, opacity: 0.52 });
+
+      const boxGeo = new THREE.BoxGeometry(2 * L, 2 * L, 2 * L);
+      const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+      constructionGroup.add(new THREE.LineSegments(edgesGeo, matOuter));
+
+      const diagPts = [
+        new THREE.Vector3(-L, -L, -L), new THREE.Vector3( L,  L,  L),
+        new THREE.Vector3(-L, -L,  L), new THREE.Vector3( L,  L, -L),
+        new THREE.Vector3(-L,  L, -L), new THREE.Vector3( L, -L,  L),
+        new THREE.Vector3( L, -L, -L), new THREE.Vector3(-L,  L,  L),
+        new THREE.Vector3(-L * 1.75, 0, 0), new THREE.Vector3(L * 1.75, 0, 0),
+        new THREE.Vector3(0, -L * 1.75, 0), new THREE.Vector3(0, L * 1.75, 0),
+        new THREE.Vector3(0, 0, -L * 1.75), new THREE.Vector3(0, 0, L * 1.75)
+      ];
+      constructionGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(diagPts), matInner));
+
+      const midPts = [
+        new THREE.Vector3(-L, -L, 0), new THREE.Vector3( L, -L, 0),
+        new THREE.Vector3( L, -L, 0), new THREE.Vector3( L,  L, 0),
+        new THREE.Vector3( L,  L, 0), new THREE.Vector3(-L,  L, 0),
+        new THREE.Vector3(-L,  L, 0), new THREE.Vector3(-L, -L, 0),
+        new THREE.Vector3(-L, 0, -L), new THREE.Vector3( L, 0, -L),
+        new THREE.Vector3( L, 0, -L), new THREE.Vector3( L, 0,  L),
+        new THREE.Vector3( L, 0,  L), new THREE.Vector3(-L, 0,  L),
+        new THREE.Vector3(-L, 0,  L), new THREE.Vector3(-L, 0, -L),
+        new THREE.Vector3(0, -L, -L), new THREE.Vector3(0,  L, -L),
+        new THREE.Vector3(0,  L, -L), new THREE.Vector3(0,  L,  L),
+        new THREE.Vector3(0,  L,  L), new THREE.Vector3(0, -L,  L),
+        new THREE.Vector3(0, -L,  L), new THREE.Vector3(0, -L, -L)
+      ];
+      const matMid = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.35 });
+      constructionGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(midPts), matMid));
+      russellRootGroup.add(constructionGroup);
+    }
+
+    function buildCircularSectionsGeometry() {
+      circlesGroup = new THREE.Group();
+      const segs = 64;
+      const matFaceCircle = new THREE.LineBasicMaterial({ color: 0xeef2f6, transparent: true, opacity: 0.85 });
+      const matGreatCircle = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65 });
+
+      function createCircleLine(radius, material) {
+        const pts = [];
+        for (let i = 0; i <= segs; i++) {
+          const ang = (i / segs) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(ang) * radius, Math.sin(ang) * radius, 0));
+        }
+        return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), material);
+      }
+
+      SIX_DIRECTIONS.forEach((d) => {
+        const c = createCircleLine(L, matFaceCircle);
+        c.position.copy(d.dir).multiplyScalar(L);
+        c.lookAt(new THREE.Vector3(0, 0, 0));
+        circlesGroup.add(c);
+      });
+
+      const gcXY = createCircleLine(L, matGreatCircle);
+      const gcXZ = createCircleLine(L, matGreatCircle);
+      gcXZ.rotation.x = Math.PI / 2;
+      const gcYZ = createCircleLine(L, matGreatCircle);
+      gcYZ.rotation.y = Math.PI / 2;
+      circlesGroup.add(gcXY, gcXZ, gcYZ);
+      russellRootGroup.add(circlesGroup);
+    }
+
+    function buildSixPyramids() {
+      pyramidsGroup = new THREE.Group();
+      SIX_DIRECTIONS.forEach((d) => {
+        const itemGroup = new THREE.Group();
+        itemGroup.userData = { axis: d.axis, dir: d.dir.clone(), baseColor: d.color };
+
+        const up = Math.abs(d.dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+        const u = new THREE.Vector3().crossVectors(d.dir, up).normalize().multiplyScalar(L);
+        const v = new THREE.Vector3().crossVectors(d.dir, u).normalize().multiplyScalar(L);
+        const center = d.dir.clone().multiplyScalar(L);
+
+        const c0 = center.clone().add(u).add(v);
+        const c1 = center.clone().sub(u).add(v);
+        const c2 = center.clone().sub(u).sub(v);
+        const c3 = center.clone().add(u).sub(v);
+        const apex = new THREE.Vector3(0, 0, 0);
+
+        const positions = new Float32Array([
+          apex.x, apex.y, apex.z,  c0.x, c0.y, c0.z,  c1.x, c1.y, c1.z,
+          apex.x, apex.y, apex.z,  c1.x, c1.y, c1.z,  c2.x, c2.y, c2.z,
+          apex.x, apex.y, apex.z,  c2.x, c2.y, c2.z,  c3.x, c3.y, c3.z,
+          apex.x, apex.y, apex.z,  c3.x, c3.y, c3.z,  c0.x, c0.y, c0.z,
+          c0.x, c0.y, c0.z,  c2.x, c2.y, c2.z,  c1.x, c1.y, c1.z,
+          c0.x, c0.y, c0.z,  c3.x, c3.y, c3.z,  c2.x, c2.y, c2.z
+        ]);
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.computeVertexNormals();
+
+        const meshMat = new THREE.MeshStandardMaterial({
+          color: 0xd8dee9, roughness: 0.65, metalness: 0.1, transparent: true, opacity: 0.65, side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geo, meshMat);
+        const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+
+        itemGroup.add(mesh, edges);
+        itemGroup.userData.mesh = mesh;
+        itemGroup.userData.edges = edges;
+        pyramidsGroup.add(itemGroup);
+      });
+      russellRootGroup.add(pyramidsGroup);
+    }
+
+    function buildSixCones() {
+      conesGroup = new THREE.Group();
+      SIX_DIRECTIONS.forEach((d) => {
+        const itemGroup = new THREE.Group();
+        itemGroup.userData = { axis: d.axis, dir: d.dir.clone(), baseColor: d.color };
+
+        const coneGeo = new THREE.ConeGeometry(L, L, 48, 1, false);
+        coneGeo.translate(0, -L / 2, 0);
+        coneGeo.rotateX(Math.PI);
+
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), d.dir);
+        const rotMat = new THREE.Matrix4().makeRotationFromQuaternion(q);
+        coneGeo.applyMatrix4(rotMat);
+        coneGeo.computeVertexNormals();
+
+        const meshMat = new THREE.MeshStandardMaterial({
+          color: 0xcbd5e1, roughness: 0.5, metalness: 0.15, transparent: true, opacity: 0.78, side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(coneGeo, meshMat);
+
+        const rimPts = [];
+        for (let i = 0; i <= 64; i++) {
+          const ang = (i / 64) * Math.PI * 2;
+          rimPts.push(new THREE.Vector3(Math.cos(ang) * L, Math.sin(ang) * L, 0));
+        }
+        const rimLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(rimPts),
+          new THREE.LineBasicMaterial({ color: 0xeef2f6, transparent: true, opacity: 0.9 })
+        );
+        rimLine.position.copy(d.dir).multiplyScalar(L);
+        rimLine.lookAt(new THREE.Vector3(0, 0, 0));
+
+        itemGroup.add(mesh, rimLine);
+        itemGroup.userData.mesh = mesh;
+        itemGroup.userData.rim = rimLine;
+        conesGroup.add(itemGroup);
+      });
+      russellRootGroup.add(conesGroup);
+    }
+
+    function buildSpandrelSphere() {
+      const sphGeo = new THREE.SphereGeometry(L, 36, 24);
+      const sphMat = new THREE.MeshBasicMaterial({ color: 0xd4af37, wireframe: true, transparent: true, opacity: 0.25 });
+      spandrelSphere = new THREE.Mesh(sphGeo, sphMat);
+      spandrelSphere.visible = false;
+      russellRootGroup.add(spandrelSphere);
+    }
+
+    function buildVectorRay() {
+      vectorRayGroup = new THREE.Group();
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(L, 0, 0)]);
+      const rayLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xfbbf24, linewidth: 2 }));
+      vectorRayGroup.userData.rayLine = rayLine;
+      vectorRayGroup.add(rayLine);
+
+      const ptSphere = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      vectorRayGroup.userData.ptSphere = ptSphere;
+      vectorRayGroup.add(ptSphere);
+
+      const ptCube = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.11), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+      vectorRayGroup.userData.ptCube = ptCube;
+      vectorRayGroup.add(ptCube);
+
+      vectorRayGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })));
+      russellRootGroup.add(vectorRayGroup);
+    }
+
+    function buildQuaternionGizmos() {
+      quatGizmoGroup = new THREE.Group();
+
+      // Rotation Axis Line u through O(0,0,0)
+      const axisGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -L * 1.45, 0),
+        new THREE.Vector3(0,  L * 1.45, 0)
+      ]);
+      const axisLine = new THREE.Line(axisGeo, new THREE.LineBasicMaterial({ color: 0xc084fc, linewidth: 2 }));
+      quatGizmoGroup.userData.axisLine = axisLine;
+      quatGizmoGroup.add(axisLine);
+
+      // SLERP Geodesic Curve on Sphere (Pink)
+      const slerpPts = [];
+      for (let i = 0; i <= 32; i++) slerpPts.push(new THREE.Vector3(0, 0, 0));
+      const slerpLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(slerpPts),
+        new THREE.LineBasicMaterial({ color: 0xf472b6, linewidth: 2 })
+      );
+      quatGizmoGroup.userData.slerpLine = slerpLine;
+      quatGizmoGroup.add(slerpLine);
+
+      // Gnomonic Cube-Projected Curve on Russell's Cube (Emerald)
+      const cubeCurvePts = [];
+      for (let i = 0; i <= 32; i++) cubeCurvePts.push(new THREE.Vector3(0, 0, 0));
+      const cubeCurveLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(cubeCurvePts),
+        new THREE.LineBasicMaterial({ color: 0x34d399, linewidth: 2 })
+      );
+      quatGizmoGroup.userData.cubeCurveLine = cubeCurveLine;
+      quatGizmoGroup.add(cubeCurveLine);
+
+      russellRootGroup.add(quatGizmoGroup);
+    }
+
+    function updateRussellParams() {
+      STATE.explode = parseFloat(document.getElementById('slider-explode').value);
+      STATE.morph = parseFloat(document.getElementById('slider-morph').value);
+      STATE.showWireframe = document.getElementById('chk-wireframe').checked;
+      STATE.showSpandrel = document.getElementById('chk-spandrel').checked;
+
+      document.getElementById('val-explode').textContent = STATE.explode.toFixed(2) + ' L';
+      const pirPct = Math.round((1 - STATE.morph) * 100);
+      const conePct = Math.round(STATE.morph * 100);
+      document.getElementById('val-morph').textContent = `${pirPct}% Pir / ${conePct}% Keg`;
+
+      constructionGroup.visible = STATE.showWireframe;
+      spandrelSphere.visible = STATE.showSpandrel;
+      circlesGroup.visible = (STATE.russellPreset === 'C' || STATE.russellPreset === 'DD' || STATE.showSpandrel);
+
+      const isChalk = STATE.russellStyle === 'chalk';
+
+      pyramidsGroup.children.forEach((grp) => {
+        const axisMatch = (STATE.axisFilter === 'ALL' || STATE.axisFilter === grp.userData.axis);
+        const op = (1 - STATE.morph);
+        grp.visible = axisMatch && (op > 0.03);
+        grp.position.copy(grp.userData.dir).multiplyScalar(STATE.explode * L);
+        grp.userData.mesh.material.color.setHex(isChalk ? 0xd0d7e2 : grp.userData.baseColor);
+        grp.userData.mesh.material.opacity = op * (isChalk ? 0.58 : 0.68);
+        grp.userData.edges.material.color.setHex(isChalk ? 0xf8fafc : grp.userData.baseColor);
+        grp.userData.edges.material.opacity = Math.min(1, op * 1.15);
+      });
+
+      conesGroup.children.forEach((grp) => {
+        const axisMatch = (STATE.axisFilter === 'ALL' || STATE.axisFilter === grp.userData.axis);
+        const op = STATE.morph;
+        grp.visible = axisMatch && (op > 0.03);
+        grp.position.copy(grp.userData.dir).multiplyScalar(STATE.explode * L);
+        grp.userData.mesh.material.color.setHex(isChalk ? 0xe2e8f0 : grp.userData.baseColor);
+        grp.userData.mesh.material.opacity = op * (isChalk ? 0.80 : 0.82);
+        grp.userData.rim.material.color.setHex(isChalk ? 0xffffff : grp.userData.baseColor);
+        grp.userData.rim.material.opacity = Math.min(1, op * 1.15);
+      });
+    }
+
+    function setRussellPreset(code) {
+      STATE.russellPreset = code;
+      ['A', 'B', 'BB', 'C', 'D', 'DD'].forEach((c) => {
+        document.getElementById('preset-' + c).classList.toggle('active', c === code);
+      });
+
+      const titleEl = document.getElementById('russell-view-title');
+      const descEl = document.getElementById('russell-view-desc');
+      const slExplode = document.getElementById('slider-explode');
+      const slMorph = document.getElementById('slider-morph');
+      const chkWire = document.getElementById('chk-wireframe');
+
+      if (code === 'A') {
+        slExplode.value = 0; slMorph.value = 0; chkWire.checked = true;
+        titleEl.textContent = '01.A — Vlakke Constructie (Construction)';
+        descEl.textContent = 'Ribben, middenvlakken en 4 lichaamsdiagonalen snijden elkaar exact in het centrum O(0,0,0).';
+        pyramidsGroup.children.forEach(g => { g.visible = false; });
+        conesGroup.children.forEach(g => { g.visible = false; });
+        constructionGroup.visible = true;
+        circlesGroup.visible = false;
+        return;
+      } else if (code === 'B') {
+        slExplode.value = 0.06; slMorph.value = 0.0; chkWire.checked = false;
+        titleEl.textContent = '01.B — Vormen Gescheiden (Forms Separated)';
+        descEl.textContent = 'De kubus opgedeeld in 6 congruente vierzijdige piramides met hun top in O(0,0,0).';
+      } else if (code === 'BB') {
+        slExplode.value = 0.65; slMorph.value = 0.0; chkWire.checked = true;
+        titleEl.textContent = '01.B.B — Axiale Opstelling (The Opposed Directions)';
+        descEl.textContent = 'De 6 piramides langs de drie orthogonale hoofdassen (±X, ±Y, ±Z) uit elkaar getrokken.';
+      } else if (code === 'C') {
+        slExplode.value = 0; slMorph.value = 1.0; chkWire.checked = true;
+        titleEl.textContent = '02.C — Cirkeldoorsneden in de Kubus';
+        descEl.textContent = 'Zes ingeschreven vlakcirkels en drie orthogonale grootcirkels rond hetzelfde centrum O(0,0,0).';
+        pyramidsGroup.children.forEach(g => { g.visible = false; });
+        conesGroup.children.forEach(g => { g.visible = false; });
+        constructionGroup.visible = true;
+        circlesGroup.visible = true;
+        return;
+      } else if (code === 'D') {
+        slExplode.value = 0.06; slMorph.value = 1.0; chkWire.checked = false;
+        titleEl.textContent = '02.D — Kegelachtige Gekromde Vormen';
+        descEl.textContent = 'Zes rechte cirkelkegels (halve tophoek α = 45°) raken elkaar langs de vlakdiagonalen.';
+      } else if (code === 'DD') {
+        slExplode.value = 0.42; slMorph.value = 0.52; chkWire.checked = true;
+        titleEl.textContent = '02.D.D — Gecombineerde Kubus-Bol Dualiteit';
+        descEl.textContent = 'Gelijktijdige projectie van vlakke piramides (L∞) en gekromde kegels (L₂) langs de 3 hoofdassen.';
+      }
+      updateRussellParams();
+    }
+
+    function setRussellStyle(style) {
+      STATE.russellStyle = style;
+      const btnChalk = document.getElementById('style-chalk');
+      const btnColor = document.getElementById('style-color');
+      if (style === 'chalk') {
+        btnChalk.className = 'px-2.5 py-1 rounded text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-500/40 transition';
+        btnColor.className = 'px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition';
+      } else {
+        btnColor.className = 'px-2.5 py-1 rounded text-xs font-medium bg-sky-500/20 text-sky-200 border border-sky-500/40 transition';
+        btnChalk.className = 'px-2.5 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition';
+      }
+      updateRussellParams();
+    }
+
+    function toggleAxisFilter(axis) {
+      STATE.axisFilter = axis;
+      ['ALL', 'X', 'Y', 'Z'].forEach((a) => {
+        const btn = document.getElementById('axis-' + a);
+        btn.className = (a === axis)
+          ? 'px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 text-amber-200 font-mono-code text-[11px]'
+          : 'px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono-code text-[11px]';
+      });
+      updateRussellParams();
+    }
+
+    function applyQuaternionPreset(preset) {
+      STATE.quatNauticalLock = false;
+      const slAngle = document.getElementById('slider-quat-angle');
+      const slAz = document.getElementById('slider-quat-az');
+      const slEl = document.getElementById('slider-quat-el');
+      const slT = document.getElementById('slider-slerp-t');
+      const lbl = document.getElementById('quat-preset-label');
+
+      if (preset === 'IDENTITY') {
+        slAngle.value = 0; slAz.value = 0; slEl.value = 90; slT.value = 1.0;
+        lbl.textContent = 'Identiteit: q = 1 + 0i + 0j + 0k';
+      } else if (preset === 'FACE_X_90') {
+        slAngle.value = 90; slAz.value = 90; slEl.value = 0; slT.value = 1.0;
+        lbl.textContent = 'Vlakrotatie +X: q = (1 + i)/√2';
+      } else if (preset === 'FACE_Y_90') {
+        slAngle.value = 90; slAz.value = 0; slEl.value = 90; slT.value = 1.0;
+        lbl.textContent = 'Zenitrotatie +Y: q = (1 + j)/√2';
+      } else if (preset === 'HURWITZ_120') {
+        slAngle.value = 120; slAz.value = 135; slEl.value = 35.264; slT.value = 1.0;
+        lbl.textContent = 'Hurwitz-eenheid: q = ½(1 + i + j + k) • 120° Lichaamsdiagonaal';
+      } else if (preset === 'EDGE_180') {
+        slAngle.value = 180; slAz.value = 90; slEl.value = 45; slT.value = 1.0;
+        lbl.textContent = 'Ribbe-inversie: q = (i + j)/√2 • 180°';
+      } else if (preset === 'SHIP_LOCK') {
+        STATE.quatNauticalLock = true;
+        slAngle.value = STATE.azimuthDeg; slAz.value = 0; slEl.value = 90; slT.value = 1.0;
+        lbl.textContent = '⚓ Gekoppeld aan Scheepskoers op Blaeu/Waghenaer Paskaart';
+      }
+      onQuaternionSliderInput();
+    }
+
+    function onQuaternionSliderInput() {
+      STATE.quatAngleDeg = parseFloat(document.getElementById('slider-quat-angle').value);
+      STATE.quatAxisAzDeg = parseFloat(document.getElementById('slider-quat-az').value);
+      STATE.quatAxisElDeg = parseFloat(document.getElementById('slider-quat-el').value);
+      STATE.slerpT = parseFloat(document.getElementById('slider-slerp-t').value);
+      updateVectorRay3D();
+    }
+
+    function multiplyActiveQuaternionBy(dw, dx, dy, dz, labelText) {
+      STATE.quatNauticalLock = false;
+      const qCur = new THREE.Quaternion(
+        STATE.currentQuat.x,
+        STATE.currentQuat.y,
+        STATE.currentQuat.z,
+        STATE.currentQuat.w
+      );
+      const dq = new THREE.Quaternion(dx, dy, dz, dw).normalize();
+      qCur.multiply(dq).normalize();
+
+      const clampedW = Math.max(-1, Math.min(1, qCur.w));
+      const newAlphaRad = 2 * Math.acos(clampedW);
+      const sinHalf = Math.sqrt(Math.max(0, 1 - clampedW * clampedW));
+      let ux = 0, uy = 1, uz = 0;
+      if (sinHalf > 1e-4) {
+        ux = qCur.x / sinHalf;
+        uy = qCur.y / sinHalf;
+        uz = qCur.z / sinHalf;
+      }
+
+      const newAngleDeg = ((newAlphaRad * 180) / Math.PI) % 360;
+      const newElDeg = (Math.asin(Math.max(-1, Math.min(1, uy))) * 180) / Math.PI;
+      const newAzDeg = (((Math.atan2(ux, -uz) * 180) / Math.PI) % 360 + 360) % 360;
+
+      document.getElementById('slider-quat-angle').value = newAngleDeg;
+      document.getElementById('slider-quat-az').value = newAzDeg;
+      document.getElementById('slider-quat-el').value = newElDeg;
+      document.getElementById('slider-slerp-t').value = 1.0;
+
+      STATE.quatAngleDeg = newAngleDeg;
+      STATE.quatAxisAzDeg = newAzDeg;
+      STATE.quatAxisElDeg = newElDeg;
+      STATE.slerpT = 1.0;
+
+      document.getElementById('quat-preset-label').textContent = `Hamilton-product: q ← q ${labelText}`;
+      updateVectorRay3D();
+    }
+
+    function toggleSO3MatrixDrawer() {
+      const dr = document.getElementById('so3-matrix-drawer');
+      if (dr) dr.classList.toggle('hidden');
+    }
+
+    function updateVectorRay3D() {
+      if (STATE.quatNauticalLock) {
+        STATE.quatAngleDeg = STATE.azimuthDeg;
+        const slA = document.getElementById('slider-quat-angle');
+        if (slA) slA.value = STATE.quatAngleDeg;
+      }
+
+      // 1. Base vector p0 from Azimuth & Elevation
+      const azRad = (STATE.azimuthDeg * Math.PI) / 180;
+      const elRad = (STATE.elevationDeg * Math.PI) / 180;
+      const cosEl = Math.cos(elRad);
+      const baseVec = new THREE.Vector3(
+        cosEl * Math.sin(azRad),
+        Math.sin(elRad),
+        -cosEl * Math.cos(azRad)
+      ).normalize();
+
+      // 2. Unit Axis u(u_x, u_y, u_z) and active SLERP angle (t * alpha)
+      const qAzRad = (STATE.quatAxisAzDeg * Math.PI) / 180;
+      const qElRad = (STATE.quatAxisElDeg * Math.PI) / 180;
+      const cosQEl = Math.cos(qElRad);
+      const axisU = new THREE.Vector3(
+        cosQEl * Math.sin(qAzRad),
+        Math.sin(qElRad),
+        -cosQEl * Math.cos(qAzRad)
+      ).normalize();
+
+      const effAlphaRad = ((STATE.quatAngleDeg * STATE.slerpT) * Math.PI) / 180;
+      const halfAlpha = effAlphaRad * 0.5;
+      const qw = Math.cos(halfAlpha);
+      const sinHalf = Math.sin(halfAlpha);
+      const qx = axisU.x * sinHalf;
+      const qy = axisU.y * sinHalf;
+      const qz = axisU.z * sinHalf;
+
+      STATE.currentQuat = { w: qw, x: qx, y: qy, z: qz };
+      const threeQuat = new THREE.Quaternion(qx, qy, qz, qw).normalize();
+
+      // Update Quaternion UI readouts
+      const fmt = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(4);
+      document.getElementById('q-comp-w').textContent = fmt(qw);
+      document.getElementById('q-comp-x').textContent = fmt(qx) + 'i';
+      document.getElementById('q-comp-y').textContent = fmt(qy) + 'j';
+      document.getElementById('q-comp-z').textContent = fmt(qz) + 'k';
+      const normVal = Math.hypot(qw, qx, qy, qz);
+      document.getElementById('q-comp-norm').textContent = normVal.toFixed(4);
+      document.getElementById('hud-quat-short').textContent =
+        `${qw.toFixed(2)} ${qx >= 0 ? '+' : '−'} ${Math.abs(qx).toFixed(2)}i ${qy >= 0 ? '+' : '−'} ${Math.abs(qy).toFixed(2)}j ${qz >= 0 ? '+' : '−'} ${Math.abs(qz).toFixed(2)}k`;
+
+      document.getElementById('val-quat-angle').textContent = `${STATE.quatAngleDeg.toFixed(1)}°`;
+      document.getElementById('val-quat-az').textContent = `${STATE.quatAxisAzDeg.toFixed(1)}°`;
+      document.getElementById('val-quat-el').textContent = `${STATE.quatAxisElDeg.toFixed(1)}°`;
+      document.getElementById('val-slerp-t').textContent = `t = ${STATE.slerpT.toFixed(2)}`;
+
+      // Rotate pyramids & cones by q if enabled
+      const rotMeshChk = document.getElementById('chk-quat-rotate-mesh');
+      if (pyramidsGroup && conesGroup) {
+        if (rotMeshChk && rotMeshChk.checked) {
+          pyramidsGroup.quaternion.copy(threeQuat);
+          conesGroup.quaternion.copy(threeQuat);
+        } else {
+          pyramidsGroup.quaternion.identity();
+          conesGroup.quaternion.identity();
+        }
+      }
+
+      // Apply Sandwich Product p' = q * p0 * q^-1
+      const unitVec = baseVec.clone().applyQuaternion(threeQuat).normalize();
+      const pSphere = unitVec.clone().multiplyScalar(L);
+      const maxComp = Math.max(Math.abs(unitVec.x), Math.abs(unitVec.y), Math.abs(unitVec.z)) || 1;
+      const pCube = unitVec.clone().multiplyScalar(L / maxComp);
+
+      if (vectorRayGroup) {
+        const posArr = vectorRayGroup.userData.rayLine.geometry.attributes.position.array;
+        posArr[3] = pCube.x; posArr[4] = pCube.y; posArr[5] = pCube.z;
+        vectorRayGroup.userData.rayLine.geometry.attributes.position.needsUpdate = true;
+        vectorRayGroup.userData.ptSphere.position.copy(pSphere);
+        vectorRayGroup.userData.ptCube.position.copy(pCube);
+      }
+
+      // Update Quaternion Axis & SLERP Geodesic Curve
+      if (quatGizmoGroup) {
+        const axPos = quatGizmoGroup.userData.axisLine.geometry.attributes.position.array;
+        axPos[0] = -axisU.x * L * 1.45; axPos[1] = -axisU.y * L * 1.45; axPos[2] = -axisU.z * L * 1.45;
+        axPos[3] =  axisU.x * L * 1.45; axPos[4] =  axisU.y * L * 1.45; axPos[5] =  axisU.z * L * 1.45;
+        quatGizmoGroup.userData.axisLine.geometry.attributes.position.needsUpdate = true;
+
+        const slerpArr = quatGizmoGroup.userData.slerpLine.geometry.attributes.position.array;
+        const cubeArr = quatGizmoGroup.userData.cubeCurveLine.geometry.attributes.position.array;
+        for (let i = 0; i <= 32; i++) {
+          const frac = (i / 32) * STATE.slerpT;
+          const stepQ = new THREE.Quaternion().setFromAxisAngle(axisU, ((STATE.quatAngleDeg * frac) * Math.PI) / 180);
+          const vStep = baseVec.clone().applyQuaternion(stepQ).normalize();
+          const mComp = Math.max(Math.abs(vStep.x), Math.abs(vStep.y), Math.abs(vStep.z)) || 1;
+
+          slerpArr[i * 3]     = vStep.x * L;
+          slerpArr[i * 3 + 1] = vStep.y * L;
+          slerpArr[i * 3 + 2] = vStep.z * L;
+
+          cubeArr[i * 3]     = (vStep.x / mComp) * L;
+          cubeArr[i * 3 + 1] = (vStep.y / mComp) * L;
+          cubeArr[i * 3 + 2] = (vStep.z / mComp) * L;
+        }
+        quatGizmoGroup.userData.slerpLine.geometry.attributes.position.needsUpdate = true;
+        quatGizmoGroup.userData.cubeCurveLine.geometry.attributes.position.needsUpdate = true;
+      }
+
+      // Active Voronoi Pyramid Sector
+      let activeSector = '+X (ORIENS)';
+      const ax = Math.abs(unitVec.x), ay = Math.abs(unitVec.y), az = Math.abs(unitVec.z);
+      if (ax >= ay && ax >= az) {
+        activeSector = unitVec.x >= 0 ? '+X (ORIENS / OOST)' : '−X (OCCIDENS / WEST)';
+      } else if (ay >= ax && ay >= az) {
+        activeSector = unitVec.y >= 0 ? '+Y (ZENIT)' : '−Y (NADIR)';
+      } else {
+        activeSector = unitVec.z >= 0 ? '+Z (MERIDIES / ZUID)' : '−Z (SEPTENTRIO / NOORD)';
+      }
+
+      document.getElementById('hud-sector').textContent = activeSector;
+      document.getElementById('hud-p-sphere').textContent = `(${unitVec.x.toFixed(2)}, ${unitVec.y.toFixed(2)}, ${unitVec.z.toFixed(2)})·L`;
+      document.getElementById('hud-p-cube').textContent = `(${(unitVec.x / maxComp).toFixed(2)}, ${(unitVec.y / maxComp).toFixed(2)}, ${(unitVec.z / maxComp).toFixed(2)})·L`;
+      document.getElementById('hud-norm-ratio').textContent = `${(1 / maxComp).toFixed(3)}×`;
+      document.getElementById('nav-russell-sector').textContent = activeSector;
+
+      const windObj = get32WindFromAzimuth(STATE.azimuthDeg);
+      document.getElementById('val-azimuth').textContent = `${STATE.azimuthDeg.toFixed(1)}° (${windObj.code})`;
+      document.getElementById('val-elevation').textContent = `${STATE.elevationDeg >= 0 ? '+' : ''}${STATE.elevationDeg.toFixed(1)}°`;
+
+      // Update 3x3 SO(3) Rotation Matrix R(q)
+      const matGrid = document.getElementById('so3-matrix-grid');
+      if (matGrid) {
+        const r00 = 1 - 2 * (qy * qy + qz * qz);
+        const r01 = 2 * (qx * qy - qz * qw);
+        const r02 = 2 * (qx * qz + qy * qw);
+        const r10 = 2 * (qx * qy + qz * qw);
+        const r11 = 1 - 2 * (qx * qx + qz * qz);
+        const r12 = 2 * (qy * qz - qx * qw);
+        const r20 = 2 * (qx * qz - qy * qw);
+        const r21 = 2 * (qy * qz + qx * qw);
+        const r22 = 1 - 2 * (qx * qx + qy * qy);
+        const cells = [r00, r01, r02, r10, r11, r12, r20, r21, r22];
+        matGrid.innerHTML = cells.map(v => `<span>${(v >= 0 ? '+' : '') + v.toFixed(3)}</span>`).join('');
+      }
+    }
+
+    function onVectorSliderChange() {
+      STATE.azimuthDeg = parseFloat(document.getElementById('slider-azimuth').value);
+      STATE.elevationDeg = parseFloat(document.getElementById('slider-elevation').value);
+      updateVectorRay3D();
+      drawWaghenaerAll();
+    }
+
+    /* =========================================================================
+       MODULE 2: HET KAARTEN-ARSENAAL VAN WILLEM & JOAN BLAEU + WAGHENAER
+       ========================================================================= */
+    let CHART_BOUNDS = { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 };
+
+    const WAGHENAER_ATLAS = [
+      // KAART 0: CORNWALL (1584)
+      {
+        id: 'cornwall_1584',
+        shortTitle: '1. Cornwall (1584)',
+        headerTitle: 'I. Zee Caerte van Engelandts Eijndt — van Sorlinges tot Pleijmondt (1584)',
+        cartoucheTitle: '„Zee Caerte van Engelandts Eijndt, Alsoe hem tselfde Landt verthoont beghinnende van Sorlinges tot Pleijmondt door Lucas Iansz. Waghenaer van Enckhuijsen • 1584”',
+        interiorTitle: 'A  N  G  L  I  Æ     P  A  R  S .',
+        interiorPos: [-4.95, 50.36],
+        seaTitle1: { text: 'Die Canacl Van Bristow', pos: [-6.05, 50.36] },
+        seaTitle2: { text: 'Die Canacl tusschen Engelandt ende Vranckrijck', pos: [-5.45, 49.63] },
+        compassNorthScreenDeg: 0,
+        roseLonLat: [-5.15, 49.74],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.24,
+        landPolygons: [{
+          color: '#d7cfa6',
+          pts: [
+            [-5.25, 50.48], [-5.48, 50.25], [-5.66, 50.14], [-5.71, 50.07], [-5.65, 50.04],
+            [-5.54, 50.11], [-5.47, 50.13], [-5.32, 50.08], [-5.20, 49.96], [-5.14, 50.04],
+            [-5.12, 50.09], [-5.05, 50.15], [-5.03, 50.22], [-4.99, 50.15], [-4.90, 50.19],
+            [-4.80, 50.22], [-4.75, 50.31], [-4.63, 50.33], [-4.45, 50.35], [-4.30, 50.34],
+            [-4.22, 50.31], [-4.16, 50.37], [-4.11, 50.42], [-4.10, 50.33], [-3.95, 50.30], [-3.95, 50.48]
+          ]
+        }],
+        shoals: [{ lon: -6.31, lat: 49.92, rx: 28, ry: 19, label: 'De Sorlinges', islands: true }],
+        monsters: [{ lon: -5.85, lat: 49.76, type: 'serpent' }],
+        shields: [{ lon: -6.32, lat: 50.26, title: 'ENGELANDT', type: 'england_royal' }],
+        soundings: [
+          { lon: -6.15, lat: 49.96, depth: "45" }, { lon: -5.60, lat: 50.06, depth: "20" },
+          { lon: -5.36, lat: 49.98, depth: "32" }, { lon: -5.03, lat: 50.11, depth: "15" },
+          { lon: -4.70, lat: 50.24, depth: "22" }, { lon: -4.16, lat: 50.30, depth: "14" }
+        ],
+        landmarks: [
+          { id: "sorlinges", name1584: "De Sorlinges", modern: "Isles of Scilly", lon: -6.31, lat: 49.92, heightM: 52, shape: "islands_castle" },
+          { id: "wolff", name1584: "De Wolff", modern: "Wolf Rock", lon: -5.80, lat: 49.95, heightM: 22, shape: "sharp_rock" },
+          { id: "engelandts_eijndt", name1584: "Engelandts Eijndt", modern: "Land's End", lon: -5.71, lat: 50.07, heightM: 65, shape: "headland_west" },
+          { id: "michiels_berch", name1584: "S. Michiels berch", modern: "St Michael's Mount", lon: -5.47, lat: 50.12, heightM: 72, shape: "abbey_mount" },
+          { id: "lezart", name1584: "Lezart", modern: "Lizard Point", lon: -5.20, lat: 49.96, heightM: 68, shape: "flat_cape" },
+          { id: "valmuijen", name1584: "Valmuijen & 't Slot", modern: "Falmouth & Pendennis", lon: -5.05, lat: 50.15, heightM: 78, shape: "castle_estuary" },
+          { id: "doodmans_hooft", name1584: "Doodmans hooft", modern: "Dodman Point", lon: -4.80, lat: 50.22, heightM: 114, shape: "high_bluff" },
+          { id: "pleijmondt", name1584: "Pleijmondt", modern: "Plymouth Sound", lon: -4.13, lat: 50.35, heightM: 85, shape: "plymouth_sound" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Sorlinges", sub: "WNW • 2 mijl", quote1584: "„Onderlinghe vande Sorlinges als die west noort west van u sijn twee mijlen”", targetLandmarkIdx: 0, shipLon: -6.08, shipLat: 49.84 },
+          { btnCode: "II. Sorlinges", sub: "ZO • 2 mijl", quote1584: "„De Sorlinges als die zuijdt oost van u sijn omtrent twee mijlen.”", targetLandmarkIdx: 0, shipLon: -6.49, shipLat: 50.04 },
+          { btnCode: "III. Land's End", sub: "Noord • 3 mijl", quote1584: "„Tlandt bij oosten engelandts eijndt alst drie mijlen noordt van u is”", targetLandmarkIdx: 2, shipLon: -5.68, shipLat: 49.87 },
+          { btnCode: "IV. Lezart", sub: "OZO • 1–2 mijl", quote1584: "„Lezart alst oost zuijdt oost van u leijt een mijl en oock zuijdt Noorden twee mijlen.”", targetLandmarkIdx: 4, shipLon: -5.34, shipLat: 50.00 },
+          { btnCode: "V. Valmuijen", sub: "NWtW • 't Slot", quote1584: "„Valmuijen alst Slot noort west ten westen van u leijt, en Doodmans hooft drie mijlen Noorden van u is.”", targetLandmarkIdx: 5, shipLon: -4.83, shipLat: 50.03 },
+          { btnCode: "VI. Doodmans", sub: "NOtN • 3 mijl", quote1584: "„Verthooninghe van Lezart, Valmuijen, ende Doodmans hooft, alst Slot noort west een mijlen van u is”", targetLandmarkIdx: 6, shipLon: -4.96, shipLat: 50.07 }
+        ]
+      },
+
+      // KAART 1: PORTUGAL (1583)
+      {
+        id: 'portugal_1583',
+        shortTitle: '2. Portugal (1583)',
+        headerTitle: 'II. Die Zee Caerte van Portugal, tusschen Camino en Montego (1583)',
+        cartoucheTitle: '„Die Zee Caerte van Portugal, tusschen Camino en Montego... Lucas Iansz Waghenaer vã Enchuijsen • 1583”',
+        interiorTitle: 'P O R T V G A L L I Æ     P A R S .',
+        interiorPos: [-5.35, 50.36],
+        seaTitle1: { text: 'DIE   WESTER   ZEE .', pos: [-5.35, 49.62] },
+        seaTitle2: { text: 'Cum Priuilegio ad decennium • 1583', pos: [-4.45, 49.66] },
+        compassNorthScreenDeg: -90,
+        roseLonLat: [-5.32, 49.79],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.08,
+        landPolygons: [{
+          color: '#ded2a8',
+          pts: [
+            [-6.68, 50.48], [-6.68, 50.05], [-6.52, 50.08], [-6.42, 50.36], [-6.32, 50.38], [-6.35, 50.14],
+            [-6.18, 50.08], [-5.92, 50.15], [-5.82, 50.36], [-5.77, 50.36], [-5.74, 50.14], [-5.50, 50.14],
+            [-5.36, 50.17], [-5.24, 50.44], [-5.16, 50.44], [-5.22, 50.16], [-4.92, 50.15], [-4.76, 50.45],
+            [-4.68, 50.45], [-4.76, 50.25], [-4.95, 50.21], [-4.72, 50.13], [-4.40, 50.04], [-4.15, 50.01],
+            [-3.95, 50.04], [-3.95, 50.48]
+          ]
+        }],
+        shoals: [{ lon: -6.38, lat: 50.04, rx: 22, ry: 10, label: 'Baxos de Viana', islands: false }],
+        monsters: [{ lon: -5.42, lat: 49.68, type: 'whale_spout' }],
+        shields: [{ lon: -4.22, lat: 50.27, title: 'PORTVGAL', type: 'portugal_royal' }],
+        soundings: [
+          { lon: -6.12, lat: 50.02, depth: "10" }, { lon: -5.28, lat: 50.12, depth: "6" },
+          { lon: -4.80, lat: 50.09, depth: "5" }, { lon: -4.22, lat: 49.97, depth: "9" }
+        ],
+        landmarks: [
+          { id: "camino", name1584: "Camino & Sanc Frego", modern: "Caminha (Rio Minho)", lon: -6.60, lat: 50.12, heightM: 88, shape: "high_bluff" },
+          { id: "viana_limas", name1584: "Viana & Rio Limas", modern: "Viana do Castelo", lon: -6.38, lat: 50.18, heightM: 74, shape: "castle_estuary" },
+          { id: "ville_del_conde", name1584: "Ville del Conde", modern: "Vila do Conde", lon: -5.78, lat: 50.19, heightM: 64, shape: "estuary" },
+          { id: "duero_porto", name1584: "Duero Rio & Port de Port", modern: "Rio Douro & Porto", lon: -5.25, lat: 50.22, heightM: 92, shape: "abbey_mount" },
+          { id: "aueiro", name1584: "Die Riuier van Aueiro", modern: "Ria de Aveiro", lon: -4.78, lat: 50.22, heightM: 48, shape: "islands_castle" },
+          { id: "montego", name1584: "Capo de Montego", modern: "Cabo Mondego", lon: -4.16, lat: 50.05, heightM: 112, shape: "chapel_headland" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Portugal 3m", sub: "Algemene Opdoening", quote1584: "„Gedaente en opdoeninge vant Landt van Portugal, alst drie mijlen van u is, en daer beneffens Zeijlt.”", targetLandmarkIdx: 3, shipLon: -5.35, shipLat: 49.84 },
+          { btnCode: "II. Sanc Frego", sub: "Noordkust • Viana", quote1584: "„Sanc Frego ende Rio Limas bij Viana alsmen daer drie mijlen buiten zeijlt”", targetLandmarkIdx: 1, shipLon: -6.32, shipLat: 49.88 },
+          { btnCode: "III. Ville Conde", sub: "Oost • 2 mijl", quote1584: "„Ville del Conde met de klippen voor de havenmonding op twee mijlen in het Oosten”", targetLandmarkIdx: 2, shipLon: -5.80, shipLat: 49.90 },
+          { btnCode: "IV. Duero / Porto", sub: "S. Juan de Foz", quote1584: "„De monding van Duero Rio met S. Juan de Foz, S. Catelina ende Port de Port”", targetLandmarkIdx: 3, shipLon: -5.26, shipLat: 49.92 },
+          { btnCode: "V. Riv. Aueiro", sub: "Swarte heuelken", quote1584: "„Als dit Swarte heuelken oost te zuijden van u leijt, soe ismen open voor die Riuier van Aueiro.”", targetLandmarkIdx: 4, shipLon: -4.85, shipLat: 49.90 },
+          { btnCode: "VI. C. Montego", sub: "Zuidkaap • 3 mijl", quote1584: "„Capo de Montego met de steile kust bij Mira als hij oost-zuidoost van u ligt”", targetLandmarkIdx: 5, shipLon: -4.25, shipLat: 49.84 }
+        ]
+      },
+
+      // KAART 2: BISCAIEN (1584)
+      {
+        id: 'biscaien_1584',
+        shortTitle: '3. Biscaien (1584)',
+        headerTitle: 'III. Die Caerte vande Zeekusten van Biscaien, tusschen Rio de Sella en Auiles (1584)',
+        cartoucheTitle: '„Die Caerte vande Zeekusten van Biscaien, Zeer quade hauenen voor groote schepen, tusschẽ Rio de Sella eñ Auiles”',
+        interiorTitle: 'B   I   S   C   A   I   Æ         P   A   R   S .',
+        interiorPos: [-5.30, 50.39],
+        seaTitle1: { text: 'M  A  R  I  S       O  C  E  A  N  I', pos: [-5.40, 49.93] },
+        seaTitle2: { text: 'DE   GROOTE   ZEE   OCEANVS   PARS', pos: [-5.35, 49.64] },
+        compassNorthScreenDeg: 180,
+        roseLonLat: [-5.35, 49.73],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.06,
+        landPolygons: [{
+          color: '#d9c59a',
+          pts: [
+            [-6.68, 50.48], [-6.68, 50.10], [-6.56, 50.10], [-6.45, 50.22], [-6.50, 50.09],
+            [-5.72, 50.10], [-5.64, 50.28], [-5.56, 50.28], [-5.54, 50.10], [-5.18, 50.10],
+            [-5.08, 50.18], [-4.92, 50.18], [-4.85, 50.06], [-4.68, 50.11], [-4.55, 50.09],
+            [-4.40, 49.98], [-4.24, 50.12], [-4.16, 50.29], [-4.10, 50.29], [-4.08, 50.08],
+            [-3.95, 50.07], [-3.95, 50.48]
+          ]
+        }],
+        shoals: [],
+        monsters: [{ lon: -6.22, lat: 49.84, type: 'whale_spout' }, { lon: -4.65, lat: 49.85, type: 'whale_spout' }],
+        shields: [],
+        soundings: [{ lon: -6.52, lat: 50.05, depth: "10" }, { lon: -5.60, lat: 50.05, depth: "10" }, { lon: -4.40, lat: 49.94, depth: "18" }],
+        landmarks: [
+          { id: "rio_sella", name1584: "Rio de Sella", modern: "Ribadesella", lon: -6.50, lat: 50.14, heightM: 95, shape: "harbor_cleft" },
+          { id: "villa_viciosa", name1584: "Villa Viciosa", modern: "Villaviciosa", lon: -5.60, lat: 50.22, heightM: 110, shape: "castle_estuary" },
+          { id: "gijon", name1584: "Sanson & Gijon", modern: "Gijón", lon: -4.85, lat: 50.10, heightM: 76, shape: "bay_town" },
+          { id: "c_de_pennas", name1584: "C. de Pennas", modern: "Cabo de Peñas", lon: -4.40, lat: 50.01, heightM: 120, shape: "chapel_headland" },
+          { id: "auiles", name1584: "Auiles", modern: "Avilés", lon: -4.13, lat: 50.20, heightM: 84, shape: "estuary" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Biscaien", sub: "Algemene Opdoening", quote1584: "„Opdoeninghe eñ verthoninghe vande Lande van Biscaien tusschen Rio de Sella eñ Auiles”", targetLandmarkIdx: 1, shipLon: -5.50, shipLat: 49.88 },
+          { btnCode: "II. Rio de Sella", sub: "Zuid • 2 mijl", quote1584: "„Facies Biscaiae inter fluuium Sellam et Auilam dum praeternauigatur — Rio de Sella”", targetLandmarkIdx: 0, shipLon: -6.45, shipLat: 49.90 },
+          { btnCode: "III. Villa Viciosa", sub: "Nauw haven-gat", quote1584: "„De nauwe kom van Villa Viciosa onder het hooggebergte van Biscaien”", targetLandmarkIdx: 1, shipLon: -5.60, shipLat: 49.92 },
+          { btnCode: "IV. Sanson & Gijon", sub: "Rede van Gijon", quote1584: "„De baai van Sanson ende de reede van Gijon bewesten Villa Viciosa”", targetLandmarkIdx: 2, shipLon: -4.92, shipLat: 49.91 },
+          { btnCode: "V. C. de Pennas", sub: "Steile Noordkaap", quote1584: "„De vooruitstekende rotspunt C. de Pennas tusschen Gijon en Auiles”", targetLandmarkIdx: 3, shipLon: -4.42, shipLat: 49.82 },
+          { btnCode: "VI. Auiles", sub: "Rivier van Avilés", quote1584: "„De havenmonding van Auiles aan de westzijde van C. de Pennas”", targetLandmarkIdx: 4, shipLon: -4.16, shipLat: 49.90 }
+        ]
+      },
+
+      // KAART 3: ZEELANDT (1583)
+      {
+        id: 'zeeland_1583',
+        shortTitle: '4. Zeelandt (1583)',
+        headerTitle: 'IV. Beschrijuinghe vande Zeeusche Eijlanden, Vlaenderen ende Hollant (1583)',
+        cartoucheTitle: '„Beschrijuinghe vande Zeeusche Eijlanden, Soe die op hare Stromẽ geleghen zijn, met een deel vande Zee Custen van Vlaenderen enn Hollant • 1583”',
+        interiorTitle: 'C O M I T A T V S   Z E E L A N D I Æ   &   F L A N D R I Æ',
+        interiorPos: [-5.15, 50.32],
+        seaTitle1: { text: 'M A R I S   S E P T E N T R I O N A L I S   P A R S', pos: [-5.45, 49.70] },
+        seaTitle2: { text: 'Die   Noordt   Zee .', pos: [-5.10, 49.60] },
+        compassNorthScreenDeg: -135,
+        roseLonLat: [-5.32, 49.68],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 49.98,
+        landPolygons: [
+          { color: '#d8cfa6', pts: [[-6.68, 50.48], [-6.68, 49.92], [-6.32, 49.96], [-6.26, 50.18], [-6.35, 50.48]] },
+          { color: '#cfc493', pts: [[-6.16, 50.00], [-6.00, 50.00], [-5.98, 50.28], [-6.18, 50.28]] },
+          { color: '#d4c99b', pts: [[-5.86, 49.98], [-5.66, 49.98], [-5.64, 50.24], [-5.84, 50.24]] },
+          { color: '#dfd3a7', pts: [[-5.52, 49.96], [-5.28, 49.96], [-5.22, 50.22], [-5.48, 50.22]] },
+          { color: '#d9cea2', pts: [[-5.12, 50.02], [-4.55, 49.92], [-3.95, 49.76], [-3.95, 50.48], [-5.10, 50.48]] }
+        ],
+        shoals: [
+          { lon: -5.60, lat: 49.84, rx: 26, ry: 10, label: 'Steenbanck', islands: false },
+          { lon: -4.92, lat: 49.86, rx: 32, ry: 12, label: 'Wielinghe', islands: false }
+        ],
+        monsters: [{ lon: -6.42, lat: 49.74, type: 'sea_dragon' }],
+        shields: [
+          { lon: -6.48, lat: 50.08, title: 'HOLLANDIA', type: 'holland_lion' },
+          { lon: -5.62, lat: 50.40, title: 'BRABANTIA', type: 'brabant_lion' },
+          { lon: -4.82, lat: 50.22, title: 'FLANDRIA', type: 'flanders_lion' }
+        ],
+        soundings: [{ lon: -6.22, lat: 49.90, depth: "5" }, { lon: -5.35, lat: 49.88, depth: "10" }, { lon: -4.72, lat: 49.84, depth: "6" }],
+        landmarks: [
+          { id: "scheuelinghe", name1584: "Scheuelinghe", modern: "Scheveningen", lon: -6.48, lat: 49.96, heightM: 56, shape: "bay_town" },
+          { id: "maess_briel", name1584: "Die Maess & Briel", modern: "Maasmonding & Brielle", lon: -6.12, lat: 50.02, heightM: 68, shape: "castle_estuary" },
+          { id: "schouwen", name1584: "Tlandt van Schouwen", modern: "Schouwen-Duiveland", lon: -5.76, lat: 50.02, heightM: 62, shape: "islands_castle" },
+          { id: "walcheren", name1584: "Walcheren (Vlissingen)", modern: "Walcheren", lon: -5.40, lat: 49.99, heightM: 78, shape: "abbey_mount" },
+          { id: "sluijs_brugghe", name1584: "Sluijs & Brugghe", modern: "Het Zwin & Sluis", lon: -5.02, lat: 50.06, heightM: 84, shape: "castle_estuary" },
+          { id: "oostende", name1584: "Oostende", modern: "Oostende", lon: -4.28, lat: 49.85, heightM: 64, shape: "chapel_headland" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Suijdt-Hollant", sub: "Haerlem–Scheuelinghe", quote1584: "„Aldus verthoont hem Suijdthollant tussche Haerlem en Scheuelinghe, alsmẽ daer beneffens heen zeijlt.”", targetLandmarkIdx: 0, shipLon: -6.42, shipLat: 49.82 },
+          { btnCode: "II. De Maess", sub: "Scheuelinghe–Maess", quote1584: "„Tlandt tusschen Scheuelinghe en die Maess — Monster, Ter Heijde ende Sgrauesande”", targetLandmarkIdx: 1, shipLon: -6.18, shipLat: 49.84 },
+          { btnCode: "III. Voorn / Briel", sub: "Voor de Maess", quote1584: "„Gedaente vant Landt van Voorn, alsmen voor de maes is — Briel ende Oostvoorn”", targetLandmarkIdx: 1, shipLon: -6.05, shipLat: 49.85 },
+          { btnCode: "IV. Schouwen", sub: "Dwers van u", quote1584: "„Tlandt van Schouwen, alst dwers van u leijt”", targetLandmarkIdx: 2, shipLon: -5.76, shipLat: 49.82 },
+          { btnCode: "V. Walcheren", sub: "De Wielinghe", quote1584: "„Walcheren met Westcappel, Domburgh ende Vlissingen gezien vanuit de Wielinghe”", targetLandmarkIdx: 3, shipLon: -5.40, shipLat: 49.80 },
+          { btnCode: "VI. Vlaenderen", sub: "Sluijs–Oostende", quote1584: "„De Vlaemsche kust bij Sluijs, Blanckenberch ende Oostende”", targetLandmarkIdx: 5, shipLon: -4.55, shipLat: 49.74 }
+        ]
+      },
+
+      // KAART 4: TEEMSE (1584)
+      {
+        id: 'thames_1584',
+        shortTitle: '5. Teemse (1584)',
+        headerTitle: 'V. De Zee Custen tusschen Douere en Orfordts nesse — Teemse (1584)',
+        cartoucheTitle: '„De Zee Custen tusschen Douere en Orfordts nesse, daer de Teemse de Vermaerde Riuere vã Lonnen gelegens is • Door Lucas Iansz. Wage.”',
+        interiorTitle: 'A   N   G   L   I   Æ       P   A   R   S',
+        interiorPos: [-5.15, 50.38],
+        seaTitle1: { text: 'O C E A N V S   S E P T E N T R I O N A L I S', pos: [-5.55, 49.68] },
+        seaTitle2: { text: 'N O O R D T     Z E E', pos: [-4.95, 49.60] },
+        compassNorthScreenDeg: 90,
+        roseLonLat: [-5.35, 49.74],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.06,
+        landPolygons: [
+          { color: '#d8ce9e', pts: [[-6.68, 50.48], [-6.68, 49.82], [-6.35, 49.90], [-6.05, 49.84], [-5.88, 50.18], [-5.68, 50.25], [-5.62, 50.48]] },
+          { color: '#dfd4a6', pts: [[-5.48, 50.48], [-5.42, 50.28], [-5.08, 50.26], [-5.00, 50.44], [-4.92, 50.22], [-4.75, 50.00], [-4.40, 50.06], [-4.32, 50.26], [-4.25, 50.04], [-3.95, 49.82], [-3.95, 50.48]] }
+        ],
+        shoals: [
+          { lon: -6.32, lat: 49.78, rx: 28, ry: 11, label: 'Goeijngh', islands: false },
+          { lon: -5.65, lat: 50.02, rx: 24, ry: 34, label: 'De Braken', islands: false },
+          { lon: -5.22, lat: 50.00, rx: 26, ry: 30, label: 'Conincx diep', islands: false }
+        ],
+        monsters: [{ lon: -5.50, lat: 49.60, type: 'whale_spout' }],
+        shields: [],
+        soundings: [{ lon: -6.15, lat: 49.76, depth: "10" }, { lon: -5.35, lat: 50.14, depth: "10" }, { lon: -4.65, lat: 49.78, depth: "12" }],
+        landmarks: [
+          { id: "doueren", name1584: "Hoeck van Doueren", modern: "Dover", lon: -6.58, lat: 49.86, heightM: 105, shape: "high_bluff" },
+          { id: "tvoor_landt", name1584: "Tvoor landt", modern: "North Foreland & Margate", lon: -6.05, lat: 49.86, heightM: 68, shape: "chapel_headland" },
+          { id: "teemse", name1584: "Teemse fluuius", modern: "River Thames Estuary", lon: -5.55, lat: 50.36, heightM: 54, shape: "castle_estuary" },
+          { id: "walton", name1584: "Brikelseij & Walton", modern: "The Naze", lon: -4.78, lat: 50.03, heightM: 62, shape: "abbey_mount" },
+          { id: "herwitz", name1584: "Herwitz", modern: "Harwich", lon: -4.35, lat: 50.08, heightM: 66, shape: "estuary" },
+          { id: "orfordts_nesse", name1584: "Orfordts nesse", modern: "Orford Ness", lon: -4.02, lat: 49.86, heightM: 52, shape: "flat_cape" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Doueren", sub: "Door de Hoofden", quote1584: "„Tlandt ontrent Doueren zeijlende door de hoofden — Douers ende S. Margaret”", targetLandmarkIdx: 0, shipLon: -6.48, shipLat: 49.70 },
+          { btnCode: "II. Tvoor landt", sub: "Buiten Goeijngh", quote1584: "„Tvoor landt met Marngat en Sandwich achter de bank Goeijngh”", targetLandmarkIdx: 1, shipLon: -6.02, shipLat: 49.72 },
+          { btnCode: "III. De Teemse", sub: "Conincx diep", quote1584: "„De monding van Teemse fluuius tusschen De Braken en het Conincx diep”", targetLandmarkIdx: 2, shipLon: -5.45, shipLat: 49.88 },
+          { btnCode: "IV. Teemse–Orfort", sub: "Buijten bancken", quote1584: "„Ghedaente vant Landt tusschen de Teemse en Orforts nesse, alsmen buijten bancken zeijlt”", targetLandmarkIdx: 3, shipLon: -4.85, shipLat: 49.78 },
+          { btnCode: "V. Herwitz", sub: "Sandt voor Herwitz", quote1584: "„De haven van Herwitz achter het Kerck sandt”", targetLandmarkIdx: 4, shipLon: -4.40, shipLat: 49.76 },
+          { btnCode: "VI. Orfordts nesse", sub: "Root Clif", quote1584: "„Orfordts nesse ende Root Clif”", targetLandmarkIdx: 5, shipLon: -4.08, shipLat: 49.70 }
+        ]
+      },
+
+      // KAART 5: NOORDT ZEE (1590)
+      {
+        id: 'noordtzee_1590',
+        shortTitle: '6. Noordt Zee (1590)',
+        headerTitle: 'VI. Beschrijuinghe der Landen ende Zee Custen van Eemderlandt tot Calis (1590)',
+        cartoucheTitle: '„Beschrijuinghe der Landen ende zee custen van Eemderlandt, Groningerlandt, Vrieslandt, Westvrieslandt, Hollandt, Zeelandt ende Vlaenderen • 1590”',
+        interiorTitle: 'D E   Z V I D E R   Z E E   •   H O L L A N D I A   •   F L A N D R I A',
+        interiorPos: [-5.35, 50.36],
+        seaTitle1: { text: 'D e     N o o r d t     Z e e .', pos: [-5.40, 49.80] },
+        seaTitle2: { text: 'O C E A N I     G E R M A N I C I     P A R S', pos: [-5.25, 49.60] },
+        compassNorthScreenDeg: -145,
+        roseLonLat: [-4.65, 49.70],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.02,
+        landPolygons: [
+          { color: '#c5d6a7', pts: [[-6.68, 50.48], [-6.68, 50.02], [-6.45, 50.00], [-6.05, 49.96], [-5.92, 50.15], [-6.05, 50.48]] },
+          { color: '#dfd098', pts: [[-5.82, 50.18], [-5.58, 50.14], [-5.72, 49.90], [-5.35, 49.96], [-5.30, 50.48], [-5.85, 50.48]] },
+          { color: '#d8c99e', pts: [[-5.22, 50.02], [-4.85, 49.94], [-4.40, 49.84], [-3.95, 49.68], [-3.95, 50.48], [-5.22, 50.48]] }
+        ],
+        shoals: [
+          { lon: -6.28, lat: 49.86, rx: 38, ry: 10, label: 'Rottum, Schiermonnikoog & Amelandt', islands: true },
+          { lon: -5.85, lat: 49.82, rx: 35, ry: 11, label: 'Terschelling, Vlielandt & Tessel', islands: true }
+        ],
+        monsters: [{ lon: -5.75, lat: 49.64, type: 'whale_spout' }],
+        shields: [{ lon: -5.75, lat: 50.28, title: 'ZVIDER ZEE', type: 'holland_lion' }],
+        soundings: [{ lon: -6.35, lat: 49.76, depth: "14" }, { lon: -5.55, lat: 49.84, depth: "12" }, { lon: -4.45, lat: 49.76, depth: "18" }],
+        landmarks: [
+          { id: "wester_eems", name1584: "Wester Eems & Borkum", modern: "Eemsmonding", lon: -6.48, lat: 49.92, heightM: 52, shape: "islands_castle" },
+          { id: "terschellingh_vlie", name1584: "Terschellingh & 't Vlie", modern: "Terschelling", lon: -5.95, lat: 49.85, heightM: 68, shape: "chapel_headland" },
+          { id: "tessel_marsdiep", name1584: "Tessel & Spanjaerts gat", modern: "Texel & Marsdiep", lon: -5.74, lat: 49.88, heightM: 64, shape: "flat_cape" },
+          { id: "enckhuijsen", name1584: "Enckhuijsen (Zuider Zee)", modern: "Enkhuizen", lon: -5.66, lat: 50.16, heightM: 86, shape: "castle_estuary" },
+          { id: "egmond_santvoort", name1584: "Egmondt & Santvoort", modern: "Hollandse Kust", lon: -5.45, lat: 49.94, heightM: 72, shape: "abbey_mount" },
+          { id: "calis_greuelinghe", name1584: "Duijnkercken & Calis", modern: "Duinkerke & Calais", lon: -4.12, lat: 49.72, heightM: 94, shape: "high_bluff" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Enckhuijsen", sub: "Zuider Zee • Maelson", quote1584: "„Opdracht aan Dr. François Maelson, pensionaris van Enckhuijsen • 1590”", targetLandmarkIdx: 3, shipLon: -5.68, shipLat: 49.98 },
+          { btnCode: "II. Wester Eems", sub: "Borkum & Rottum", quote1584: "„De tonnen en zeegaten van de Wester Eems voor Eemderlandt”", targetLandmarkIdx: 0, shipLon: -6.45, shipLat: 49.78 },
+          { btnCode: "III. 't Vlie", sub: "Vlielandt & Brandaris", quote1584: "„Het Vlie-gat tusschen Vlielandt ende Terschellingh”", targetLandmarkIdx: 1, shipLon: -5.95, shipLat: 49.74 },
+          { btnCode: "IV. Tessel / Helder", sub: "Spanjaerts gat", quote1584: "„Het Landsdiep en Spanjaerts gat bij Tessel”", targetLandmarkIdx: 2, shipLon: -5.72, shipLat: 49.76 },
+          { btnCode: "V. Hollandts Kust", sub: "De Bree Veertien", quote1584: "„De Hollandse duinkust bij Petten en Egmondt”", targetLandmarkIdx: 4, shipLon: -5.45, shipLat: 49.80 },
+          { btnCode: "VI. Vlaemsche Kust", sub: "Oostende tot Calis", quote1584: "„De Vlaemsche banken voor Oostende, Duijnkercken ende Calis”", targetLandmarkIdx: 5, shipLon: -4.25, shipLat: 49.64 }
+        ]
+      },
+
+      // KAART 6 (BLAEU I): INFERIORIS GERMANIAE PROVINCIARUM NOVA DESCRIPTIO (1604)
+      {
+        id: 'blaeu_17prov_1604',
+        shortTitle: '★ Blaeu I: 17 Provinciën (1604)',
+        headerTitle: 'VII. Willem Jansz. Blaeu — Inferioris Germaniae Provinciarum Nova Descriptio (1604)',
+        cartoucheTitle: '„INFERIORIS GERMANIÆ PROVINCIARUM NOVA DESCRIPTIO • Gedruckt t\'Amsterdam bij Willem Jansz inden gulden Zonnewijser Anno 1604”',
+        interiorTitle: 'B R A B A N T I A   •   F L A N D R I A   •   H O L L A N D I A   •   G E L R I A',
+        interiorPos: [-5.35, 49.78],
+        seaTitle1: { text: 'O C E A N I     G E R M A N I C I     P A R S', pos: [-5.30, 50.34] },
+        seaTitle2: { text: 'De   Z u y d e r   Z e e', pos: [-4.72, 50.04] },
+        compassNorthScreenDeg: 58,
+        roseLonLat: [-5.35, 50.38],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.45,
+        minShipLat: 50.08,
+        isBlaeuHeraldic17: true,
+        landPolygons: [
+          { color: '#dfb89d', pts: [[-6.68, 49.56], [-6.68, 50.40], [-6.22, 50.32], [-5.78, 50.20], [-5.68, 49.56]] },
+          { color: '#e5d399', pts: [[-5.66, 49.56], [-5.66, 50.18], [-5.32, 50.22], [-5.02, 50.10], [-4.95, 49.56]] },
+          { color: '#b8d1ae', pts: [[-5.25, 50.14], [-4.95, 50.22], [-4.68, 50.20], [-4.75, 50.08], [-5.05, 50.02]] },
+          { color: '#d9c896', pts: [[-4.55, 50.14], [-4.15, 50.12], [-3.95, 49.96], [-3.95, 49.56], [-4.94, 49.56], [-4.62, 49.98]] }
+        ],
+        shoals: [
+          { lon: -5.52, lat: 50.18, rx: 24, ry: 12, label: 'Walcheren & Schouwen', islands: true },
+          { lon: -4.45, lat: 50.22, rx: 38, ry: 11, label: 'Texel, Vlielandt, Der Schellingk & Amelant', islands: true }
+        ],
+        monsters: [{ lon: -4.18, lat: 50.28, type: 'sea_dragon' }],
+        shields: [{ lon: -6.48, lat: 49.92, title: 'XVII PROVINCIËN', type: 'holland_lion' }],
+        soundings: [{ lon: -6.02, lat: 50.34, depth: "16" }, { lon: -5.05, lat: 50.28, depth: "12" }, { lon: -4.35, lat: 50.30, depth: "15" }],
+        landmarks: [
+          { id: "calis_blaeu", name1584: "Calis & Grevelingen", modern: "Calais & Grevelingen", lon: -6.28, lat: 50.32, heightM: 88, shape: "high_bluff" },
+          { id: "oostende_sluis", name1584: "Oostende, Sluys & Brugghe", modern: "Vlaamse Kust", lon: -5.82, lat: 50.20, heightM: 74, shape: "castle_estuary" },
+          { id: "walcheren_blaeu", name1584: "Walcheren & Schouwen", modern: "Zeeland", lon: -5.48, lat: 50.18, heightM: 76, shape: "islands_castle" },
+          { id: "hollandia_hage", name1584: "S. Graven Hage & Leyden", modern: "Hollandse Duinkust", lon: -5.05, lat: 50.20, heightM: 64, shape: "bay_town" },
+          { id: "amstelodamum", name1584: "Amstelodamum & Enckhuysen", modern: "Amsterdam („In den Vergulden Zonnewijser”)", lon: -4.78, lat: 50.08, heightM: 92, shape: "abbey_mount" },
+          { id: "texel_vlie_1604", name1584: "Texel, Vlielandt & Der Schellingk", modern: "Waddeneilanden", lon: -4.52, lat: 50.22, heightM: 66, shape: "flat_cape" }
+        ],
+        vertoningen: [
+          { btnCode: "I. 17 Provinciën", sub: "Willem Jansz. 1604", quote1584: "„Gedruckt t'Amsterdam bij Willem Jansz inden gulden Zonnewijser Anno 1604 — met de 17 Provinciewapens”", targetLandmarkIdx: 4, shipLon: -5.15, shipLat: 50.32 },
+          { btnCode: "II. Vlaenderen", sub: "Calis tot Sluys", quote1584: "„De Vlaemsche rede voor Duynkercken, Oostende ende Sluys”", targetLandmarkIdx: 1, shipLon: -5.88, shipLat: 50.35 },
+          { btnCode: "III. Zeelandia", sub: "Walcheren & Maas", quote1584: "„Walcheren, Schouwen ende de monding van de Maze op Blaeu's kaart van 1604”", targetLandmarkIdx: 2, shipLon: -5.48, shipLat: 50.32 },
+          { btnCode: "IV. Hollandia", sub: "Graadmeting Kust", quote1584: "„De rechte duinkust van Hollandt tussen de Maas en Texel waar Willem Blaeu zijn aard-graadmeting verrichtte”", targetLandmarkIdx: 3, shipLon: -5.05, shipLat: 50.32 },
+          { btnCode: "V. Zuyder Zee", sub: "Amsterdam & Hoorn", quote1584: "„De Zuyder Zee met de steden Amstelodamum, Hoorn, Enckhuysen ende Stavoren”", targetLandmarkIdx: 4, shipLon: -4.74, shipLat: 50.14 },
+          { btnCode: "VI. Wadden & Eems", sub: "Texel tot Amelant", quote1584: "„De zeegaten bij Texel, 't Vlie, Der Schellingk ende Amelant”", targetLandmarkIdx: 5, shipLon: -4.45, shipLat: 50.34 }
+        ]
+      },
+
+      // KAART 7 (BLAEU II): GRONINGA DOMINIUM — BARTHOLD WICHERINGE (1635)
+      {
+        id: 'blaeu_groninga_1635',
+        shortTitle: '★ Blaeu II: Groninga (1635)',
+        headerTitle: 'VIII. Willem & Joan Blaeu — Groninga Dominium, Auctore Bartholdo Wicheringe (1635)',
+        cartoucheTitle: '„GRONINGA DOMINIUM, Auctore Bartholdo Wicheringe • AMSTELODAMI Guiljelmus Blaeuw excudit”',
+        interiorTitle: 'H V N S I N G O   •   F I V E L I N G O   •   O L D A M B T',
+        interiorPos: [-5.45, 49.95],
+        seaTitle1: { text: 'M A R I S     G E R M A N I C I     P A R S', pos: [-5.75, 50.42] },
+        seaTitle2: { text: 'Gronninger   Watt          •          Watt', pos: [-5.55, 50.22] },
+        compassNorthScreenDeg: 0,
+        roseLonLat: [-5.42, 50.34],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.44,
+        minShipLat: 50.08,
+        isGroningaDollert: true,
+        landPolygons: [
+          {
+            color: '#dfd5b2',
+            pts: [
+              [-6.68, 49.56], [-6.68, 50.06], [-6.25, 50.08], [-6.12, 50.18], [-5.68, 50.19],
+              [-5.18, 50.15], [-4.96, 50.02], [-4.68, 49.88], [-4.98, 49.84], [-5.00, 49.68],
+              [-4.58, 49.68], [-4.45, 49.56]
+            ]
+          },
+          { color: '#d9ceb0', pts: [[-4.42, 49.94], [-4.15, 50.28], [-3.95, 50.40], [-3.95, 49.56], [-4.45, 49.56]] }
+        ],
+        shoals: [
+          { lon: -6.42, lat: 50.36, rx: 25, ry: 9, label: 'Schiermonick oogh', islands: true },
+          { lon: -5.98, lat: 50.34, rx: 16, ry: 7, label: 'Bosck', islands: true },
+          { lon: -5.62, lat: 50.36, rx: 15, ry: 7, label: 'Rottum', islands: true },
+          { lon: -5.08, lat: 50.39, rx: 24, ry: 9, label: 'Borcum', islands: true }
+        ],
+        monsters: [],
+        shields: [{ lon: -4.68, lat: 50.32, title: 'GRONINGA DOMINIUM', type: 'holland_lion' }],
+        soundings: [
+          { lon: -6.32, lat: 50.24, depth: "Lauwers" }, { lon: -5.75, lat: 50.25, depth: "Watt" },
+          { lon: -4.78, lat: 50.02, depth: "Eems" }
+        ],
+        landmarks: [
+          { id: "schiermonick", name1584: "Schiermonick oogh & Lauwers", modern: "Schiermonnikoog", lon: -6.42, lat: 50.36, heightM: 54, shape: "islands_castle" },
+          { id: "bosck_rottum", name1584: "Bosck & Rottum", modern: "Verdronken eiland Bosch & Rottum", lon: -5.82, lat: 50.35, heightM: 48, shape: "flat_cape" },
+          { id: "borcum_eems", name1584: "Borcum & Wester Eems", modern: "Borkum & Eemsmonding", lon: -5.08, lat: 50.39, heightM: 62, shape: "chapel_headland" },
+          { id: "groningen_stad", name1584: "Groningen (Martinitoren)", modern: "Stad Groningen", lon: -5.75, lat: 49.84, heightM: 96, shape: "abbey_mount" },
+          { id: "delfzijl_emden", name1584: "Delfzijl & Emden (Amasius)", modern: "Delfzijl & Emden", lon: -4.65, lat: 49.94, heightM: 78, shape: "castle_estuary" },
+          { id: "dollert_1277", name1584: "DOLLERT (Anno 1277)", modern: "De Dollard (33 verdronken dorpen)", lon: -4.78, lat: 49.76, heightM: 64, shape: "estuary" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Groninger Watt", sub: "Wicheringe & Blaeu", quote1584: "„GRONINGA DOMINIUM Auctore Bartholdo Wicheringe — Amstelodami Guiljelmus Blaeuw excudit”", targetLandmarkIdx: 3, shipLon: -5.65, shipLat: 50.26 },
+          { btnCode: "II. Eiland Bosck", sub: "Verdronken Wadden", quote1584: "„Het verdronken Waddeneiland Bosck (Bosch) tusschen Schiermonick oogh ende Rottum”", targetLandmarkIdx: 1, shipLon: -5.85, shipLat: 50.25 },
+          { btnCode: "III. De Lauwers", sub: "Schiermonick oogh", quote1584: "„De geul van de Lauwers langs Schiermonick oogh richting het Reitdiep”", targetLandmarkIdx: 0, shipLon: -6.32, shipLat: 50.24 },
+          { btnCode: "IV. Borcum & Eems", sub: "Amasius Fluvius", quote1584: "„Het eiland Borcum aan de monding van de Amasius Fluvius (De Eems)”", targetLandmarkIdx: 2, shipLon: -4.92, shipLat: 50.24 },
+          { btnCode: "V. Delfzijl & Emden", sub: "Fivelingo & Oostfriesl.", quote1584: "„De rede van Delfzijl ende Emden aan weerszijden van de Eems”", targetLandmarkIdx: 4, shipLon: -4.72, shipLat: 50.10 },
+          { btnCode: "VI. Dollert (1277)", sub: "33 Verdronken Dorpen", quote1584: "„DOLLERT: Anno 1277 Maris inundatione triginta tres pagi hoc in loco periere”", targetLandmarkIdx: 5, shipLon: -4.75, shipLat: 50.08 }
+        ]
+      },
+
+      // KAART 8 (BLAEU III): HET LICHT DER ZEE-VAERT (1608)
+      {
+        id: 'blaeu_licht_1608',
+        shortTitle: '★ Blaeu III: Licht der Zee-vaert',
+        headerTitle: 'IX. Willem Jansz. Blaeu — Het Licht der Zee-vaert: Zeegaten van Texel & \'t Vlie (1608)',
+        cartoucheTitle: '„Pascaarte vande Zee-gaten van Texel ende \'t Vlie, met de Vaer-wateren over de Zuyder-Zee naer Enckhuysen ende Amsterdam • Willem Jansz. 1608”',
+        interiorTitle: 'W E S T - V R I E S L A N D T   •   D E   Z V Y D E R   Z E E',
+        interiorPos: [-5.25, 50.34],
+        seaTitle1: { text: 'D E     N O O R D T     Z E E', pos: [-5.65, 49.68] },
+        seaTitle2: { text: 'Het Licht der Zee-vaert • In den Vergulden Zonnewijser (1608)', pos: [-4.95, 49.60] },
+        compassNorthScreenDeg: -90,
+        roseLonLat: [-5.55, 49.76],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.05,
+        landPolygons: [
+          { color: '#dfd3a4', pts: [[-4.95, 50.48], [-4.98, 49.94], [-4.55, 49.92], [-3.95, 49.90], [-3.95, 50.48], [-4.45, 50.42], [-4.72, 50.18], [-4.90, 50.32]] },
+          { color: '#c9d6a5', pts: [[-6.68, 50.48], [-6.68, 50.12], [-5.95, 50.16], [-5.80, 50.48]] }
+        ],
+        shoals: [
+          { lon: -5.18, lat: 49.95, rx: 28, ry: 12, label: 'Texel', islands: true },
+          { lon: -5.68, lat: 49.96, rx: 26, ry: 11, label: 'Vlielandt', islands: true },
+          { lon: -6.22, lat: 49.98, rx: 30, ry: 11, label: 'Der Schellingk', islands: true }
+        ],
+        monsters: [{ lon: -6.25, lat: 49.68, type: 'whale_spout' }],
+        shields: [{ lon: -4.35, lat: 50.30, title: 'HOLLANDIA', type: 'holland_lion' }],
+        soundings: [{ lon: -5.02, lat: 49.88, depth: "12" }, { lon: -5.92, lat: 49.92, depth: "11" }],
+        landmarks: [
+          { id: "huisduinen_marsdiep", name1584: "Huisduinen & Spanjaerts gat", modern: "Den Helder & Marsdiep", lon: -4.98, lat: 49.94, heightM: 68, shape: "high_bluff" },
+          { id: "texel_rede", name1584: "De Rede van Texel", modern: "VOC-Rede van Texel", lon: -5.18, lat: 49.96, heightM: 62, shape: "islands_castle" },
+          { id: "vlielandt_vlie", name1584: "Vlielandt & Het Vlie", modern: "Vlieland", lon: -5.68, lat: 49.96, heightM: 58, shape: "flat_cape" },
+          { id: "brandaris", name1584: "Der Schellingk (Brandaris)", modern: "Terschelling & Brandaris", lon: -6.22, lat: 49.98, heightM: 95, shape: "abbey_mount" },
+          { id: "enckhuysen_blaeu", name1584: "Enckhuysen & Hoorn", modern: "West-Friesland", lon: -4.82, lat: 50.22, heightM: 84, shape: "castle_estuary" },
+          { id: "amsterdam_ij", name1584: "Amstelredam ('t IJ)", modern: "Amsterdam", lon: -4.25, lat: 50.18, heightM: 90, shape: "chapel_headland" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Licht Zee-vaert", sub: "Willem Blaeu 1608", quote1584: "„Het Licht der Zee-vaert (1608) door Willem Jansz.”", targetLandmarkIdx: 1, shipLon: -5.15, shipLat: 49.78 },
+          { btnCode: "II. Marsdiep", sub: "Huisduinen & Texel", quote1584: "„Verthooninghe van Huisduinen en de duinen van Texel”", targetLandmarkIdx: 0, shipLon: -4.98, shipLat: 49.76 },
+          { btnCode: "III. Rede v. Texel", sub: "VOC Oostindiëvaarders", quote1584: "„De beroemde Rede van Texel waar de retourvloot van de VOC ankerde”", targetLandmarkIdx: 1, shipLon: -5.22, shipLat: 49.82 },
+          { btnCode: "IV. Het Vlie", sub: "Brandaris (1594)", quote1584: "„De hoge vuurtoren Brandaris op Der Schellingk”", targetLandmarkIdx: 3, shipLon: -6.05, shipLat: 49.78 },
+          { btnCode: "V. Enckhuysen", sub: "Enckhuyser Sandt", quote1584: "„De vaargeul langs het Wieringer Vlaack naar Enckhuysen”", targetLandmarkIdx: 4, shipLon: -5.05, shipLat: 49.88 },
+          { btnCode: "VI. Amstelredam", sub: "Over Pampus naar 't IJ", quote1584: "„De aanloop naar Amstelredam en het Damrak”", targetLandmarkIdx: 5, shipLon: -4.45, shipLat: 49.80 }
+        ]
+      },
+
+      // KAART 9 (BLAEU IV): JOAN BLAEU — ATLAS MAIOR (1662–1665)
+      {
+        id: 'blaeu_atlas_maior_1662',
+        shortTitle: '★ Blaeu IV: Atlas Maior (1662)',
+        headerTitle: 'X. Dr. Joan Blaeu — Atlas Maior sive Cosmographia Blaviana: Belgica Foederata (1662–1665)',
+        cartoucheTitle: '„BELGICA FOEDERATA • Uit de 11-delige Atlas Maior sive Cosmographia Blaviana door Dr. Joan Blaeu aan de Bloemgracht te Amsterdam • 1662”',
+        interiorTitle: 'B E L G I C A     F O E D E R A T A     ( A T L A S     M A I O R )',
+        interiorPos: [-5.15, 50.36],
+        seaTitle1: { text: 'M A R E     G E R M A N I C U M     ( N O O R D T - Z E E )', pos: [-5.55, 49.70] },
+        seaTitle2: { text: 'Graadmeting van Willem Blaeu & Snellius: 1° Meridiaanboog = 15 Duijtsche Mijlen', pos: [-5.25, 49.60] },
+        compassNorthScreenDeg: -90,
+        roseLonLat: [-5.40, 49.74],
+        bounds: { lonMin: -6.68, lonMax: -3.95, latMin: 49.56, latMax: 50.48 },
+        maxShipLat: 50.02,
+        landPolygons: [
+          { color: '#e4d6a7', pts: [[-6.68, 50.48], [-6.68, 49.96], [-6.05, 50.02], [-5.55, 49.94], [-4.85, 49.92], [-4.15, 49.84], [-3.95, 49.80], [-3.95, 50.48]] }
+        ],
+        shoals: [
+          { lon: -6.18, lat: 49.88, rx: 34, ry: 11, label: 'Texel, Vlielandt & Terschelling', islands: true },
+          { lon: -4.45, lat: 49.78, rx: 32, ry: 11, label: 'Zeeuwse Banken', islands: false }
+        ],
+        monsters: [{ lon: -6.28, lat: 49.64, type: 'whale_spout' }],
+        shields: [
+          { lon: -5.85, lat: 50.25, title: 'BELGICA FOEDERATA', type: 'holland_lion' },
+          { lon: -4.35, lat: 50.24, title: 'OFFICINA BLAVIANA', type: 'portugal_royal' }
+        ],
+        soundings: [{ lon: -6.12, lat: 49.78, depth: "15" }, { lon: -4.95, lat: 49.80, depth: "12" }],
+        landmarks: [
+          { id: "texel_meridiaan", name1584: "Texel (Noordpunt Graadmeting)", modern: "Texel", lon: -6.15, lat: 49.94, heightM: 68, shape: "islands_castle" },
+          { id: "alkmaar_hoorn", name1584: "Alkmaar & Uitgeest", modern: "Alkmaar (Geboortestreek Willem Blaeu)", lon: -5.75, lat: 50.06, heightM: 76, shape: "abbey_mount" },
+          { id: "bloemgracht_amsterdam", name1584: "Amsterdam (Bloemgracht)", modern: "Joan Blaeu's Drukkerij", lon: -5.45, lat: 50.14, heightM: 98, shape: "castle_estuary" },
+          { id: "leyden_snellius", name1584: "Leyden & Katwijck", modern: "Leiden (Snellius)", lon: -5.15, lat: 49.96, heightM: 72, shape: "bay_town" },
+          { id: "maasmond_briel", name1584: "De Maze & Den Briel", modern: "Maasmonding (Zuidpunt Graadmeting)", lon: -4.75, lat: 49.92, heightM: 66, shape: "chapel_headland" },
+          { id: "middelburg_vlissingen", name1584: "Middelburg & Vlissingen", modern: "Walcheren", lon: -4.25, lat: 49.86, heightM: 82, shape: "high_bluff" }
+        ],
+        vertoningen: [
+          { btnCode: "I. Atlas Maior", sub: "Joan Blaeu 1662", quote1584: "„Atlas Maior sive Cosmographia Blaviana (1662–1665) — gedrukt aan de Bloemgracht te Amsterdam”", targetLandmarkIdx: 2, shipLon: -5.45, shipLat: 49.78 },
+          { btnCode: "II. Graadmeting N", sub: "Texel tot de Maas", quote1584: "„Willem Blaeu mat langs het Noordzeestrand van Texel tot de Maas een meridiaanboog”", targetLandmarkIdx: 0, shipLon: -6.12, shipLat: 49.76 },
+          { btnCode: "III. Alkmaar 1571", sub: "Geboortegrond Blaeu", quote1584: "„De kust van Kennemerland bij Alkmaar en Uitgeest”", targetLandmarkIdx: 1, shipLon: -5.75, shipLat: 49.80 },
+          { btnCode: "IV. Leyden & Rijn", sub: "Snellius Triangulatie", quote1584: "„De duinkust bij Katwijck en Leyden”", targetLandmarkIdx: 3, shipLon: -5.15, shipLat: 49.78 },
+          { btnCode: "V. Graadmeting Z", sub: "Monding van de Maas", quote1584: "„Het zuidelijke eindpunt van Blaeu's kustmeting bij de Maze”", targetLandmarkIdx: 4, shipLon: -4.75, shipLat: 49.76 },
+          { btnCode: "VI. VOC Zeelandia", sub: "Rede van Vlissingen", quote1584: "„De aanloop naar Walcheren en Vlissingen”", targetLandmarkIdx: 5, shipLon: -4.28, shipLat: 49.72 }
+        ]
+      }
+    ];
+
+    let activeAtlasIndex = 6;
+    let LANDMARKS = WAGHENAER_ATLAS[6].landmarks;
+    let VERTONINGEN = WAGHENAER_ATLAS[6].vertoningen;
+
+    let chartCanvas, chartCtx, profileCanvas, profileCtx;
+    let isDraggingShip = false;
+    let shipScene, shipCamera, shipRenderer, galleon3DGroup, galleonHullGroup;
+
+    function initShip3DOverlay() {
+      const container = document.getElementById('ship-3d-overlay');
+      if (!container) return;
+      const w = container.clientWidth || 600;
+      const h = container.clientHeight || 380;
+
+      shipScene = new THREE.Scene();
+      shipCamera = new THREE.OrthographicCamera(0, w, 0, -h, -500, 1000);
+      shipCamera.position.set(0, 0, 300);
+      shipCamera.lookAt(0, 0, 0);
+
+      shipRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      shipRenderer.setSize(w, h);
+      shipRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      shipRenderer.setClearColor(0x000000, 0);
+      container.appendChild(shipRenderer.domElement);
+
+      shipScene.add(new THREE.AmbientLight(0xfff4dc, 0.78));
+      const sun = new THREE.DirectionalLight(0xffe6b0, 1.25);
+      sun.position.set(120, -80, 260);
+      shipScene.add(sun);
+
+      const rim = new THREE.DirectionalLight(0xd4af37, 0.55);
+      rim.position.set(-150, 100, 140);
+      shipScene.add(rim);
+
+      galleon3DGroup = new THREE.Group();
+      galleonHullGroup = buildHMSVictorySpanishGalleon3D();
+      galleon3DGroup.add(galleonHullGroup);
+      galleon3DGroup.rotation.x = -0.82;
+      shipScene.add(galleon3DGroup);
+    }
+
+    function buildHMSVictorySpanishGalleon3D() {
+      const ship = new THREE.Group();
+      const matDarkHull = new THREE.MeshStandardMaterial({ color: 0x3b2313, roughness: 0.65, metalness: 0.1 });
+      const matOchreStripe = new THREE.MeshStandardMaterial({ color: 0xd99b26, roughness: 0.45, metalness: 0.25 });
+      const matCrimson = new THREE.MeshStandardMaterial({ color: 0x8f1d1d, roughness: 0.55, metalness: 0.15 });
+      const matDeck = new THREE.MeshStandardMaterial({ color: 0xc29b61, roughness: 0.8 });
+      const matGold = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.75 });
+      const matMast = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.6 });
+      const matSail = new THREE.MeshStandardMaterial({ color: 0xfdf6e2, roughness: 0.6, side: THREE.DoubleSide });
+      const matCannon = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
+
+      const hullGeo = new THREE.CylinderGeometry(11, 7.5, 48, 16);
+      hullGeo.rotateZ(Math.PI / 2);
+      hullGeo.scale(1.0, 0.62, 0.55);
+      const hullMesh = new THREE.Mesh(hullGeo, matDarkHull);
+      hullMesh.position.set(0, 0, 5);
+      ship.add(hullMesh);
+
+      const stripeGeo = new THREE.CylinderGeometry(11.3, 9.2, 46, 16);
+      stripeGeo.rotateZ(Math.PI / 2);
+      stripeGeo.scale(1.0, 0.63, 0.22);
+      const stripeMesh = new THREE.Mesh(stripeGeo, matOchreStripe);
+      stripeMesh.position.set(0, 0, 7.2);
+      ship.add(stripeMesh);
+
+      const deckMesh = new THREE.Mesh(new THREE.BoxGeometry(44, 12.5, 2.2), matDeck);
+      deckMesh.position.set(0, 0, 9.2);
+      ship.add(deckMesh);
+
+      const poopMesh = new THREE.Mesh(new THREE.BoxGeometry(15, 11.8, 7.5), matCrimson);
+      poopMesh.position.set(-16.5, 0, 13.5);
+      ship.add(poopMesh);
+
+      const transomMesh = new THREE.Mesh(new THREE.BoxGeometry(2.2, 11.2, 8.5), matGold);
+      transomMesh.position.set(-24.2, 0, 16.5);
+      ship.add(transomMesh);
+
+      const foreGeo = new THREE.ConeGeometry(8.2, 16, 12);
+      foreGeo.rotateZ(-Math.PI / 2);
+      foreGeo.scale(1, 0.85, 0.65);
+      const foreMesh = new THREE.Mesh(foreGeo, matCrimson);
+      foreMesh.position.set(22, 0, 11.5);
+      ship.add(foreMesh);
+
+      const bowspritGeo = new THREE.CylinderGeometry(0.6, 1.3, 24, 8);
+      bowspritGeo.rotateZ(-Math.PI / 3.1);
+      const bowspritMesh = new THREE.Mesh(bowspritGeo, matMast);
+      bowspritMesh.position.set(30, 0, 17);
+      ship.add(bowspritMesh);
+
+      for (let i = -2; i <= 2; i++) {
+        const cx = i * 6.5;
+        [-1, 1].forEach((side) => {
+          const canGeo = new THREE.CylinderGeometry(0.65, 0.85, 4.5, 8);
+          canGeo.rotateX(Math.PI / 2);
+          const canMesh = new THREE.Mesh(canGeo, matCannon);
+          canMesh.position.set(cx, side * 7.2, 7.6);
+          ship.add(canMesh);
+        });
+      }
+
+      function createBillowingSail(width, height, belly, hasCross) {
+        const sailGroup = new THREE.Group();
+        const geo = new THREE.PlaneGeometry(width, height, 12, 8);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const u = pos.getX(i) / (width * 0.5);
+          const v = pos.getY(i) / (height * 0.5);
+          pos.setZ(i, (1 - u * u * 0.45) * (1 - v * v * 0.35) * belly);
+        }
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, matSail);
+        mesh.rotation.y = Math.PI / 2;
+        sailGroup.add(mesh);
+
+        if (hasCross) {
+          const vBar = new THREE.Mesh(new THREE.BoxGeometry(0.6, width * 0.58, 1.4), matCrimson);
+          vBar.position.set(belly * 0.92, 0, 0);
+          const hBar = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.4, height * 0.58), matCrimson);
+          hBar.position.set(belly * 0.92, 0, 0);
+          sailGroup.add(vBar, hBar);
+        }
+        return sailGroup;
+      }
+
+      const mastSpecs = [
+        { x: 13,  h: 36, r: 1.1, sails: [{ z: 18, w: 17, sh: 10, b: 3.8, cross: false }, { z: 29, w: 13, sh: 8, b: 2.8, cross: true }] },
+        { x: -1,  h: 44, r: 1.35, sails: [{ z: 20, w: 22, sh: 12, b: 4.6, cross: true },  { z: 33, w: 16, sh: 9.5, b: 3.4, cross: false }] },
+        { x: -14, h: 32, r: 0.95, sails: [{ z: 21, w: 14, sh: 9,  b: 3.0, cross: false }] }
+      ];
+
+      mastSpecs.forEach((m) => {
+        const mGeo = new THREE.CylinderGeometry(m.r * 0.65, m.r, m.h, 10);
+        mGeo.rotateX(Math.PI / 2);
+        const mMesh = new THREE.Mesh(mGeo, matMast);
+        mMesh.position.set(m.x, 0, 10 + m.h * 0.5);
+        ship.add(mMesh);
+
+        m.sails.forEach((s) => {
+          const sail = createBillowingSail(s.w, s.sh, s.b, s.cross);
+          sail.position.set(m.x, 0, 10 + s.z);
+          ship.add(sail);
+        });
+      });
+
+      return ship;
+    }
+
+    function toggleSketchfabDrawer() {
+      const dr = document.getElementById('sketchfab-drawer');
+      if (dr) dr.classList.toggle('hidden');
+    }
+
+    function updateShipScale(val) {
+      STATE.shipScale = parseFloat(val);
+    }
+
+    function fireBroadside() {
+      STATE.cannonFlashTimer = 28;
+    }
+
+    function toggleWaghenaerBioModal() {
+      const dr = document.getElementById('waghenaer-bio-drawer');
+      if (dr) dr.classList.toggle('hidden');
+    }
+
+    function toggleBlaeuBioModal() {
+      const dr = document.getElementById('blaeu-bio-drawer');
+      if (dr) dr.classList.toggle('hidden');
+    }
+
+    function selectAtlasChart(chartIdx) {
+      activeAtlasIndex = chartIdx;
+      const chart = WAGHENAER_ATLAS[chartIdx];
+
+      for (let i = 0; i < WAGHENAER_ATLAS.length; i++) {
+        const b = document.getElementById('atlas-btn-' + i);
+        if (b) b.classList.toggle('active', i === chartIdx);
+      }
+
+      CHART_BOUNDS = chart.bounds;
+      LANDMARKS = chart.landmarks;
+      VERTONINGEN = chart.vertoningen;
+      STATE.shipWake = [];
+
+      document.getElementById('chart-header-title').textContent = chart.headerTitle;
+      document.getElementById('chart-cartouche-badge').innerHTML = `⚓ <strong>${chart.shortTitle}:</strong> ${chart.cartoucheTitle}`;
+
+      const rotLabels = {
+        '0': 'Kompas-oriëntatie: Noord ↑ (SEPTENTRIO boven)',
+        '58': 'Kompas-oriëntatie: Noord ↗ (58° rechtsboven, zoals op Blaeu\'s 1604 gravure)',
+        '-90': 'Kompas-oriëntatie: Oost ↑ (Noord ← links op de paskaart)',
+        '180': 'Kompas-oriëntatie: Zuid ↑ (Noord ↓ onder, zoals op de 1584 gravure)',
+        '-135': 'Kompas-oriëntatie: Zuidoost ↑ (Kust boven, Noordzee onder)',
+        '90': 'Kompas-oriëntatie: West ↑ (Noord → rechts, Teemse boven)',
+        '-145': 'Kompas-oriëntatie: Zuidoost ↑ (Zuiderzee boven, Noordzee onder)'
+      };
+      document.getElementById('chart-north-indicator').textContent =
+        rotLabels[String(chart.compassNorthScreenDeg)] || `Kompas-rotatie: ${chart.compassNorthScreenDeg}°`;
+
+      const sel = document.getElementById('select-landmark');
+      sel.innerHTML = '';
+      LANDMARKS.forEach((lm, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${lm.name1584} (${lm.modern})`;
+        sel.appendChild(opt);
+      });
+
+      const grid = document.getElementById('vertoning-buttons-grid');
+      grid.innerHTML = '';
+      VERTONINGEN.forEach((v, idx) => {
+        const btn = document.createElement('button');
+        btn.id = 'vert-btn-' + idx;
+        btn.className = 'btn-preset px-2 py-1.5 rounded border border-slate-700 bg-slate-900/70 text-left';
+        btn.onclick = () => selectVertoning(idx);
+        btn.innerHTML = `
+          <div class="text-[11px] font-bold font-mono-code text-amber-400 truncate">${v.btnCode}</div>
+          <div class="text-[10px] text-slate-400 truncate">${v.sub}</div>
+        `;
+        grid.appendChild(btn);
+      });
+
+      selectVertoning(0);
+    }
+
+    function initWaghenaer2D() {
+      chartCanvas = document.getElementById('chart-canvas');
+      chartCtx = chartCanvas.getContext('2d');
+      profileCanvas = document.getElementById('profile-canvas');
+      profileCtx = profileCanvas.getContext('2d');
+
+      initShip3DOverlay();
+
+      chartCanvas.addEventListener('mousedown', onChartPointerDown);
+      window.addEventListener('mousemove', onChartPointerMove);
+      window.addEventListener('mouseup', () => { isDraggingShip = false; });
+
+      chartCanvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) onChartPointerDown(e.touches[0]);
+      }, { passive: true });
+      chartCanvas.addEventListener('touchmove', (e) => {
+        if (isDraggingShip && e.touches.length === 1) onChartPointerMove(e.touches[0]);
+      }, { passive: true });
+      window.addEventListener('touchend', () => { isDraggingShip = false; });
+
+      window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+        const step = 0.035;
+        let dLon = 0, dLat = 0;
+        if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') dLon = -step;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dLon =  step;
+        if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') dLat =  step * 0.75;
+        if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') dLat = -step * 0.75;
+        if (dLon !== 0 || dLat !== 0) {
+          e.preventDefault();
+          moveShipToLonLat(STATE.shipLon + dLon, STATE.shipLat + dLat);
+        }
+      });
+
+      selectAtlasChart(6);
+    }
+
+    function lonLatToCanvas(lon, lat, width, height) {
+      const x = ((lon - CHART_BOUNDS.lonMin) / (CHART_BOUNDS.lonMax - CHART_BOUNDS.lonMin)) * width;
+      const y = ((CHART_BOUNDS.latMax - lat) / (CHART_BOUNDS.latMax - CHART_BOUNDS.latMin)) * height;
+      return { x, y };
+    }
+
+    function canvasToLonLat(x, y, width, height) {
+      const lon = CHART_BOUNDS.lonMin + (x / width) * (CHART_BOUNDS.lonMax - CHART_BOUNDS.lonMin);
+      const lat = CHART_BOUNDS.latMax - (y / height) * (CHART_BOUNDS.latMax - CHART_BOUNDS.latMin);
+      return { lon, lat };
+    }
+
+    function onChartPointerDown(e) {
+      const rect = chartCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      for (let i = 0; i < LANDMARKS.length; i++) {
+        const pt = lonLatToCanvas(LANDMARKS[i].lon, LANDMARKS[i].lat, rect.width, rect.height);
+        if (Math.hypot(mx - pt.x, my - pt.y) < 16) {
+          STATE.selectedLandmarkIndex = i;
+          document.getElementById('select-landmark').value = i;
+          syncNavigationTelemetry();
+          drawWaghenaerAll();
+          return;
+        }
+      }
+
+      isDraggingShip = true;
+      updateShipFromPointer(mx, my, rect.width, rect.height);
+    }
+
+    function onChartPointerMove(e) {
+      if (!isDraggingShip) return;
+      const rect = chartCanvas.getBoundingClientRect();
+      updateShipFromPointer(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+    }
+
+    function updateShipFromPointer(mx, my, w, h) {
+      const coords = canvasToLonLat(mx, my, w, h);
+      moveShipToLonLat(coords.lon, coords.lat);
+    }
+
+    function moveShipToLonLat(rawLon, rawLat) {
+      const chart = WAGHENAER_ATLAS[activeAtlasIndex];
+      const maxLat = chart && chart.maxShipLat ? chart.maxShipLat : 50.24;
+      const minLat = chart && chart.minShipLat ? chart.minShipLat : (CHART_BOUNDS.latMin + 0.05);
+      const newLon = Math.max(CHART_BOUNDS.lonMin + 0.08, Math.min(CHART_BOUNDS.lonMax - 0.08, rawLon));
+      const newLat = Math.max(minLat, Math.min(maxLat, rawLat));
+
+      const dLon = newLon - STATE.shipLon;
+      const dLat = newLat - STATE.shipLat;
+      if (Math.hypot(dLon, dLat) > 0.0015) {
+        STATE.targetHeadingRad = Math.atan2(-dLat, dLon);
+        STATE.shipWake.push({ lon: STATE.shipLon, lat: STATE.shipLat });
+        if (STATE.shipWake.length > 28) STATE.shipWake.shift();
+      }
+
+      STATE.shipLon = newLon;
+      STATE.shipLat = newLat;
+      syncNavigationTelemetry();
+      drawWaghenaerAll();
+    }
+
+    function selectVertoning(idx) {
+      STATE.activeVertoningIndex = idx;
+      for (let i = 0; i < 6; i++) {
+        const btn = document.getElementById('vert-btn-' + i);
+        if (btn) btn.classList.toggle('active', i === idx);
+      }
+      const v = VERTONINGEN[idx];
+      STATE.shipLon = v.shipLon;
+      STATE.shipLat = v.shipLat;
+      STATE.selectedLandmarkIndex = v.targetLandmarkIdx;
+      document.getElementById('select-landmark').value = v.targetLandmarkIdx;
+      document.getElementById('vertoning-quote').textContent = v.quote1584;
+
+      const lm = LANDMARKS[v.targetLandmarkIdx];
+      STATE.targetHeadingRad = Math.atan2(-(lm.lat - STATE.shipLat), lm.lon - STATE.shipLon);
+      syncNavigationTelemetry();
+      drawWaghenaerAll();
+    }
+
+    function onSelectLandmark() {
+      STATE.selectedLandmarkIndex = parseInt(document.getElementById('select-landmark').value, 10);
+      syncNavigationTelemetry();
+      drawWaghenaerAll();
+    }
+
+    function get32WindFromAzimuth(deg) {
+      const norm = ((deg % 360) + 360) % 360;
+      const idx = Math.round(norm / 11.25) % 32;
+      return DUTCH_32_WINDS[idx];
+    }
+
+    function computeNauticalMetrics(shipLon, shipLat, targetLon, targetLat) {
+      const chart = WAGHENAER_ATLAS[activeAtlasIndex];
+      const northOffsetDeg = chart ? chart.compassNorthScreenDeg : 0;
+      const meanLatRad = ((shipLat + targetLat) * 0.5 * Math.PI) / 180;
+      const dLatDeg = targetLat - shipLat;
+      const dLonDeg = (targetLon - shipLon) * Math.cos(meanLatRad);
+      const distDeg = Math.hypot(dLonDeg, dLatDeg);
+
+      const screenAzRad = Math.atan2(dLonDeg, dLatDeg);
+      const screenAzDeg = (screenAzRad * 180) / Math.PI;
+      const azDeg = ((screenAzDeg - northOffsetDeg) % 360 + 360) % 360;
+
+      return {
+        azDeg,
+        dutchMiles: distDeg * 15.0,
+        spanishMiles: distDeg * 17.5,
+        km: distDeg * 111.12,
+        nm: distDeg * 60.0
+      };
+    }
+
+    function syncNavigationTelemetry() {
+      const lm = LANDMARKS[STATE.selectedLandmarkIndex] || LANDMARKS[0];
+      const m = computeNauticalMetrics(STATE.shipLon, STATE.shipLat, lm.lon, lm.lat);
+      const wind = get32WindFromAzimuth(m.azDeg);
+
+      STATE.azimuthDeg = m.azDeg;
+      document.getElementById('slider-azimuth').value = m.azDeg.toFixed(1);
+      updateVectorRay3D();
+
+      document.getElementById('nav-wind-dutch').textContent = `${wind.old} (${wind.code})`;
+      document.getElementById('nav-azimuth').textContent = `Azimut θ = ${m.azDeg.toFixed(1).replace('.', ',')}° naar ${lm.name1584}`;
+      document.getElementById('nav-dutch-miles').textContent = `${m.dutchMiles.toFixed(2).replace('.', ',')} mijl`;
+      document.getElementById('nav-spanish-miles').textContent = `${m.spanishMiles.toFixed(2).replace('.', ',')} mijl`;
+      document.getElementById('nav-km').textContent = `≈ ${m.km.toFixed(1).replace('.', ',')} km (${m.nm.toFixed(1).replace('.', ',')} NM)`;
+
+      document.getElementById('vertoning-modern').textContent =
+        `Peiling op ${lm.name1584}: ${m.azDeg.toFixed(1).replace('.', ',')}° (${wind.code}) • Afstand: ${m.dutchMiles.toFixed(2).replace('.', ',')} Duijtsche mijl`;
+
+      const headingEl = document.getElementById('ship-heading-hud');
+      if (headingEl) headingEl.textContent = `${m.azDeg.toFixed(1).replace('.', ',')}° (${wind.code})`;
+    }
+
+    function drawWaghenaerAll() {
+      drawPaskaartCanvas();
+      drawCoastalProfileCanvas();
+    }
+
+    function drawPaskaartCanvas() {
+      if (!chartCanvas) return;
+      const chart = WAGHENAER_ATLAS[activeAtlasIndex];
+      const rect = chartCanvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = rect.width || 600;
+      const h = rect.height || 360;
+
+      if (chartCanvas.width !== Math.floor(w * dpr) || chartCanvas.height !== Math.floor(h * dpr)) {
+        chartCanvas.width = Math.floor(w * dpr);
+        chartCanvas.height = Math.floor(h * dpr);
+      }
+
+      const ctx = chartCtx;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const seaGrad = ctx.createLinearGradient(0, 0, w, h);
+      seaGrad.addColorStop(0, '#eadec2');
+      seaGrad.addColorStop(0.5, '#e2d3b1');
+      seaGrad.addColorStop(1, '#d8c59e');
+      ctx.fillStyle = seaGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(72, 95, 102, 0.15)';
+      ctx.lineWidth = 1;
+      for (let wy = 18; wy < h; wy += 22) {
+        for (let wx = 15; wx < w; wx += 48) {
+          ctx.beginPath();
+          ctx.moveTo(wx, wy);
+          ctx.quadraticCurveTo(wx + 8, wy - 2, wx + 16, wy);
+          ctx.stroke();
+        }
+      }
+
+      const rosePos = lonLatToCanvas(chart.roseLonLat[0], chart.roseLonLat[1], w, h);
+      const northRotRad = (chart.compassNorthScreenDeg * Math.PI) / 180;
+
+      if (document.getElementById('chk-rhumb').checked) {
+        for (let i = 0; i < 32; i++) {
+          const ang = northRotRad + (i * 11.25 * Math.PI) / 180;
+          ctx.beginPath();
+          ctx.moveTo(rosePos.x, rosePos.y);
+          ctx.lineTo(rosePos.x + Math.sin(ang) * 1200, rosePos.y - Math.cos(ang) * 1200);
+          ctx.strokeStyle = (i % 8 === 0) ? 'rgba(138, 52, 35, 0.42)' : (i % 4 === 0 ? 'rgba(42, 78, 86, 0.34)' : 'rgba(85, 74, 56, 0.20)');
+          ctx.lineWidth = (i % 8 === 0) ? 1.2 : 0.7;
+          ctx.stroke();
+        }
+      }
+
+      chart.landPolygons.forEach((poly) => {
+        ctx.save();
+        ctx.beginPath();
+        poly.pts.forEach((pt, idx) => {
+          const c = lonLatToCanvas(pt[0], pt[1], w, h);
+          if (idx === 0) ctx.moveTo(c.x, c.y);
+          else ctx.lineTo(c.x, c.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = poly.color || '#d7cfa6';
+        ctx.fill();
+        ctx.strokeStyle = '#3f3222';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      if (chart.interiorTitle) {
+        ctx.save();
+        const titlePos = lonLatToCanvas(chart.interiorPos[0], chart.interiorPos[1], w, h);
+        ctx.fillStyle = '#3b2c1d';
+        ctx.font = 'bold 13px "Cinzel", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(chart.interiorTitle, titlePos.x, titlePos.y);
+        ctx.restore();
+      }
+
+      (chart.shoals || []).forEach((sh) => {
+        const sp = lonLatToCanvas(sh.lon, sh.lat, w, h);
+        ctx.save();
+        ctx.fillStyle = 'rgba(186, 152, 98, 0.36)';
+        ctx.strokeStyle = '#6b5335';
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.ellipse(sp.x, sp.y, sh.rx, sh.ry, -0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      });
+
+      (chart.shields || []).forEach((sh) => {
+        const p = lonLatToCanvas(sh.lon, sh.lat, w, h);
+        drawHeraldicShield1584(ctx, p.x, p.y, sh.title, sh.type);
+      });
+      (chart.monsters || []).forEach((mo) => {
+        const p = lonLatToCanvas(mo.lon, mo.lat, w, h);
+        drawSeaMonster1584(ctx, p.x, p.y, mo.type);
+      });
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(55, 42, 28, 0.78)';
+      if (chart.seaTitle1) {
+        ctx.font = 'italic 600 13px "Cormorant Garamond", serif';
+        const p1 = lonLatToCanvas(chart.seaTitle1.pos[0], chart.seaTitle1.pos[1], w, h);
+        ctx.fillText(chart.seaTitle1.text, p1.x, p1.y);
+      }
+      if (chart.seaTitle2) {
+        ctx.font = 'italic 700 13.5px "Cormorant Garamond", serif';
+        const p2 = lonLatToCanvas(chart.seaTitle2.pos[0], chart.seaTitle2.pos[1], w, h);
+        ctx.fillText(chart.seaTitle2.text, p2.x, p2.y);
+      }
+      ctx.restore();
+
+      if (document.getElementById('chk-soundings').checked) {
+        ctx.save();
+        ctx.fillStyle = '#4a3d2c';
+        ctx.font = '600 10px "Cormorant Garamond", serif';
+        (chart.soundings || []).forEach((s) => {
+          const p = lonLatToCanvas(s.lon, s.lat, w, h);
+          ctx.fillText(s.depth, p.x, p.y);
+        });
+        ctx.restore();
+      }
+
+      if (chart.isBlaeuHeraldic17) {
+        ctx.save();
+        const boxW = Math.min(265, w * 0.44);
+        const boxX = w - boxW - 10;
+        const boxY = 10;
+        ctx.fillStyle = 'rgba(244, 234, 208, 0.94)';
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, 62, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 8.5px "Cinzel", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('INFERIORIS GERMANIÆ PROVINCIARUM NOVA DESCRIPTIO', boxX + boxW / 2, boxY + 13);
+
+        const shieldColors = ['#dc2626', '#eab308', '#1d4ed8', '#15803d', '#9333ea', '#b91c1c', '#d97706', '#0284c7', '#dc2626'];
+        for (let s = 0; s < 9; s++) {
+          const sx = boxX + 14 + s * ((boxW - 28) / 8.2);
+          ctx.fillStyle = shieldColors[s % shieldColors.length];
+          ctx.fillRect(sx, boxY + 18, 12, 14);
+          ctx.strokeStyle = '#451a03';
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(sx, boxY + 18, 12, 14);
+        }
+        ctx.fillStyle = '#451a03';
+        ctx.font = 'italic 600 9.5px "Cormorant Garamond", serif';
+        ctx.fillText('„Gedruckt t\'Amsterdam bij Willem Jansz inden gulden Zonnewijser 1604”', boxX + boxW / 2, boxY + 46);
+        ctx.restore();
+      }
+
+      if (chart.isGroningaDollert) {
+        const dolPt = lonLatToCanvas(-4.78, 49.76, w, h);
+        ctx.save();
+        ctx.fillStyle = 'rgba(180, 83, 9, 0.14)';
+        ctx.strokeStyle = 'rgba(153, 27, 27, 0.45)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.ellipse(dolPt.x, dolPt.y, 64, 34, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#451a03';
+        ctx.font = 'bold 11px "Cinzel", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('D O L L E R T', dolPt.x, dolPt.y - 10);
+        ctx.font = 'italic 600 9.5px "Cormorant Garamond", serif';
+        ctx.fillText('„Anno 1277 Maris inundatione', dolPt.x, dolPt.y + 3);
+        ctx.fillText('triginta tres pagi hoc in loco periere”', dolPt.x, dolPt.y + 14);
+        ctx.restore();
+      }
+
+      drawCompassRose1584(ctx, rosePos.x, rosePos.y, 30, northRotRad);
+      drawScaleCartouche1584(ctx, w - 185, h - 68, w);
+
+      const shipPt = lonLatToCanvas(STATE.shipLon, STATE.shipLat, w, h);
+      const targetLm = LANDMARKS[STATE.selectedLandmarkIndex] || LANDMARKS[0];
+      const targetPt = lonLatToCanvas(targetLm.lon, targetLm.lat, w, h);
+
+      if (document.getElementById('chk-fov').checked) {
+        ctx.save();
+        const angleToTarget = Math.atan2(targetPt.y - shipPt.y, targetPt.x - shipPt.x);
+        const fovHalf = (35 * Math.PI) / 180;
+        ctx.beginPath();
+        ctx.moveTo(shipPt.x, shipPt.y);
+        ctx.arc(shipPt.x, shipPt.y, 180, angleToTarget - fovHalf, angleToTarget + fovHalf);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(212, 175, 55, 0.16)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(180, 120, 30, 0.45)';
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(shipPt.x, shipPt.y);
+      ctx.lineTo(targetPt.x, targetPt.y);
+      ctx.strokeStyle = '#991b1b';
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([5, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      LANDMARKS.forEach((lm, idx) => {
+        const pt = lonLatToCanvas(lm.lon, lm.lat, w, h);
+        const isSelected = idx === STATE.selectedLandmarkIndex;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isSelected ? 6.5 : 4.2, 0, Math.PI * 2);
+        ctx.fillStyle = isSelected ? '#b91c1c' : '#292524';
+        ctx.fill();
+        ctx.strokeStyle = '#fef3c7';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = isSelected ? 'bold 12px "Cormorant Garamond", serif' : '600 11px "Cormorant Garamond", serif';
+        ctx.fillStyle = isSelected ? '#7f1d1d' : '#1c1917';
+        ctx.textAlign = 'center';
+        ctx.fillText(lm.name1584, pt.x, pt.y + (idx % 2 === 0 ? -9 : 14));
+        ctx.restore();
+      });
+
+      draw16thCenturyShip(ctx, shipPt.x, shipPt.y);
+      ctx.restore();
+    }
+
+    function drawHeraldicShield1584(ctx, x, y, title, type) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.beginPath();
+      ctx.moveTo(-16, -18);
+      ctx.lineTo(16, -18);
+      ctx.lineTo(16, 2);
+      ctx.quadraticCurveTo(16, 18, 0, 24);
+      ctx.quadraticCurveTo(-16, 18, -16, 2);
+      ctx.closePath();
+      ctx.fillStyle = (type === 'portugal_royal') ? '#b91c1c' : (type === 'brabant_lion' ? '#1c1917' : '#eab308');
+      ctx.fill();
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = '#3b2c1d';
+      ctx.font = 'bold 8.5px "Cinzel", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, 0, -22);
+      ctx.restore();
+    }
+
+    function drawSeaMonster1584(ctx, x, y, type) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = 'rgba(105, 112, 78, 0.78)';
+      ctx.strokeStyle = '#2c2218';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(-6, 4, 16, 7, -0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (type === 'whale_spout') {
+        ctx.strokeStyle = 'rgba(30, 88, 115, 0.72)';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(-14, -2);
+        ctx.quadraticCurveTo(-18, -24, -4, -18);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawCompassRose1584(ctx, cx, cy, r, northRotRad = 0) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(northRotRad);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#f5ebd6';
+      ctx.fill();
+      ctx.strokeStyle = '#3f2e1e';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      for (let i = 0; i < 8; i++) {
+        ctx.save();
+        ctx.rotate((i * Math.PI) / 4);
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.lineTo(5, -6);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#991b1b' : '#1e3a5f';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.fillStyle = '#7f1d1d';
+      ctx.font = 'bold 9px "Cinzel", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚜ N', 0, -r - 5);
+      ctx.restore();
+    }
+
+    function drawScaleCartouche1584(ctx, x, y, canvasW) {
+      const p0 = lonLatToCanvas(-5.0, 50.0, canvasW, 360);
+      const p1 = lonLatToCanvas(-4.8, 50.0, canvasW, 360);
+      const barW = Math.max(80, Math.min(145, Math.abs(p1.x - p0.x) * 1.1));
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = 'rgba(242, 230, 202, 0.94)';
+      ctx.strokeStyle = '#7c2d12';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 175, 58, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#292524';
+      ctx.font = '600 9.5px "Cormorant Garamond", serif';
+      ctx.fillText('Duijtsche mijlen (15 in 1°):', 10, 22);
+      ctx.strokeStyle = '#1c1917';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(10, 28);
+      ctx.lineTo(10 + barW, 28);
+      ctx.stroke();
+
+      ctx.fillText('Spaensche mijlen (17½ in 1°):', 10, 43);
+      ctx.beginPath();
+      ctx.moveTo(10, 49);
+      ctx.lineTo(10 + barW * (15 / 17.5), 49);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function draw16thCenturyShip(ctx, x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.beginPath();
+      ctx.arc(0, 0, 26, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.16)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(153, 27, 27, 0.65)';
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawCoastalProfileCanvas() {
+      if (!profileCanvas || !profileCtx) return;
+      const rect = profileCanvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = rect.width || 600;
+      const h = rect.height || 125;
+
+      if (profileCanvas.width !== Math.floor(w * dpr) || profileCanvas.height !== Math.floor(h * dpr)) {
+        profileCanvas.width = Math.floor(w * dpr);
+        profileCanvas.height = Math.floor(h * dpr);
+      }
+
+      const ctx = profileCtx;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+      skyGrad.addColorStop(0, '#f3ebd6');
+      skyGrad.addColorStop(0.75, '#e6d8b8');
+      skyGrad.addColorStop(0.76, '#c7bea2');
+      skyGrad.addColorStop(1, '#d7cbb0');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      const horizonY = h * 0.78;
+      const centerLm = LANDMARKS[STATE.selectedLandmarkIndex] || LANDMARKS[0];
+      const centerMetrics = computeNauticalMetrics(STATE.shipLon, STATE.shipLat, centerLm.lon, centerLm.lat);
+      const centerAz = centerMetrics.azDeg;
+      const fovDeg = 95;
+
+      LANDMARKS.forEach((lm, idx) => {
+        const m = computeNauticalMetrics(STATE.shipLon, STATE.shipLat, lm.lon, lm.lat);
+        let relAz = m.azDeg - centerAz;
+        while (relAz < -180) relAz += 360;
+        while (relAz >  180) relAz -= 360;
+
+        if (Math.abs(relAz) <= fovDeg * 0.58) {
+          const cx = w * 0.5 + (relAz / fovDeg) * (w * 0.86);
+          const distScale = Math.max(0.35, Math.min(1.65, 2.2 / Math.max(0.6, m.dutchMiles)));
+          const peakH = (lm.heightM * 0.42) * distScale;
+          const halfW = 38 * distScale;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(cx - halfW, horizonY);
+          ctx.quadraticCurveTo(cx - halfW * 0.3, horizonY - peakH * 1.1, cx, horizonY - peakH);
+          ctx.quadraticCurveTo(cx + halfW * 0.3, horizonY - peakH * 1.05, cx + halfW, horizonY);
+          ctx.closePath();
+          ctx.fillStyle = idx === STATE.selectedLandmarkIndex ? '#9f8c66' : '#b8a886';
+          ctx.fill();
+          ctx.strokeStyle = '#332619';
+          ctx.lineWidth = idx === STATE.selectedLandmarkIndex ? 1.8 : 1.15;
+          ctx.stroke();
+
+          ctx.fillStyle = idx === STATE.selectedLandmarkIndex ? '#7f1d1d' : '#2c2013';
+          ctx.font = idx === STATE.selectedLandmarkIndex ? 'bold 11px "Cormorant Garamond", serif' : '600 10px "Cormorant Garamond", serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(lm.name1584, cx, Math.max(32, horizonY - peakH - 8));
+          ctx.restore();
+        }
+      });
+
+      ctx.strokeStyle = '#3b2c1d';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY);
+      ctx.lineTo(w, horizonY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function switchMainMode(mode) {
+      STATE.mainMode = mode;
+      const pRussell = document.getElementById('panel-russell');
+      const pWaghenaer = document.getElementById('panel-waghenaer');
+
+      ['russell', 'waghenaer', 'split'].forEach((m) => {
+        document.getElementById('tab-' + m).classList.toggle('active-tab', m === mode);
+      });
+
+      if (mode === 'russell') {
+        pRussell.classList.remove('hidden', 'xl:col-span-6');
+        pRussell.classList.add('xl:col-span-12');
+        pWaghenaer.classList.add('hidden');
+      } else if (mode === 'waghenaer') {
+        pWaghenaer.classList.remove('hidden', 'xl:col-span-6');
+        pWaghenaer.classList.add('xl:col-span-12');
+        pRussell.classList.add('hidden');
+      } else {
+        pRussell.classList.remove('hidden', 'xl:col-span-12');
+        pRussell.classList.add('xl:col-span-6');
+        pWaghenaer.classList.remove('hidden', 'xl:col-span-12');
+        pWaghenaer.classList.add('xl:col-span-6');
+      }
+      handleResize();
+    }
+
+    function handleResize() {
+      const container = document.getElementById('three-container');
+      if (renderer && camera && container && container.clientWidth > 0) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      }
+
+      const shipContainer = document.getElementById('ship-3d-overlay');
+      if (shipRenderer && shipCamera && shipContainer && shipContainer.clientWidth > 0) {
+        shipCamera.right = shipContainer.clientWidth;
+        shipCamera.bottom = -shipContainer.clientHeight;
+        shipCamera.updateProjectionMatrix();
+        shipRenderer.setSize(shipContainer.clientWidth, shipContainer.clientHeight);
+      }
+
+      drawWaghenaerAll();
+    }
+
+    let clockTime = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      clockTime += 0.035;
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
+      if (shipRenderer && shipScene && shipCamera && galleon3DGroup && chartCanvas) {
+        const rect = chartCanvas.parentElement.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const shipPt = lonLatToCanvas(STATE.shipLon, STATE.shipLat, rect.width, rect.height);
+          let diff = STATE.targetHeadingRad - STATE.shipHeadingRad;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff >  Math.PI) diff -= Math.PI * 2;
+          STATE.shipHeadingRad += diff * 0.14;
+
+          galleon3DGroup.position.set(shipPt.x, -shipPt.y, 40);
+          galleon3DGroup.scale.setScalar(STATE.shipScale);
+
+          if (galleonHullGroup) {
+            galleonHullGroup.rotation.z = -STATE.shipHeadingRad;
+            galleonHullGroup.rotation.y = Math.sin(clockTime * 1.3) * 0.08;
+            galleonHullGroup.rotation.x = Math.cos(clockTime * 0.95) * 0.11;
+            galleonHullGroup.position.z = Math.sin(clockTime * 1.6) * 2.2;
+          }
+
+          if (STATE.cannonFlashTimer > 0) {
+            STATE.cannonFlashTimer--;
+            drawPaskaartCanvas();
+          }
+
+          shipRenderer.render(shipScene, shipCamera);
+        }
+      }
+    }
+
+    window.onload = function () {
+      initRussell3D();
+      initWaghenaer2D();
+      window.addEventListener('resize', handleResize);
+      animate();
+    };
+  </script>
+</body>
+</html>
