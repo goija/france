@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 QQ8 — 3D Astrodynamica & Kwadrant-Simulatie</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Fonts: JetBrains Mono & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #030508;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: radial-gradient(circle at 65% 50%, #0a101d 0%, #020305 75%);
+        }
+        .hud-panel {
+            background: rgba(7, 11, 20, 0.84);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7);
+        }
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #22c55e 0%, #eab308 52%, #ef4444 100%);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #eab308;
+            margin-top: -6px;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.9);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.18);
+        }
+        .label-3d {
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative overflow-hidden">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Floating 3D World Labels -->
+    <div id="labels-layer" class="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+        <div id="label-l1" class="label-3d mono text-white text-base md:text-lg font-medium tracking-wider">
+            L<sub class="text-xs">1</sub>
+        </div>
+        <div id="label-earth" class="label-3d mono text-cyan-300 text-xs font-semibold opacity-80">
+            Aarde
+        </div>
+        <div id="label-start" class="label-3d mono text-emerald-400 text-xs bg-black/70 px-1.5 py-0.5 rounded border border-emerald-500/40">
+            02 Okt (+Z Noord)
+        </div>
+        <div id="label-south" class="label-3d mono text-yellow-300 text-xs bg-black/70 px-1.5 py-0.5 rounded border border-yellow-500/40">
+            Zuidkwadrant Lus (-Z)
+        </div>
+        <div id="label-node" class="label-3d mono text-sky-300 text-[11px] bg-black/60 px-1.5 py-0.5 rounded border border-sky-400/30 opacity-85">
+            ☊ Dalende Knoop (z=0)
+        </div>
+    </div>
+
+    <!-- Top Bar: Title, Date Readout (Replica style) & Camera Views -->
+    <header class="relative z-20 flex flex-wrap items-center justify-between gap-3 p-3 md:p-4 pointer-events-none">
+        <!-- Left Title & Status Badge -->
+        <div class="hud-panel rounded-xl px-4 py-2.5 pointer-events-auto flex items-center gap-3">
+            <div class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-sm md:text-base font-bold tracking-tight text-white">2026 QQ8 — Mini-Maan Baansimulatie</h1>
+                    <span id="capture-badge" class="mono text-[11px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-semibold">
+                        TIJDELIJK INGEVANGEN
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400">Synodisch Zon–Aarde–Maan stelsel (CR3BP) • Noordkwadrant (+Z) → Zuidkwadrant (-Z) → L₁</p>
+            </div>
+        </div>
+
+        <!-- Center/Right: Oscilloscope Date Stamp (Matches screenshot 'Oct 02 2026') -->
+        <div class="hud-panel rounded-xl px-4 py-2 pointer-events-auto flex items-center gap-4 border-yellow-500/30">
+            <div class="text-right">
+                <div class="text-[10px] uppercase tracking-widest text-slate-400">Ephemeride Tijdstip</div>
+                <div id="osc-date" class="mono text-lg md:text-xl font-bold text-yellow-300 tracking-wider">Oct 02 2026</div>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div class="text-left">
+                <div class="text-[10px] uppercase tracking-widest text-slate-400">Ecliptisch Halfrond</div>
+                <div id="quadrant-pill" class="mono text-xs md:text-sm font-bold text-emerald-400">NOORDKWADRANT (+Z)</div>
+            </div>
+        </div>
+
+        <!-- Camera View Presets -->
+        <div class="hud-panel rounded-xl p-1.5 pointer-events-auto flex flex-wrap items-center gap-1">
+            <button onclick="setCameraPreset('screenshot')" id="btn-view-screenshot" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 transition">
+                Origineel Perspectief
+            </button>
+            <button onclick="setCameraPreset('xz')" id="btn-view-xz" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition">
+                Noord/Zuid Zijaanzicht (XZ)
+            </button>
+            <button onclick="setCameraPreset('xy')" id="btn-view-xy" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition">
+                Bovenaanzicht (XY)
+            </button>
+            <button onclick="toggleReferenceGrid()" id="btn-toggle-grid" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 transition">
+                Kwadrant-Vlakken & Hill-sfeer
+            </button>
+        </div>
+    </header>
+
+    <!-- Left Telemetry & Quadrant Analysis Sidebar -->
+    <aside class="relative z-20 px-3 md:px-4 w-full max-w-sm pointer-events-none flex flex-col gap-3">
+        <!-- Astrodynamics & Quadrant Telemetry Card -->
+        <div class="hud-panel rounded-xl p-3.5 pointer-events-auto space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Baantelemetrie & Kwadranten</span>
+                <span id="phase-direction" class="mono text-[11px] text-amber-300">↻ Met de klok mee (Retrograad)</span>
+            </div>
+
+            <!-- Primary Readouts Grid -->
+            <div class="grid grid-cols-2 gap-2.5 text-xs">
+                <div class="bg-slate-900/80 rounded-lg p-2 border border-slate-800">
+                    <div class="text-slate-400 text-[10px]">Ecliptische Hoogte (Z)</div>
+                    <div id="val-z" class="mono text-sm font-bold text-emerald-400 mt-0.5">+412.000 km</div>
+                    <div id="val-beta" class="mono text-[10px] text-slate-400">β = +38.4° Noord</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-lg p-2 border border-slate-800">
+                    <div class="text-slate-400 text-[10px]">Afstand tot Aarde (r₂)</div>
+                    <div id="val-dist" class="mono text-sm font-bold text-white mt-0.5">664.000 km</div>
+                    <div id="val-ld" class="mono text-[10px] text-cyan-400">1.73 × Maanbaan (LD)</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-lg p-2 border border-slate-800">
+                    <div class="text-slate-400 text-[10px]">Azimut atan2(y,x)</div>
+                    <div id="val-atan2" class="mono text-sm font-bold text-sky-300 mt-0.5">78.2° (Kwadrant I)</div>
+                    <div id="val-relvel" class="mono text-[10px] text-slate-400">v_syn = 0.41 km/s</div>
+                </div>
+                <div class="bg-slate-900/80 rounded-lg p-2 border border-slate-800">
+                    <div class="text-slate-400 text-[10px]">Geocentrische Energie</div>
+                    <div id="val-energy" class="mono text-sm font-bold text-yellow-300 mt-0.5">E = -0.34 km²/s²</div>
+                    <div id="val-jacobi" class="mono text-[10px] text-slate-400">C_J = 3.00084 (L₁ open)</div>
+                </div>
+            </div>
+
+            <!-- Live 2D Quadrant Radar (XZ North/South + XY Azimuth) -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <!-- XZ North/South Cross Section -->
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90 flex flex-col items-center">
+                    <div class="w-full flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>Noord/Zuid (XZ)</span>
+                        <span class="mono text-yellow-400">Z-as</span>
+                    </div>
+                    <canvas id="radar-xz" width="136" height="100" class="rounded bg-black/60 border border-slate-800/60"></canvas>
+                </div>
+                <!-- XY Synodic Quadrant Radar -->
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90 flex flex-col items-center">
+                    <div class="w-full flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>Ecliptica (XY)</span>
+                        <span class="mono text-sky-400">atan2</span>
+                    </div>
+                    <canvas id="radar-xy" width="136" height="100" class="rounded bg-black/60 border border-slate-800/60"></canvas>
+                </div>
+            </div>
+
+            <!-- Dynamic Explanation Box -->
+            <div id="phase-explanation" class="text-xs text-slate-300 bg-slate-900/90 border-l-2 border-emerald-400 p-2.5 rounded-r-lg leading-relaxed">
+                <strong>2 okt 2026 — Noordkwadrant (+Z):</strong> 2026 QQ8 bevindt zich hoog boven het eclipticavlak (groene stip) en begint aan zijn rechtsom draaiende duik richting de maanbaan.
+            </div>
+        </div>
+    </aside>
+
+    <!-- Bottom Timeline & Phase Scrubber -->
+    <footer class="fixed bottom-0 inset-x-0 z-20 p-3 md:p-4 pointer-events-none flex justify-center">
+        <div class="hud-panel rounded-2xl px-4 py-3 w-full max-w-4xl pointer-events-auto flex flex-col gap-2.5">
+            <!-- Quick Phase Jump Buttons -->
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-slate-400 text-[11px] mr-1">Spring naar fase:</span>
+                    <button onclick="jumpToProgress(0.0)" class="px-2 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 mono text-[11px] transition">
+                        1. Noordkwadrant (02 Okt)
+                    </button>
+                    <button onclick="jumpToProgress(0.19)" class="px-2 py-1 rounded bg-sky-500/15 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 mono text-[11px] transition">
+                        2. Dalende Knoop (z = 0)
+                    </button>
+                    <button onclick="jumpToProgress(0.36)" class="px-2 py-1 rounded bg-yellow-500/15 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/30 mono text-[11px] transition">
+                        3. Tijdelijke Maan Zuidkwadrant (-Z Lus)
+                    </button>
+                    <button onclick="jumpToProgress(0.58)" class="px-2 py-1 rounded bg-orange-500/15 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 mono text-[11px] transition">
+                        4. L₁ Hals & MPC (29 Okt)
+                    </button>
+                    <button onclick="jumpToProgress(0.92)" class="px-2 py-1 rounded bg-red-500/15 hover:bg-red-500/30 text-red-300 border border-red-500/30 mono text-[11px] transition">
+                        5. Heliocentrische Baan
+                    </button>
+                </div>
+                <div class="text-[11px] text-slate-400 hidden sm:block">
+                    Sleep met muis/vinger om 3D-camera te draaien • Scroll om te zoomen
+                </div>
+            </div>
+
+            <!-- Slider + Transport Controls -->
+            <div class="flex items-center gap-3">
+                <button id="btn-play" onclick="togglePlay()" class="w-9 h-9 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold flex items-center justify-center shadow-lg transition shrink-0" title="Afspelen / Pauzeren">
+                    <svg id="icon-play" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6V4z"/></svg>
+                    <svg id="icon-pause" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 4h3v12H5V4zm7 0h3v12h-3V4z" clip-rule="evenodd"/></svg>
+                </button>
+
+                <div class="flex-1 flex flex-col">
+                    <input id="time-slider" type="range" min="0" max="1000" value="320" class="w-full">
+                    <div class="flex justify-between text-[10px] mono text-slate-400 mt-1">
+                        <span class="text-emerald-400">02 Okt 2026 (Noord +Z)</span>
+                        <span class="text-yellow-300">18 Okt 2026 (Zuidkwadrant Keerlus -Z)</span>
+                        <span class="text-orange-400">29 Okt 2026 (L₁ Doorgang)</span>
+                        <span class="text-red-400">25 Nov 2026 (Zonnebaan)</span>
+                    </div>
+                </div>
+
+                <!-- Speed Control -->
+                <button onclick="cycleSpeed()" id="btn-speed" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono text-slate-200 border border-slate-700 shrink-0">
+                    1.0×
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================================================
+        // 1. ASTRODYNAMISCHE BAANDATA & GEOMETRIE VAN 2026 QQ8
+        // ============================================================================
+        // Schaal in Three.js scene:
+        // Aarde op (x = +3.2, y = 0, z = 0)
+        // L1 Lagrangepunt op (x = -0.2, y = 0, z = 0) -> afstand Aarde-L1 = 3.4 eenheden (~1.5 miljoen km)
+        // Maanbaan straal = 0.88 eenheden (visueel vergroot voor exacte overeenkomst met het diagram)
+        // In Three.js gebruiken we:
+        //   X-as: Rechts (+X = van Zon af voorbij de Aarde, -X = richting L1 en de Zon)
+        //   Y-as in Three.js = Ecliptische Z-as (Noord = +Y, Zuid = -Y)
+        //   Z-as in Three.js = Synodische Y-as (Diepte in het eclipticavlak)
+
+        const EARTH_POS = new THREE.Vector3(3.2, 0.0, 0.0);
+        const L1_POS = new THREE.Vector3(-0.2, 0.0, 0.0);
+        const LUNAR_RADIUS = 0.92;
+
+        // Controlepunten voor de exacte 3D-baan uit de afbeelding:
+        // Deel 1 (Gele lus): Start op 2 okt 2026 bij het groene punt in het Noordkwadrant (+Z),
+        // draait met de klok mee rechts langs de maanbaan, duikt door het eclipticavlak (z=0)
+        // diep het Zuidkwadrant (-Z) in tot een scherpe keerlus onder de maanbaan, en klimt
+        // vervolgens omhoog richting de L1-hals.
+        const yellowControlPoints = [
+            new THREE.Vector3(2.50,  1.62, -0.15), // t=0.00: 02 Okt 2026 (Groene stip, Noordkwadrant +Z)
+            new THREE.Vector3(2.90,  1.72,  0.10), // Bovenste bocht boven maanbaan
+            new THREE.Vector3(3.85,  1.15,  0.42), // Rechtsboven maanbaan (met de klok mee)
+            new THREE.Vector3(4.32,  0.00,  0.52), // Dalende knoop (z = 0, kruist eclipticavlak naar Zuid)
+            new THREE.Vector3(4.15, -1.25,  0.38), // Duik in het Zuidkwadrant (-Z)
+            new THREE.Vector3(3.45, -2.35,  0.12), // Nadering onderste keerpunt
+            new THREE.Vector3(2.82, -2.75, -0.05), // Scherpe retrograde keerlus onderin Zuidkwadrant (-Z cusp)
+            new THREE.Vector3(2.48, -2.10, -0.18), // Terugklimmend vanuit Zuidkwadrant richting L1
+            new THREE.Vector3(1.92, -0.75, -0.22), // Kruist z=0 weer omhoog
+            new THREE.Vector3(1.12,  0.48, -0.15)  // Overgang naar rode heliocentrische baan nabij L1
+        ];
+
+        // Deel 2 (Rode lijn): Vanaf de L1-hals (29 okt 2026) buigt het object af
+        // naar een heliocentrische baan richting de Zon (links in beeld).
+        const redControlPoints = [
+            new THREE.Vector3(1.12,  0.48, -0.15), // Aansluitpunt op gele lus
+            new THREE.Vector3(0.25,  1.28, -0.05), // Passeren van L1-regio (29 Okt 2026)
+            new THREE.Vector3(-0.95, 1.62,  0.08), // Top van de rode boog boven L1
+            new THREE.Vector3(-2.60, 1.50,  0.22), // Uitloop richting Zon
+            new THREE.Vector3(-4.80, 1.02,  0.35),
+            new THREE.Vector3(-7.40, 0.25,  0.45)  // Ver links buiten de Hill-sfeer
+        ];
+
+        const yellowCurve = new THREE.CatmullRomCurve3(yellowControlPoints, false, 'centripetal', 0.35);
+        const redCurve = new THREE.CatmullRomCurve3(redControlPoints, false, 'centripetal', 0.35);
+
+        // ============================================================================
+        // 2. THREE.JS SCENE, CAMERA & RENDERER OPZET
+        // ============================================================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Sferische camera-coördinaten voor soepele muis/touch rotatie
+        let camTarget = new THREE.Vector3(-0.4, -0.15, 0.0);
+        let camSpherical = {
+            radius: 13.8,
+            theta: 0.04,       // Horizontale hoek
+            phi: Math.PI / 2 - 0.06 // Verticale hoek (bijna recht van voren zoals de screenshot)
+        };
+
+        function updateCameraFromSpherical() {
+            const sinPhi = Math.sin(camSpherical.phi);
+            camera.position.x = camTarget.x + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta);
+            camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+            camera.position.z = camTarget.z + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta);
+            camera.lookAt(camTarget);
+        }
+        updateCameraFromSpherical();
+
+        // Verlichting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+        scene.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+        sunLight.position.set(-25, 6, 8); // Zon staat ver links (-X)
+        scene.add(sunLight);
+
+        // Subtiele sterrenachtergrond
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 450;
+        const starPos = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount * 3; i += 3) {
+            starPos[i] = (Math.random() - 0.5) * 90;
+            starPos[i + 1] = (Math.random() - 0.5) * 60;
+            starPos[i + 2] = -15 - Math.random() * 40;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0x64748b, size: 0.08, transparent: true, opacity: 0.45 });
+        scene.add(new THREE.Points(starGeo, starMat));
+
+        // ============================================================================
+        // 3. AARDE, MAANBAAN (WITTE RING), L1 & KWADRANT-HULPVLAKKEN
+        // ============================================================================
+        const systemGroup = new THREE.Group();
+        scene.add(systemGroup);
+
+        // 3A. Aarde (Lichtblauwe / cyaan bol in het centrum van de maanbaan, exact zoals op de afbeelding)
+        const earthGeo = new THREE.SphereGeometry(0.11, 32, 32);
+        const earthMat = new THREE.MeshStandardMaterial({
+            color: 0x38bdf8,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.65,
+            roughness: 0.2
+        });
+        const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+        earthMesh.position.copy(EARTH_POS);
+        systemGroup.add(earthMesh);
+
+        // 3B. Maanbaan (Heldere witte 3D-ring / band rond de Aarde, licht gekanteld voor het exacte 3D-perspectief)
+        const lunarOrbitGroup = new THREE.Group();
+        lunarOrbitGroup.position.copy(EARTH_POS);
+        // Kantel de maanbaan licht zodat hij exact op de witte ovaal uit de screenshot lijkt
+        lunarOrbitGroup.rotation.x = 0.24;
+        lunarOrbitGroup.rotation.z = -0.03;
+        systemGroup.add(lunarOrbitGroup);
+
+        const moonRingGeo = new THREE.TorusGeometry(LUNAR_RADIUS, 0.055, 24, 120);
+        moonRingGeo.rotateX(Math.PI / 2); // Ligt in het XZ-vlak van Three.js (eclipticavlak)
+        const moonRingMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+        const moonRingMesh = new THREE.Mesh(moonRingGeo, moonRingMat);
+        lunarOrbitGroup.add(moonRingMesh);
+
+        // Subtiele schaduwrand op de maanring voor het 3D-buis-effect uit de screenshot
+        const moonInnerRingGeo = new THREE.TorusGeometry(LUNAR_RADIUS - 0.035, 0.02, 16, 100);
+        moonInnerRingGeo.rotateX(Math.PI / 2);
+        const moonInnerRingMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+        lunarOrbitGroup.add(new THREE.Mesh(moonInnerRingGeo, moonInnerRingMat));
+
+        // De Maan zelf (klein grijs/wit bolletje dat tegen de klok in over de witte ring draait)
+        const moonGeo = new THREE.SphereGeometry(0.065, 20, 20);
+        const moonMat = new THREE.MeshBasicMaterial({ color: 0xdbeafe });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        lunarOrbitGroup.add(moonMesh);
+
+        // 3C. Groene Startstip op 2 oktober 2026 (Noordkwadrant +Z)
+        const startDotGeo = new THREE.SphereGeometry(0.08, 24, 24);
+        const startDotMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+        const startDotMesh = new THREE.Mesh(startDotGeo, startDotMat);
+        startDotMesh.position.copy(yellowControlPoints[0]);
+        systemGroup.add(startDotMesh);
+
+        // 3D. Gele Baan (Tijdelijke invangst-lus van Noordkwadrant naar Zuidkwadrant)
+        const yellowTubeGeo = new THREE.TubeGeometry(yellowCurve, 180, 0.036, 12, false);
+        const yellowTubeMat = new THREE.MeshBasicMaterial({ color: 0xdbe638 });
+        const yellowTubeMesh = new THREE.Mesh(yellowTubeGeo, yellowTubeMat);
+        systemGroup.add(yellowTubeMesh);
+
+        // 3E. Rode Baan (Doorgang door L1 en heliocentrisch vervolg)
+        const redTubeGeo = new THREE.TubeGeometry(redCurve, 140, 0.036, 12, false);
+        const redTubeMat = new THREE.MeshBasicMaterial({ color: 0xd93829 });
+        const redTubeMesh = new THREE.Mesh(redTubeGeo, redTubeMat);
+        systemGroup.add(redTubeMesh);
+
+        // 3F. Huidige positie-indicator van 2026 QQ8 (bewegende planetoïde + gloed)
+        const asteroidGroup = new THREE.Group();
+        const astGeo = new THREE.SphereGeometry(0.105, 24, 24);
+        const astMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const astMesh = new THREE.Mesh(astGeo, astMat);
+        asteroidGroup.add(astMesh);
+
+        const astHaloGeo = new THREE.SphereGeometry(0.22, 24, 24);
+        const astHaloMat = new THREE.MeshBasicMaterial({
+            color: 0xfacc15,
+            transparent: true,
+            opacity: 0.4
+        });
+        const astHaloMesh = new THREE.Mesh(astHaloGeo, astHaloMat);
+        asteroidGroup.add(astHaloMesh);
+        systemGroup.add(asteroidGroup);
+
+        // 3G. Wetenschappelijke Referentie- en Kwadrantvlakken (Aan/Uit te zetten)
+        const referenceGroup = new THREE.Group();
+        referenceGroup.visible = true;
+        systemGroup.add(referenceGroup);
+
+        // Eclipticavlak (z = 0 scheidingsvlak tussen Noordkwadrant +Z en Zuidkwadrant -Z)
+        const planeGeo = new THREE.PlaneGeometry(5.5, 4.2, 12, 12);
+        planeGeo.rotateX(Math.PI / 2);
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: 0x0ea5e9,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.11
+        });
+        const eclipticPlane = new THREE.Mesh(planeGeo, planeMat);
+        eclipticPlane.position.set(2.4, 0, 0);
+        referenceGroup.add(eclipticPlane);
+
+        // Hill-sfeer grens rond de Aarde (straal = afstand Aarde tot L1 = 3.4 eenheden)
+        const hillGeo = new THREE.SphereGeometry(3.4, 32, 24);
+        const hillMat = new THREE.MeshBasicMaterial({
+            color: 0x38bdf8,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.06
+        });
+        const hillSphere = new THREE.Mesh(hillGeo, hillMat);
+        hillSphere.position.copy(EARTH_POS);
+        referenceGroup.add(hillSphere);
+
+        // Noord-Zuid Z-as loodlijn vanuit het huidige punt van 2026 QQ8 op het eclipticavlak (z=0)
+        const dropLineGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, 0)
+        ]);
+        const dropLineMat = new THREE.LineDashedMaterial({
+            color: 0x38bdf8,
+            dashSize: 0.12,
+            gapSize: 0.08,
+            transparent: true,
+            opacity: 0.75
+        });
+        const dropLine = new THREE.Line(dropLineGeo, dropLineMat);
+        referenceGroup.add(dropLine);
+
+        // Klein projectiekringetje op het eclipticavlak (z = 0)
+        const projRingGeo = new THREE.RingGeometry(0.06, 0.1, 24);
+        projRingGeo.rotateX(Math.PI / 2);
+        const projRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+        const projRingMesh = new THREE.Mesh(projRingGeo, projRingMat);
+        referenceGroup.add(projRingMesh);
+
+        // Markering van de Dalende Knoop (waar de baan van Noord +Z naar Zuid -Z duikt)
+        const nodePos = yellowCurve.getPointAt(0.315);
+        const nodeGeo = new THREE.RingGeometry(0.09, 0.13, 24);
+        nodeGeo.rotateX(Math.PI / 2);
+        const nodeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide });
+        const nodeMarker = new THREE.Mesh(nodeGeo, nodeMat);
+        nodeMarker.position.copy(nodePos);
+        referenceGroup.add(nodeMarker);
+
+        // L1 Punt kruisje
+        const l1MarkerGeo = new THREE.SphereGeometry(0.045, 16, 16);
+        const l1MarkerMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+        const l1Marker = new THREE.Mesh(l1MarkerGeo, l1MarkerMat);
+        l1Marker.position.copy(L1_POS);
+        referenceGroup.add(l1Marker);
+
+        // ============================================================================
+        // 4. SIMULATIE-TIJDLIJN, INTERPOLATIE & TELEMETRIE
+        // ============================================================================
+        // Totale tijdlijn: 02 Okt 2026 (t=0) t/m 25 Nov 2026 (t=1) -> 54 dagen
+        // t = 0.00 -> 02 Okt 2026 (Start in Noordkwadrant +Z)
+        // t = 0.19 -> 11 Okt 2026 (Dalende knoop z = 0)
+        // t = 0.36 -> 19 Okt 2026 (Diepste punt Zuidkwadrant -Z keerlus)
+        // t = 0.56 -> 29 Okt 2026 (Overgang Geel -> Rood nabij L1, MPC melding)
+        // t = 1.00 -> 25 Nov 2026 (Heliocentrische baan ver links)
+
+        const YELLOW_SPLIT = 0.56; // Fractie van de slider die op de gele curve ligt
+        let progress = 0.0;        // Start op 02 Okt 2026 zoals op de afbeelding
+        let isPlaying = true;
+        let playSpeed = 1.0;
+
+        const sliderEl = document.getElementById('time-slider');
+        const oscDateEl = document.getElementById('osc-date');
+        const quadrantPillEl = document.getElementById('quadrant-pill');
+        const captureBadgeEl = document.getElementById('capture-badge');
+        const valZEl = document.getElementById('val-z');
+        const valBetaEl = document.getElementById('val-beta');
+        const valDistEl = document.getElementById('val-dist');
+        const valLdEl = document.getElementById('val-ld');
+        const valAtan2El = document.getElementById('val-atan2');
+        const valRelVelEl = document.getElementById('val-relvel');
+        const valEnergyEl = document.getElementById('val-energy');
+        const valJacobiEl = document.getElementById('val-jacobi');
+        const phaseExplEl = document.getElementById('phase-explanation');
+
+        function getPointOnFullTrajectory(t) {
+            const clamped = Math.max(0, Math.min(1, t));
+            if (clamped <= YELLOW_SPLIT) {
+                const u = clamped / YELLOW_SPLIT;
+                return yellowCurve.getPointAt(u);
+            } else {
+                const u = (clamped - YELLOW_SPLIT) / (1 - YELLOW_SPLIT);
+                return redCurve.getPointAt(u);
+            }
+        }
+
+        function getTangentOnFullTrajectory(t) {
+            const clamped = Math.max(0, Math.min(1, t));
+            if (clamped <= YELLOW_SPLIT) {
+                const u = clamped / YELLOW_SPLIT;
+                return yellowCurve.getTangentAt(u);
+            } else {
+                const u = (clamped - YELLOW_SPLIT) / (1 - YELLOW_SPLIT);
+                return redCurve.getTangentAt(u);
+            }
+        }
+
+        function formatSimDate(t) {
+            const startMs = Date.UTC(2026, 9, 2); // Oct 02 2026
+            const totalDays = 54;
+            const currentMs = startMs + t * totalDays * 86400000;
+            const d = new Date(currentMs);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const dayStr = String(d.getUTCDate()).padStart(2, '0');
+            return `${months[d.getUTCMonth()]} ${dayStr} ${d.getUTCFullYear()}`;
+        }
+
+        // 2D Mini-Radars voor Noord/Zuid (XZ) en Azimut (XY)
+        const radarXZ = document.getElementById('radar-xz');
+        const ctxXZ = radarXZ.getContext('2d');
+        const radarXY = document.getElementById('radar-xy');
+        const ctxXY = radarXY.getContext('2d');
+
+        function drawMiniRadars(currentPos) {
+            // 1. XZ Noord/Zuid Zijaanzicht Radar
+            const w = radarXZ.width;
+            const h = radarXZ.height;
+            ctxXZ.clearRect(0, 0, w, h);
+
+            const cx = w * 0.62;
+            const cy = h * 0.48;
+            const scale = 14.5;
+
+            // Noord/Zuid achtergrondtinten
+            ctxXZ.fillStyle = 'rgba(16, 185, 129, 0.06)';
+            ctxXZ.fillRect(0, 0, w, cy);
+            ctxXZ.fillStyle = 'rgba(234, 179, 8, 0.06)';
+            ctxXZ.fillRect(0, cy, w, h - cy);
+
+            // Assen (Eclipticavlak z=0 horizontaal, Z-as verticaal door Aarde)
+            ctxXZ.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+            ctxXZ.lineWidth = 1;
+            ctxXZ.beginPath();
+            ctxXZ.moveTo(0, cy); ctxXZ.lineTo(w, cy);
+            ctxXZ.moveTo(cx, 0); ctxXZ.lineTo(cx, h);
+            ctxXZ.stroke();
+
+            // Labels +Z (Noord) en -Z (Zuid)
+            ctxXZ.fillStyle = '#34d399';
+            ctxXZ.font = '9px JetBrains Mono';
+            ctxXZ.fillText('+Z Noord', 4, 11);
+            ctxXZ.fillStyle = '#facc15';
+            ctxXZ.fillText('-Z Zuid', 4, h - 5);
+
+            // Teken gele & rode baanprojectie in XZ
+            ctxXZ.strokeStyle = '#eab308';
+            ctxXZ.lineWidth = 1.5;
+            ctxXZ.beginPath();
+            for (let i = 0; i <= 40; i++) {
+                const p = yellowCurve.getPointAt(i / 40);
+                const px = cx + (p.x - EARTH_POS.x) * scale;
+                const py = cy - p.y * scale;
+                if (i === 0) ctxXZ.moveTo(px, py);
+                else ctxXZ.lineTo(px, py);
+            }
+            ctxXZ.stroke();
+
+            ctxXZ.strokeStyle = '#ef4444';
+            ctxXZ.beginPath();
+            for (let i = 0; i <= 30; i++) {
+                const p = redCurve.getPointAt(i / 30);
+                const px = cx + (p.x - EARTH_POS.x) * scale;
+                const py = cy - p.y * scale;
+                if (i === 0) ctxXZ.moveTo(px, py);
+                else ctxXZ.lineTo(px, py);
+            }
+            ctxXZ.stroke();
+
+            // Aarde stip
+            ctxXZ.fillStyle = '#38bdf8';
+            ctxXZ.beginPath();
+            ctxXZ.arc(cx, cy, 2.5, 0, Math.PI * 2);
+            ctxXZ.fill();
+
+            // Huidige positie op XZ-radar
+            const curX = cx + (currentPos.x - EARTH_POS.x) * scale;
+            const curY = cy - currentPos.y * scale;
+            ctxXZ.fillStyle = '#ffffff';
+            ctxXZ.beginPath();
+            ctxXZ.arc(curX, curY, 3.2, 0, Math.PI * 2);
+            ctxXZ.fill();
+
+            // 2. XY Bovenaanzicht & atan2(y, x) Kwadranten Radar
+            ctxXY.clearRect(0, 0, w, h);
+            const cxy_x = w * 0.58;
+            const cxy_y = h * 0.52;
+            const scaleXY = 15.0;
+
+            // Kwadrantkruis door de Aarde
+            ctxXY.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+            ctxXY.beginPath();
+            ctxXY.moveTo(0, cxy_y); ctxXY.lineTo(w, cxy_y);
+            ctxXY.moveTo(cxy_x, 0); ctxXY.lineTo(cxy_x, h);
+            ctxXY.stroke();
+
+            // Maanbaan cirkel
+            ctxXY.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctxXY.beginPath();
+            ctxXY.arc(cxy_x, cxy_y, LUNAR_RADIUS * scaleXY, 0, Math.PI * 2);
+            ctxXY.stroke();
+
+            // Gele lus in XY
+            ctxXY.strokeStyle = '#eab308';
+            ctxXY.beginPath();
+            for (let i = 0; i <= 40; i++) {
+                const p = yellowCurve.getPointAt(i / 40);
+                const px = cxy_x + (p.x - EARTH_POS.x) * scaleXY;
+                const py = cxy_y + p.z * scaleXY * 2.2; // Versterk Z-diepte licht voor zichtbaarheid
+                if (i === 0) ctxXY.moveTo(px, py);
+                else ctxXY.lineTo(px, py);
+            }
+            ctxXY.stroke();
+
+            // Voer-straal (atan2 vector) van Aarde naar 2026 QQ8
+            const ax = cxy_x + (currentPos.x - EARTH_POS.x) * scaleXY;
+            const ay = cxy_y + currentPos.z * scaleXY * 2.2;
+            ctxXY.strokeStyle = '#38bdf8';
+            ctxXY.beginPath();
+            ctxXY.moveTo(cxy_x, cxy_y);
+            ctxXY.lineTo(ax, ay);
+            ctxXY.stroke();
+
+            ctxXY.fillStyle = '#ffffff';
+            ctxXY.beginPath();
+            ctxXY.arc(ax, ay, 3.2, 0, Math.PI * 2);
+            ctxXY.fill();
+
+            ctxXY.fillStyle = '#94a3b8';
+            ctxXY.font = '9px JetBrains Mono';
+            ctxXY.fillText('II', cxy_x - 16, 11);
+            ctxXY.fillText('I', cxy_x + 6, 11);
+            ctxXY.fillText('III', cxy_x - 18, h - 5);
+            ctxXY.fillText('IV', cxy_x + 6, h - 5);
+        }
+
+        function updateSimulationState(t) {
+            progress = Math.max(0, Math.min(1, t));
+            sliderEl.value = Math.round(progress * 1000);
+
+            const pos = getPointOnFullTrajectory(progress);
+            const tangent = getTangentOnFullTrajectory(progress);
+
+            // Verplaats 2026 QQ8 langs de 3D-baan
+            asteroidGroup.position.copy(pos);
+
+            // Update loodlijn op het eclipticavlak (z = 0)
+            const linePositions = dropLine.geometry.attributes.position.array;
+            linePositions[0] = pos.x;
+            linePositions[1] = pos.y;
+            linePositions[2] = pos.z;
+            linePositions[3] = pos.x;
+            linePositions[4] = 0.0;
+            linePositions[5] = pos.z;
+            dropLine.geometry.attributes.position.needsUpdate = true;
+            dropLine.computeLineDistances();
+
+            projRingMesh.position.set(pos.x, 0.0, pos.z);
+
+            // Beweeg de Maan over de witte maanring (ongeveer 2 omlopen gedurende de 54 dagen)
+            const moonAngle = progress * Math.PI * 4.0 + 1.1;
+            moonMesh.position.set(
+                Math.cos(moonAngle) * LUNAR_RADIUS,
+                0.0,
+                -Math.sin(moonAngle) * LUNAR_RADIUS // Tegen de klok in van bovenaf gezien
+            );
+
+            // Bereken fysische grootheden t.o.v. de Aarde
+            // 1 scene-eenheid ≈ 440.000 km (zodat Aarde-L1 = 3.4 eenheden ≈ 1.500.000 km)
+            const KM_PER_UNIT = 440000;
+            const dx = pos.x - EARTH_POS.x;
+            const dy_syn = -pos.z * 2.4; // Synodische Y-coördinaat
+            const dz_ecl = pos.y;        // Ecliptische hoogte Z (+ = Noord, - = Zuid)
+
+            const zKm = Math.round(dz_ecl * KM_PER_UNIT);
+            const rUnits = Math.sqrt(dx * dx + dy_syn * dy_syn + dz_ecl * dz_ecl);
+            const distKm = Math.round(rUnits * KM_PER_UNIT);
+            const distLD = (distKm / 384400).toFixed(2);
+
+            // Ecliptische breedte beta (in graden Noord of Zuid)
+            const betaDeg = (Math.asin(Math.max(-1, Math.min(1, dz_ecl / (rUnits + 0.0001)))) * 180 / Math.PI);
+
+            // Azimuthoek via atan2(y, x) in het synodische vlak
+            let atanDeg = Math.atan2( dz_ecl, dx ) * (180 / Math.PI);
+            if (atanDeg < 0) atanDeg += 360;
+            const romQuad = atanDeg < 90 ? 'I' : (atanDeg < 180 ? 'II' : (atanDeg < 270 ? 'III' : 'IV'));
+
+            // Geocentrische energie E (negatief tijdens tijdelijke invangst op gele lus, positief na L1)
+            const energyVal = (progress < 0.57)
+                ? (-0.42 * Math.sin((1 - progress / 0.57) * Math.PI * 0.75) - 0.04)
+                : ((progress - 0.57) * 1.15);
+
+            const relVel = (0.28 + Math.abs(tangent.y) * 0.25 + (progress > 0.57 ? (progress - 0.57) * 0.9 : 0)).toFixed(2);
+
+            // Update Datum
+            oscDateEl.textContent = formatSimDate(progress);
+
+            // Update Hoogte Z & Breedte
+            const signZ = zKm >= 0 ? '+' : '';
+            valZEl.textContent = `${signZ}${zKm.toLocaleString('nl-NL')} km`;
+            valBetaEl.textContent = `β = ${betaDeg >= 0 ? '+' : ''}${betaDeg.toFixed(1)}° ${betaDeg >= 0 ? 'Noord' : 'Zuid'}`;
+
+            // Update Afstand
+            valDistEl.textContent = `${distKm.toLocaleString('nl-NL')} km`;
+            valLdEl.textContent = `${distLD} × Maanbaan (LD)`;
+
+            // Update atan2 & snelheid
+            valAtan2El.textContent = `${atanDeg.toFixed(1)}° (Kw. ${romQuad})`;
+            valRelVelEl.textContent = `v_syn = ${relVel} km/s`;
+
+            // Update Energie
+            valEnergyEl.textContent = `E = ${energyVal >= 0 ? '+' : ''}${energyVal.toFixed(2)} km²/s²`;
+            valEnergyEl.className = `mono text-sm font-bold mt-0.5 ${energyVal < 0 ? 'text-yellow-300' : 'text-red-400'}`;
+
+            // Kwadrant Status & Toelichting
+            if (progress <= 0.19) {
+                // Noordkwadrant (+Z)
+                quadrantPillEl.textContent = 'NOORDKWADRANT (+Z)';
+                quadrantPillEl.className = 'mono text-xs md:text-sm font-bold text-emerald-400';
+                valZEl.className = 'mono text-sm font-bold text-emerald-400 mt-0.5';
+                astHaloMat.color.setHex(0x22c55e);
+                dropLineMat.color.setHex(0x22c55e);
+                captureBadgeEl.textContent = 'TIJDELIJK INGEVANGEN (NOORD +Z)';
+                captureBadgeEl.className = 'mono text-[11px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold';
+                phaseExplEl.className = 'text-xs text-slate-300 bg-slate-900/90 border-l-2 border-emerald-400 p-2.5 rounded-r-lg leading-relaxed';
+                phaseExplEl.innerHTML = '<strong>Noordkwadrant (+Z, 2–10 okt 2026):</strong> 2026 QQ8 bevindt zich hoog boven het eclipticavlak van de maanbaan en beweegt met de klok mee naar rechtsonder richting de dalende knoop.';
+            } else if (progress <= 0.51) {
+                // Zuidkwadrant (-Z tijdelijke maanlus)
+                quadrantPillEl.textContent = 'ZUIDKWADRANT (-Z LUS)';
+                quadrantPillEl.className = 'mono text-xs md:text-sm font-bold text-yellow-300';
+                valZEl.className = 'mono text-sm font-bold text-yellow-300 mt-0.5';
+                astHaloMat.color.setHex(0xfacc15);
+                dropLineMat.color.setHex(0xfacc15);
+                captureBadgeEl.textContent = 'MINI-MAAN IN ZUIDKWADRANT (-Z)';
+                captureBadgeEl.className = 'mono text-[11px] px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-semibold';
+                phaseExplEl.className = 'text-xs text-slate-300 bg-slate-900/90 border-l-2 border-yellow-400 p-2.5 rounded-r-lg leading-relaxed';
+                phaseExplEl.innerHTML = '<strong>Tijdelijke Maan in het Zuidkwadrant (-Z):</strong> Na het kruisen van het eclipticavlak duikt 2026 QQ8 diep onder de maanbaan (Z &lt; 0). Door het Corioliseffect en de aardse zwaartekracht maakt het object onderin zijn kenmerkende scherpe keerlus.';
+            } else {
+                // Ontsnapping via L1 (Rode baan)
+                quadrantPillEl.textContent = 'L₁ UITLOOP (HELIOCENTRISCH)';
+                quadrantPillEl.className = 'mono text-xs md:text-sm font-bold text-red-400';
+                valZEl.className = 'mono text-sm font-bold text-red-400 mt-0.5';
+                astHaloMat.color.setHex(0xef4444);
+                dropLineMat.color.setHex(0xef4444);
+                captureBadgeEl.textContent = 'ONTSNAPT VIA L₁ NAAR ZONNEBAAN';
+                captureBadgeEl.className = 'mono text-[11px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 font-semibold';
+                phaseExplEl.className = 'text-xs text-slate-300 bg-slate-900/90 border-l-2 border-red-500 p-2.5 rounded-r-lg leading-relaxed';
+                phaseExplEl.innerHTML = '<strong>L₁-Passage & Heliocentrische Baan (vanaf 29 okt 2026):</strong> Het object klimt uit het zuidkwadrant omhoog en verlaat via de L₁-hals de Hill-sfeer van de Aarde (rode baan) om weer zelfstandig rond de Zon te draaien.';
+            }
+
+            drawMiniRadars(pos);
+        }
+
+        // ============================================================================
+        // 5. 3D LABELS PROJECTIE NAAR HET SCHERM
+        // ============================================================================
+        const labelL1 = document.getElementById('label-l1');
+        const labelEarth = document.getElementById('label-earth');
+        const labelStart = document.getElementById('label-start');
+        const labelSouth = document.getElementById('label-south');
+        const labelNode = document.getElementById('label-node');
+
+        function projectToScreen(vec3, el) {
+            const v = vec3.clone().project(camera);
+            if (v.z > 1) {
+                el.style.opacity = '0';
+                return;
+            }
+            const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(v.y * 0.5) + 0.5) * window.innerHeight;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.opacity = '1';
+        }
+
+        function updateScreenLabels() {
+            projectToScreen(new THREE.Vector3(L1_POS.x, L1_POS.y - 0.15, L1_POS.z), labelL1);
+            projectToScreen(new THREE.Vector3(EARTH_POS.x, EARTH_POS.y - 0.45, EARTH_POS.z), labelEarth);
+            projectToScreen(new THREE.Vector3(yellowControlPoints[0].x - 0.2, yellowControlPoints[0].y + 0.35, yellowControlPoints[0].z), labelStart);
+            projectToScreen(new THREE.Vector3(yellowControlPoints[6].x + 0.1, yellowControlPoints[6].y - 0.38, yellowControlPoints[6].z), labelSouth);
+            if (referenceGroup.visible) {
+                projectToScreen(new THREE.Vector3(nodePos.x + 0.85, nodePos.y, nodePos.z), labelNode);
+            } else {
+                labelNode.style.opacity = '0';
+            }
+        }
+
+        // ============================================================================
+        // 6. INTERACTIE: MUIS, TOUCH, CAMERA PRESETS & CONTROLS
+        // ============================================================================
+        let isDragging = false;
+        let prevPointer = { x: 0, y: 0 };
+
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            prevPointer = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - prevPointer.x;
+            const dy = e.clientY - prevPointer.y;
+            prevPointer = { x: e.clientX, y: e.clientY };
+
+            camSpherical.theta -= dx * 0.0065;
+            camSpherical.phi = Math.max(0.08, Math.min(Math.PI - 0.08, camSpherical.phi - dy * 0.0065));
+            updateCameraFromSpherical();
+        });
+
+        window.addEventListener('pointerup', () => {
+            isDragging = false;
+        });
+
+        renderer.domElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camSpherical.radius = Math.max(5.5, Math.min(26.0, camSpherical.radius + e.deltaY * 0.01));
+            updateCameraFromSpherical();
+        }, { passive: false });
+
+        // Slider event
+        sliderEl.addEventListener('input', (e) => {
+            isPlaying = false;
+            updatePlayButtonUI();
+            updateSimulationState(parseFloat(e.target.value) / 1000);
+        });
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            if (isPlaying && progress >= 0.995) {
+                progress = 0.0;
+            }
+            updatePlayButtonUI();
+        }
+
+        function updatePlayButtonUI() {
+            const iconPlay = document.getElementById('icon-play');
+            const iconPause = document.getElementById('icon-pause');
+            if (isPlaying) {
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
+            } else {
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
+            }
+        }
+
+        function jumpToProgress(val) {
+            isPlaying = false;
+            updatePlayButtonUI();
+            updateSimulationState(val);
+        }
+
+        function cycleSpeed() {
+            const speeds = [0.5, 1.0, 2.0, 4.0];
+            const idx = (speeds.indexOf(playSpeed) + 1) % speeds.length;
+            playSpeed = speeds[idx];
+            document.getElementById('btn-speed').textContent = `${playSpeed.toFixed(1)}×`;
+        }
+
+        function toggleReferenceGrid() {
+            referenceGroup.visible = !referenceGroup.visible;
+            const btn = document.getElementById('btn-toggle-grid');
+            if (referenceGroup.visible) {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 transition';
+            } else {
+                btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800/80 transition';
+            }
+        }
+
+        // Camera Presets met vloeiende overgang
+        let targetSpherical = null;
+        let targetLookAt = null;
+
+        function setCameraPreset(mode) {
+            const buttons = ['screenshot', 'xz', 'xy'];
+            buttons.forEach(b => {
+                const el = document.getElementById(`btn-view-${b}`);
+                if (b === mode) {
+                    el.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 transition';
+                } else {
+                    el.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition';
+                }
+            });
+
+            if (mode === 'screenshot') {
+                // Exacte kijkhoek zoals de geüploade afbeelding
+                targetSpherical = { radius: 13.8, theta: 0.04, phi: Math.PI / 2 - 0.06 };
+                targetLookAt = new THREE.Vector3(-0.4, -0.15, 0.0);
+            } else if (mode === 'xz') {
+                // Zuiver Noord-Zuid Zijaanzicht op het Aarde-L1 systeem
+                targetSpherical = { radius: 11.5, theta: 0.0, phi: Math.PI / 2 };
+                targetLookAt = new THREE.Vector3(2.2, -0.4, 0.0);
+            } else if (mode === 'xy') {
+                // Ecliptisch Bovenaanzicht vanaf de Noordpool (+Z)
+                targetSpherical = { radius: 14.2, theta: 0.0, phi: 0.08 };
+                targetLookAt = new THREE.Vector3(1.2, 0.0, 0.0);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ============================================================================
+        // 7. ANIMATIELUS
+        // ============================================================================
+        let lastTime = performance.now();
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(0.05, (now - lastTime) / 1000);
+            lastTime = now;
+
+            if (isPlaying) {
+                let nextProg = progress + dt * 0.055 * playSpeed;
+                if (nextProg > 1.0) {
+                    nextProg = 0.0; // Herhaal de lus automatisch
+                }
+                updateSimulationState(nextProg);
+            }
+
+            // Vloeiende camera-interpolatie bij preset-wissel
+            if (targetSpherical && targetLookAt) {
+                camSpherical.radius += (targetSpherical.radius - camSpherical.radius) * 0.1;
+                camSpherical.theta += (targetSpherical.theta - camSpherical.theta) * 0.1;
+                camSpherical.phi += (targetSpherical.phi - camSpherical.phi) * 0.1;
+                camTarget.lerp(targetLookAt, 0.1);
+                updateCameraFromSpherical();
+
+                if (Math.abs(camSpherical.radius - targetSpherical.radius) < 0.01 &&
+                    Math.abs(camSpherical.theta - targetSpherical.theta) < 0.005 &&
+                    Math.abs(camSpherical.phi - targetSpherical.phi) < 0.005) {
+                    targetSpherical = null;
+                    targetLookAt = null;
+                }
+            }
+
+            updateScreenLabels();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function () {
+            // Start op 02 Okt 2026 en laat de animatie door het Noord- en Zuidkwadrant lopen
+            updateSimulationState(0.0);
+            animate(performance.now());
+        };
+    </script>
+</body>
+</html>
