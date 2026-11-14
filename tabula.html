@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corioliskracht & Tabula Anemographica (Janssonius, 1650)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cinzel (Historische Cartografie), Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #060911;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        .serif-title {
+            font-family: 'Cinzel', serif;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hud-card {
+            background: rgba(10, 15, 28, 0.88);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(212, 175, 55, 0.22);
+            box-shadow: 0 14px 36px -6px rgba(0, 0, 0, 0.75);
+        }
+        .hud-card-subtle {
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+        /* Custom Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.28);
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 15px;
+            width: 15px;
+            border-radius: 50%;
+            background: #facc15;
+            border: 2px solid #0f172a;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.7);
+            transition: transform 0.12s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.18);
+        }
+        .wind-btn {
+            transition: all 0.15s ease;
+        }
+        .wind-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(250, 204, 21, 0.6);
+            background: rgba(250, 204, 21, 0.12);
+        }
+        /* Scrollbar voor zijpaneel op kleinere schermen */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.35);
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col lg:flex-row overflow-hidden bg-[#060911]">
+
+    <!-- LINKER / BOVENSTE HOOFDCANVAS: 1650 Windroos + Coriolis & Schets-integrator -->
+    <main class="relative flex-1 h-[58vh] lg:h-full overflow-hidden flex items-center justify-center">
+        <canvas id="sim-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- Bovenste Zwevende Header: Titel & Modus-keuze -->
+        <div class="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+            <div class="hud-card rounded-xl px-3.5 py-2 pointer-events-auto flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-400/40 flex items-center justify-center text-amber-300 font-bold serif-title text-sm shrink-0">
+                    32
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="serif-title text-xs md:text-sm font-bold text-amber-200 tracking-wider uppercase">
+                            Tabula Anemographica seu Pyxis Nautica (1650)
+                        </h1>
+                        <span id="hemisphere-badge" class="mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
+                            NOORDELIJK HALFROND (Afbuiging Rechts ↻)
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        Corioliskracht <span class="mono text-amber-300">F_c = -2m(Ω × v)</span> • Janssonius 32-streken Windroos & Schets-Lemniscaat
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3 Modi Knoppen -->
+            <div class="hud-card rounded-xl p-1 pointer-events-auto flex flex-wrap items-center gap-1">
+                <button onclick="setMode('sketch')" id="tab-sketch" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/50 transition">
+                    1. Schets-Analyse (Spiraal & ∞ Krul)
+                </button>
+                <button onclick="setMode('windrose')" id="tab-windrose" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800/70 transition">
+                    2. Janssonius Winden (RK4 Deeltjes)
+                </button>
+                <button onclick="setMode('draw')" id="tab-draw" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800/70 transition">
+                    3. Vrije Lancering & Circulatie
+                </button>
+            </div>
+        </div>
+
+        <!-- Onderste Zwevende Legenda & Citaten uit Janssonius (1650) -->
+        <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none z-10">
+            <!-- Vector Legenda -->
+            <div class="hud-card rounded-xl px-3 py-2 pointer-events-auto flex flex-wrap items-center gap-3 text-[11px]">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-0.5 bg-emerald-400 inline-block"></span>
+                    <span class="text-slate-300">Snelheid <strong class="mono text-emerald-300">v</strong></span>
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-0.5 bg-cyan-400 inline-block"></span>
+                    <span class="text-slate-300">Coriolisversnelling <strong class="mono text-cyan-300">a_c = -2(Ω × v)</strong></span>
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-0.5 bg-rose-400 inline-block"></span>
+                    <span class="text-slate-300">Drukgradiënt / Vortex <strong class="mono text-rose-300">-∇Φ</strong></span>
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-300 inline-block"></span>
+                    <span class="text-slate-300">Schets-traject (Notitieblok)</span>
+                </span>
+            </div>
+
+            <!-- Historisch Citaat van geselecteerde wind (Uit het boekfragment van Janssonius) -->
+            <div id="wind-quote-box" class="hud-card rounded-xl px-3.5 py-2 pointer-events-auto max-w-xl text-xs border-l-2 border-l-amber-400">
+                <div class="flex items-center justify-between gap-2">
+                    <span id="quote-title" class="serif-title font-bold text-amber-300">ZEPHYRUS / PONENTE (West — 270°)</span>
+                    <span id="quote-rhumb" class="mono text-[10px] text-slate-400">Streek 25 van 32 • Kwadrant III/IV</span>
+                </div>
+                <p id="quote-text" class="text-slate-300 italic mt-0.5 leading-snug">
+                    "De westenwind was de Ponente, de Grieken noemden hem Zephyrus, want ‘deze wind brengt het leven in de lente’; de Fransen noemden hem le vent feuilleret, de bladerwind, omdat hij ‘met zijn zoete en warme lucht de bladeren uitlokt’."
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- RECHTER BEDIENINGSPANEEL: Fysica-parameters, 8 Hoofdwinden & Telemetrie -->
+    <aside class="w-full lg:w-[420px] xl:w-[450px] h-[42vh] lg:h-full bg-[#090d18] border-t lg:border-t-0 lg:border-l border-amber-500/20 overflow-y-auto p-3.5 flex flex-col gap-3 z-20">
+
+        <!-- SECTIE 1: De Twee Figuren uit je Notitieblokschets -->
+        <div class="hud-card-subtle rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                    <span>✎</span> Notitieblok Schets-Analyse
+                </h2>
+                <label class="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+                    <input type="checkbox" id="chk-lined-paper" onchange="toggleLinedPaper()" class="rounded accent-amber-400">
+                    <span>Schriftlijnen tonen</span>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <button onclick="focusSketchPart('both')" id="btn-sketch-both" class="p-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-left transition">
+                    <div class="font-bold text-amber-200">1. Beide Schetsen</div>
+                    <div class="text-[10px] text-slate-300 mt-0.5">Bovenste Ekman-spiraal + Onderste ∞ Lemniscaat met krul</div>
+                </button>
+                <button onclick="focusSketchPart('lemniscate')" id="btn-sketch-lem" class="p-2 rounded-lg bg-slate-900/80 border border-slate-700/80 hover:border-amber-400/40 text-left transition">
+                    <div class="font-bold text-cyan-300">2. Bipolaire Vortex (∞)</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Overgang Hoog (H) ↔ Laag (L) met inwaartse eindspiraal links</div>
+                </button>
+            </div>
+
+            <div class="text-[11px] text-slate-300 bg-slate-950/80 rounded-lg p-2 border border-slate-800 leading-relaxed">
+                <strong class="text-amber-300">Wiskundige verklaring van je tekening:</strong>
+                <ul class="list-disc list-inside mt-1 space-y-0.5 text-[10.5px] text-slate-300">
+                    <li><strong>Bovenste krul:</strong> Een <em>inertiële / Ekman-spiraal</em> ($\vec{r}(t) = r_0 e^{-\gamma t} e^{-i f t}$) waarbij wrijving ($\gamma$) en Corioliskracht ($f$) een luchtdeeltje naar binnen laten spiraliseren.</li>
+                    <li><strong>Onderste ∞ met linkerkrul:</strong> Een luchtdeeltje dat vanuit een <em>anticycloon</em> (rechterlus, met de klok mee) de zadelkeel passeert naar een <em>cycloon</em> (linkerlus, tegen de klok in) en door Ekman-wrijving in de linkerkern naar binnen krult.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTIE 2: 8 Klassieke Winden van Janssonius (Klik om luchtdeeltje te lanceren) -->
+        <div class="hud-card-subtle rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">
+                    8 Hoofdstreken (Janssonius, 1650)
+                </h2>
+                <button onclick="launchAllEightWinds()" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 border border-amber-400/40 text-[10px] mono font-semibold transition">
+                    Lanceer Alle 8 Winden tegelijk
+                </button>
+            </div>
+            <p class="text-[11px] text-slate-400">
+                Klik op een windstreek om vanaf de buitenring een luchtpakket richting het centrum te blazen:
+            </p>
+            <div class="grid grid-cols-4 gap-1.5 text-[11px]">
+                <button onclick="triggerHistoricalWind(0)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">0° N</div>
+                    <div class="font-semibold text-white truncate">Tramontana</div>
+                </button>
+                <button onclick="triggerHistoricalWind(1)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">45° NO</div>
+                    <div class="font-semibold text-white truncate">Greco</div>
+                </button>
+                <button onclick="triggerHistoricalWind(2)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">90° O</div>
+                    <div class="font-semibold text-white truncate">Levante</div>
+                </button>
+                <button onclick="triggerHistoricalWind(3)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">135° ZO</div>
+                    <div class="font-semibold text-white truncate">Siroco</div>
+                </button>
+                <button onclick="triggerHistoricalWind(4)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">180° Z</div>
+                    <div class="font-semibold text-white truncate">Ostro / Notus</div>
+                </button>
+                <button onclick="triggerHistoricalWind(5)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">225° ZW</div>
+                    <div class="font-semibold text-white truncate">Libeccio</div>
+                </button>
+                <button onclick="triggerHistoricalWind(6)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">270° W</div>
+                    <div class="font-semibold text-white truncate">Zephyrus</div>
+                </button>
+                <button onclick="triggerHistoricalWind(7)" class="wind-btn p-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-center">
+                    <div class="mono text-[10px] text-amber-400">315° NW</div>
+                    <div class="font-semibold text-white truncate">Maestro</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTIE 3: Fysische Parameters (Breedtegraad, Corioliskracht, Ekman-demping) -->
+        <div class="hud-card-subtle rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">
+                    Coriolis & Dynamica Parameters
+                </h2>
+                <button onclick="toggleReferenceFrame()" id="btn-frame" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] mono font-semibold transition">
+                    Stelsel: Meedraaiend (Aarde)
+                </button>
+            </div>
+
+            <!-- Breedtegraad Slider -->
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300">Geografische Breedte (<span class="mono text-amber-300">φ</span>)</span>
+                    <span id="lbl-lat" class="mono font-bold text-emerald-400">+52.3° N (Amsterdam)</span>
+                </div>
+                <input id="slider-lat" type="range" min="-90" max="90" step="0.5" value="52.3" class="w-full" oninput="updatePhysicsParams()">
+                <div class="flex justify-between text-[10px] mono text-slate-500 mt-0.5">
+                    <span>-90° Zuidpool (Links ↺)</span>
+                    <span>0° Evenaar (f=0)</span>
+                    <span>+90° Noordpool (Rechts ↻)</span>
+                </div>
+            </div>
+
+            <!-- Rotatiesnelheid Omega -->
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300">Rotatiefrequentie (<span class="mono text-amber-300">Ω</span> schaal)</span>
+                    <span id="lbl-omega" class="mono font-bold text-cyan-300">1.25 rad/s</span>
+                </div>
+                <input id="slider-omega" type="range" min="0.0" max="3.0" step="0.05" value="1.25" class="w-full" oninput="updatePhysicsParams()">
+            </div>
+
+            <!-- Ekman Wrijving / Spiraal-demping Gamma -->
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300">Ekman-wrijving (<span class="mono text-amber-300">γ</span> spiraalkrul)</span>
+                    <span id="lbl-gamma" class="mono font-bold text-amber-300">0.18 s⁻¹</span>
+                </div>
+                <input id="slider-gamma" type="range" min="0.0" max="0.6" step="0.01" value="0.18" class="w-full" oninput="updatePhysicsParams()">
+            </div>
+
+            <!-- Drukgradiënt / Bipolaire Vortex Sterkte -->
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-slate-300">Bipolaire Drukgradiënt (<span class="mono text-rose-300">-∇P</span> Lemniscaat)</span>
+                    <span id="lbl-pressure" class="mono font-bold text-rose-300">1.00×</span>
+                </div>
+                <input id="slider-pressure" type="range" min="0.0" max="2.5" step="0.05" value="1.00" class="w-full" oninput="updatePhysicsParams()">
+            </div>
+        </div>
+
+        <!-- SECTIE 4: Live Telemetrie & 32-Streken Kompas-Uitlezing -->
+        <div class="hud-card-subtle rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Real-Time Baantelemetrie</span>
+                <button onclick="clearParticles()" class="text-[10px] mono px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    Wis Sporen
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90">
+                    <div class="text-[10px] text-slate-400">Coriolisparameter <span class="mono">f = 2Ω sin(φ)</span></div>
+                    <div id="tel-f" class="mono text-sm font-bold text-cyan-300 mt-0.5">+1.15×10⁻⁴ rad/s</div>
+                    <div id="tel-buys" class="mono text-[10px] text-emerald-400">Wet v. Buys Ballot: Rechts</div>
+                </div>
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90">
+                    <div class="text-[10px] text-slate-400">Kompasstreek & <span class="mono">atan2(y,x)</span></div>
+                    <div id="tel-streek" class="mono text-sm font-bold text-amber-300 mt-0.5">Zephyrus (270°)</div>
+                    <div id="tel-quadrant" class="mono text-[10px] text-slate-400">Streek 25/32 • Kwadrant III</div>
+                </div>
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90">
+                    <div class="text-[10px] text-slate-400">Coriolisversnelling <span class="mono">|a_c|</span></div>
+                    <div id="tel-ac" class="mono text-sm font-bold text-white mt-0.5">2.48 m/s²</div>
+                    <div id="tel-rossby" class="mono text-[10px] text-sky-400">Rossby-getal Ro = 0.24</div>
+                </div>
+                <div class="bg-slate-950/90 rounded-lg p-2 border border-slate-800/90">
+                    <div class="text-[10px] text-slate-400">Kringintegraal / Oppervlak</div>
+                    <div id="tel-area" class="mono text-sm font-bold text-purple-300 mt-0.5">∮ v·dr = +14.2</div>
+                    <div id="tel-radius" class="mono text-[10px] text-slate-400">Inertiële straal R_i = v/|f|</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <script>
+        // ============================================================================
+        // 1. HISTORISCHE DATA: 32 STREKEN VAN JOHANNES JANSSONIUS (AMSTERDAM, 1650)
+        //    "Tabula Anemographica seu Pyxis Nautica"
+        // ============================================================================
+        const EIGHT_PRINCIPAL_WINDS = [
+            {
+                index: 0,
+                angleDeg: 0, // Noord (Boven op de kaart)
+                name: "TRAMONTANA",
+                dutch: "Noordenwind (Noord)",
+                latin: "Septentrio / Aparctias",
+                quote: "De noordenwind noemden de Italianen de Tramontana, 'van over de bergen komend' (uit de Alpen richting de Middellandse Zee)."
+            },
+            {
+                index: 1,
+                angleDeg: 45, // Noordoost
+                name: "GRECO",
+                dutch: "Noordoostenwind (Noord-Oost)",
+                latin: "Aquilo / Boreas",
+                quote: "De Greco (Grecale) kwam uit het noordoosten, genoemd naar Griekenland vanuit het centraal-Mediterrane zeevaartperspectief."
+            },
+            {
+                index: 2,
+                angleDeg: 90, // Oost
+                name: "LEVANTE",
+                dutch: "Oostenwind (Oost)",
+                latin: "Subsolanus / Apeliotes",
+                quote: "De oostenwind heette de Levante, waar de zon opkomt ('sol levans') aan de oostelijke horizon van de Middellandse Zee."
+            },
+            {
+                index: 3,
+                angleDeg: 135, // Zuidoost
+                name: "SIROCO",
+                dutch: "Zuidoostenwind (Zuyd-Oost)",
+                latin: "Vulturnus / Eurus",
+                quote: "De zuidoostenwind noemde men de Siroco (Scirocco), de warme mediterrane wind uit de richting van Syrië en de woestijn."
+            },
+            {
+                index: 4,
+                angleDeg: 180, // Zuid
+                name: "OSTRO / NOTUS",
+                dutch: "Zuidenwind (Zuyd)",
+                latin: "Auster / Notus",
+                quote: "De zuidenwind was de Ostro, in het Grieks Notus, hetgeen vochtigheid betekent want deze wind 'brengt gemeenlijk veel warmte en vochtigheid'."
+            },
+            {
+                index: 5,
+                angleDeg: 225, // Zuidwest
+                name: "AFRICUS / LIBECCIO",
+                dutch: "Zuidwestenwind (Zuyd-West)",
+                latin: "Africus / Lips",
+                quote: "De zuidwestenwind heette Africus of Libeccio, 'de wind die van Afrika c.q. Libië komt'."
+            },
+            {
+                index: 6,
+                angleDeg: 270, // West
+                name: "PONENTE / ZEPHYRUS",
+                dutch: "Westenwind (West)",
+                latin: "Favonius / Zephyrus / Le vent feuilleret",
+                quote: "De westenwind was de Ponente, de Grieken noemden hem Zephyrus, want 'deze wind brengt het leven in de lente'; de Fransen noemden hem le vent feuilleret, de bladerwind, omdat hij 'met zijn zoete en warme lucht de bladeren uitlokt'."
+            },
+            {
+                index: 7,
+                angleDeg: 315, // Noordwest
+                name: "MAESTRO / MISTRAL",
+                dutch: "Noordwestenwind (Noord-West)",
+                latin: "Corus / Argestes",
+                quote: "De noordwestenwind is de Maestro (Magistralis), die de Fransen de Mistral noemen."
+            }
+        ];
+
+        // Alle 32 streken (Tweeëndertig streken op het 17e-eeuwse zeekompas)
+        const THIRTY_TWO_STREKEN = [
+            "Noord (Tramontana)", "Noord ten Oosten", "Noord-Noord-Oost", "Noordoost ten Noorden",
+            "Noord-Oost (Greco)", "Noordoost ten Oosten", "Oost-Noord-Oost", "Oost ten Noorden",
+            "Oost (Levante)", "Oost ten Zuyden", "Oost-Zuyd-Oost", "Zuydoost ten Oosten",
+            "Zuyd-Oost (Siroco)", "Zuydoost ten Zuyden", "Zuyd-Zuyd-Oost", "Zuyd ten Oosten",
+            "Zuyd (Ostro / Notus)", "Zuyd ten Westen", "Zuyd-Zuyd-West", "Zuydwest ten Zuyden",
+            "Zuyd-West (Libeccio)", "Zuydwest ten Westen", "West-Zuyd-West", "West ten Zuyden",
+            "West (Zephyrus)", "West ten Noorden", "West-Noord-West", "Noordwest ten Westen",
+            "Noord-West (Maestro)", "Noordwest ten Noorden", "Noord-Noord-West", "Noord ten Westen"
+        ];
+
+        // ============================================================================
+        // 2. CANVAS & GLOBALE SIMULATIE-STATUS
+        // ============================================================================
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentMode = 'sketch'; // 'sketch', 'windrose', 'draw'
+        let sketchFocus = 'both';   // 'both' of 'lemniscate'
+        let showLinedPaper = false;
+        let isRotatingFrame = true; // true = Synodisch (meedraaiend met Aarde), false = Inertieel
+
+        // Fysische parameters
+        let latitudeDeg = 52.3;     // Amsterdam (Janssonius 1650)
+        let omegaScale = 1.25;      // Hoeksnelheid schaal
+        let gammaDamp = 0.18;       // Ekman demping voor de spiraalkrul
+        let pressureStrength = 1.0; // Kracht van het bipolaire drukveld
+        let worldRotationAngle = 0; // Rotatiehoek van de windroos in inertieel stelsel
+
+        // Schets-animatie voortgang
+        let sketchTime = 0;
+        let upperSpiralPoints = [];
+        let lowerLemniscatePoints = [];
+
+        // RK4 Deeltjes in Modus 2 & 3
+        let particles = [];
+
+        // Vrije sleep/lancering en Planimeter-lus in Modus 3
+        let isDraggingLaunch = false;
+        let dragStart = null;
+        let dragCurrent = null;
+        let userDrawnLoop = [];
+
+        // ============================================================================
+        // 3. WISKUNDIGE GENERATIE VAN DE TWEE NOTITIEBLOK-SCHETSEN
+        // ============================================================================
+        // Genereert exact de twee curven die met blauwe balpen in het schrift zijn getekend:
+        //   1. Bovenste figuur: Inertiële / Ekman-spiraal (coriolis-rotatie + demping naar binnen)
+        //   2. Onderste figuur: Gekoppelde Lemniscaat (∞) tussen een rechter lob (Anticycloon H)
+        //      en linker lob (Cycloon L) die aan de linkerbovenzijde uitmondt in een
+        //      inwaartse Coriolis-spiraalkrul.
+        function generateNotebookSketchCurves(radiusScale) {
+            upperSpiralPoints = [];
+            lowerLemniscatePoints = [];
+
+            const signHemi = latitudeDeg >= 0 ? 1 : -1;
+            const fFactor = Math.max(0.35, Math.abs(Math.sin(latitudeDeg * Math.PI / 180))) * (omegaScale / 1.25);
+            const damp = Math.max(0.05, gammaDamp);
+
+            // ----------------------------------------------------------------
+            // CURVE A: Bovenste figuur uit het schrift (Inertiële / Ekman-spiraal)
+            // Vergelijking: z(s) = z_center + R0 * exp(-damp * s) * exp(i * omega * s)
+            // ----------------------------------------------------------------
+            const cxUpper = 0.14 * radiusScale;
+            const cyUpper = -0.52 * radiusScale;
+            const r0Upper = 0.25 * radiusScale;
+            const stepsUpper = 260;
+
+            for (let i = 0; i <= stepsUpper; i++) {
+                const s = i / stepsUpper; // 0 -> 1
+                // Ongeveer 1.85 omwentelingen van binnen naar buiten of buiten naar binnen
+                const theta = -0.8 + signHemi * s * Math.PI * 3.65 * fFactor;
+                const env = r0Upper * Math.exp(-1.55 * damp * 4.2 * (1 - s));
+                // Lichte elliptische afplatting zoals in de handgetekende krul
+                const x = cxUpper + env * 1.18 * Math.cos(theta);
+                const y = cyUpper + env * 0.92 * Math.sin(theta);
+                upperSpiralPoints.push({ x, y, s });
+            }
+
+            // ----------------------------------------------------------------
+            // CURVE B: Onderste figuur uit het schrift (Gekoppelde Lemniscaat ∞
+            //          met de karakteristieke naar binnen krullende spiraal linksboven)
+            // ----------------------------------------------------------------
+            // We parametriseren een vloeiende overgang:
+            //   Fase 1 (s = 0.00 -> 0.68): Lemniscaat van Bernoulli (rechterlus -> kruispunt -> onderste linkerlus)
+            //   Fase 2 (s = 0.68 -> 1.00): Vanuit de linkerlus omhoog buigend in een strakke
+            //                              inwaartse Coriolis-spiraalkrul linksboven (exact zoals op de foto!)
+            const cxLower = -0.02 * radiusScale;
+            const cyLower = 0.24 * radiusScale;
+            const aLem = 0.66 * radiusScale * (0.75 + 0.25 * pressureStrength);
+            const stepsLower = 420;
+
+            // Eerst de hoofd-achtvorm (Lemniscaat) + aansluitende krul
+            for (let i = 0; i <= stepsLower; i++) {
+                const s = i / stepsLower;
+
+                if (s <= 0.72) {
+                    // Parameter u loopt over de lemniscaat:
+                    // Start nabij het midden-links, maakt de volledige rechterlus, kruist het midden,
+                    // en maakt de grote onderste linkerboog omhoog naar linksboven.
+                    const u = (s / 0.72) * (Math.PI * 1.92) - 0.38;
+                    const denom = 1 + Math.sin(u) * Math.sin(u);
+                    let lx = aLem * Math.cos(u) / denom;
+                    let ly = aLem * Math.sin(u) * Math.cos(u) / denom;
+
+                    // Geef de linker- en rechterlob de lichte asymmetrie van de handschets
+                    lx *= 1.05;
+                    ly *= 1.18 * signHemi;
+
+                    lowerLemniscatePoints.push({
+                        x: cxLower + lx,
+                        y: cyLower + ly,
+                        s
+                    });
+                } else {
+                    // Fase 2: De inwaartse Coriolis-spiraalkrul linksboven op de linkerlob
+                    const w = (s - 0.72) / 0.28; // 0 -> 1
+                    const lastPt = lowerLemniscatePoints[lowerLemniscatePoints.length - 1];
+                    if (i === Math.floor(0.72 * stepsLower) + 1) {
+                        // Bewaar ankerpunt voor naadloze C1-aansluiting
+                    }
+                    // Spiraalcentrum linksboven de linkerlob
+                    const curlCenterX = cxLower - 0.50 * aLem;
+                    const curlCenterY = cyLower - 0.23 * aLem * signHemi;
+                    const startRadius = 0.23 * aLem;
+                    const endRadius = 0.025 * aLem;
+                    const rCurl = startRadius * Math.exp(-2.1 * w) + endRadius * (1 - Math.exp(-2.1 * w));
+                    const startAngle = Math.PI * 0.95 * signHemi;
+                    const curlTheta = startAngle + signHemi * w * Math.PI * 2.85 * fFactor;
+
+                    const x = curlCenterX + rCurl * 1.12 * Math.cos(curlTheta);
+                    const y = curlCenterY + rCurl * 0.95 * Math.sin(curlTheta);
+
+                    lowerLemniscatePoints.push({ x, y, s });
+                }
+            }
+
+            // Vloeiende Gaussische smoothing rond het overgangspunt (zodat de krul 100% naadloos uit de 8-vorm loopt)
+            const transitionIdx = Math.floor(0.72 * stepsLower);
+            for (let pass = 0; pass < 6; pass++) {
+                for (let k = transitionIdx - 22; k <= transitionIdx + 22; k++) {
+                    if (k > 1 && k < lowerLemniscatePoints.length - 2) {
+                        lowerLemniscatePoints[k].x = 0.25 * lowerLemniscatePoints[k - 1].x + 0.5 * lowerLemniscatePoints[k].x + 0.25 * lowerLemniscatePoints[k + 1].x;
+                        lowerLemniscatePoints[k].y = 0.25 * lowerLemniscatePoints[k - 1].y + 0.5 * lowerLemniscatePoints[k].y + 0.25 * lowerLemniscatePoints[k + 1].y;
+                    }
+                }
+            }
+        }
+
+        // ============================================================================
+        // 4. RK4 FYSICA-INTEGRATOR VOOR CORIOLIS-DEELTJES OP DE WINDROOS
+        // ============================================================================
+        // Bewegingsvergelijking in het meedraaiende referentiekader:
+        //   dv_x / dt =  f * v_y - gamma * v_x - dPhi/dx
+        //   dv_y / dt = -f * v_x - gamma * v_y - dPhi/dy
+        // (Let op schermcoördinaten: +X is Oost/Rechts, +Y is Zuid/Omlaag.
+        //  Op het Noordelijk Halfrond (f > 0) buigt een deeltje naar RECHTS af t.o.v. zijn bewegingsrichting:
+        //  In schermcoördinaten (rechtsdraaiend: X rechts, Y omlaag) is 90° naar rechts van (vx, vy) gelijk aan (-vy, vx)!)
+        function getCoriolisAcceleration(x, y, vx, vy, radiusScale) {
+            const sinLat = Math.sin(latitudeDeg * Math.PI / 180);
+            const f = 2.0 * omegaScale * sinLat; // Positief op Noordelijk Halfrond
+
+            // 1. Corioliskracht a_c = f * (-vy, vx) -> buigt naar rechts voor f > 0
+            const ac_x = -f * vy;
+            const ac_y =  f * vx;
+
+            // 2. Ekman wrijving -gamma * v
+            const drag_x = -gammaDamp * vx;
+            const drag_y = -gammaDamp * vy;
+
+            // 3. Drukgradiënt / Geopotentiaalveld (-grad Phi)
+            // Creëert een subtiel bipolair drukveld (Lage druk L links, Hoge druk H rechts of centraal)
+            let press_x = 0;
+            let press_y = 0;
+
+            if (currentMode === 'windrose' || currentMode === 'draw') {
+                // Centraal lagedrukgebied (of bipolair bij hogere druk-instelling) dat lucht naar het midden zuigt,
+                // waardoor de Corioliskracht er een spiraal / cyclonale circulatie van maakt:
+                const r = Math.hypot(x, y) + 1;
+                const normR = r / radiusScale;
+                const pull = -0.32 * pressureStrength * radiusScale * Math.tanh(normR * 1.5);
+                press_x = pull * (x / r);
+                press_y = pull * (y / r);
+            }
+
+            return {
+                ax: ac_x + drag_x + press_x,
+                ay: ac_y + drag_y + press_y,
+                ac_x,
+                ac_y,
+                press_x,
+                press_y,
+                f
+            };
+        }
+
+        function stepParticleRK4(p, dt, radiusScale) {
+            const k1v = getCoriolisAcceleration(p.x, p.y, p.vx, p.vy, radiusScale);
+            const k1x = p.vx;
+            const k1y = p.vy;
+
+            const x2 = p.x + 0.5 * dt * k1x;
+            const y2 = p.y + 0.5 * dt * k1y;
+            const vx2 = p.vx + 0.5 * dt * k1v.ax;
+            const vy2 = p.vy + 0.5 * dt * k1v.ay;
+            const k2v = getCoriolisAcceleration(x2, y2, vx2, vy2, radiusScale);
+
+            const x3 = p.x + 0.5 * dt * vx2;
+            const y3 = p.y + 0.5 * dt * vy2;
+            const vx3 = p.vx + 0.5 * dt * k2v.ax;
+            const vy3 = p.vy + 0.5 * dt * k2v.ay;
+            const k3v = getCoriolisAcceleration(x3, y3, vx3, vy3, radiusScale);
+
+            const x4 = p.x + dt * vx3;
+            const y4 = p.y + dt * vy3;
+            const vx4 = p.vx + dt * k3v.ax;
+            const vy4 = p.vy + dt * k3v.ay;
+            const k4v = getCoriolisAcceleration(x4, y4, vx4, vy4, radiusScale);
+
+            p.x += (dt / 6) * (k1x + 2 * vx2 + 2 * vx3 + vx4);
+            p.y += (dt / 6) * (k1y + 2 * vy2 + 2 * vy3 + vy4);
+            p.vx += (dt / 6) * (k1v.ax + 2 * k2v.ax + 2 * k3v.ax + k4v.ax);
+            p.vy += (dt / 6) * (k1v.ay + 2 * k2v.ay + 2 * k3v.ay + k4v.ay);
+
+            p.ac_x = k1v.ac_x;
+            p.ac_y = k1v.ac_y;
+            p.press_x = k1v.press_x;
+            p.press_y = k1v.press_y;
+            p.age += dt;
+
+            p.trail.push({ x: p.x, y: p.y });
+            if (p.trail.length > 360) p.trail.shift();
+        }
+
+        // ============================================================================
+        // 5. LANCERING VAN HISTORISCHE WINDEN (JANSSONIUS 1650)
+        // ============================================================================
+        function triggerHistoricalWind(windIndex, keepMode = false) {
+            const w = EIGHT_PRINCIPAL_WINDS[windIndex];
+            if (!keepMode && currentMode === 'sketch') {
+                setMode('windrose');
+            }
+
+            // Update citaat-kaart onderin
+            document.getElementById('quote-title').textContent = `${w.name} (${w.dutch} — ${w.angleDeg}°)`;
+            const streekNr = windIndex * 4 + 1;
+            const quad = w.angleDeg < 90 ? 'I (NO)' : (w.angleDeg < 180 ? 'II (ZO)' : (w.angleDeg < 270 ? 'III (ZW)' : 'IV (NW)'));
+            document.getElementById('quote-rhumb').textContent = `Streek ${streekNr} van 32 • ${w.latin} • Kwadrant ${quad}`;
+            document.getElementById('quote-text').textContent = `"${w.quote}"`;
+
+            // Bereken startpositie op de buitenring van de windroos
+            const radiusScale = Math.min(canvas.width, canvas.height) * 0.39;
+            // Kompas-hoek: 0° = Noord (boven, dus -Y), 90° = Oost (+X)
+            const rad = (w.angleDeg - 90) * (Math.PI / 180);
+            const startX = Math.cos(rad) * radiusScale * 0.90;
+            const startY = Math.sin(rad) * radiusScale * 0.90;
+
+            // De wind waait VANUIT die streek richting het centrum van de Middellandse Zee / het kompas:
+            const speed = radiusScale * 0.62;
+            const vx = -Math.cos(rad) * speed;
+            const vy = -Math.sin(rad) * speed;
+
+            const colors = ['#38bdf8', '#34d399', '#facc15', '#fb923c', '#f87171', '#e879f9', '#a78bfa', '#2dd4bf'];
+
+            particles.push({
+                x: startX,
+                y: startY,
+                vx,
+                vy,
+                ac_x: 0,
+                ac_y: 0,
+                press_x: 0,
+                press_y: 0,
+                name: w.name,
+                color: colors[windIndex % colors.length],
+                age: 0,
+                trail: [{ x: startX, y: startY }]
+            });
+
+            if (particles.length > 16) particles.shift();
+        }
+
+        function launchAllEightWinds() {
+            if (currentMode === 'sketch') setMode('windrose');
+            particles = [];
+            for (let i = 0; i < 8; i++) {
+                triggerHistoricalWind(i, true);
+            }
+        }
+
+        function clearParticles() {
+            particles = [];
+            userDrawnLoop = [];
+            sketchTime = 0;
+        }
+
+        // ============================================================================
+        // 6. RENDERING: 1650 JANSSONIUS WINDROOS + SCHETS + VECToren
+        // ============================================================================
+        function drawJanssoniusCompassRose(cx, cy, R) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            if (!isRotatingFrame) {
+                ctx.rotate(worldRotationAngle);
+            }
+
+            // Achtergrond gloed van het kompas
+            const grad = ctx.createRadialGradient(0, 0, R * 0.05, 0, 0, R * 1.12);
+            grad.addColorStop(0, 'rgba(30, 41, 59, 0.35)');
+            grad.addColorStop(0.75, 'rgba(15, 23, 42, 0.22)');
+            grad.addColorStop(1, 'rgba(6, 9, 17, 0.0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, R * 1.12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Concentrische historische ringen (zoals op de gravure van Janssonius uit 1650)
+            const ringRadii = [1.04, 1.00, 0.86, 0.72, 0.56, 0.38, 0.16];
+            ringRadii.forEach((factor, idx) => {
+                ctx.beginPath();
+                ctx.arc(0, 0, R * factor, 0, Math.PI * 2);
+                ctx.strokeStyle = idx <= 1 ? 'rgba(212, 175, 55, 0.50)' : 'rgba(212, 175, 55, 0.18)';
+                ctx.lineWidth = idx === 1 ? 1.8 : 1.0;
+                ctx.stroke();
+            });
+
+            // 32 Streken (Rhumb lines / Kompaslijnen)
+            for (let i = 0; i < 32; i++) {
+                const deg = i * 11.25;
+                const rad = (deg - 90) * Math.PI / 180;
+                const isPrincipal = (i % 4 === 0);     // 8 Hoofdwinden
+                const isHalfWind = (i % 2 === 0);      // 16 Halve winden
+
+                const innerR = isPrincipal ? R * 0.16 : (isHalfWind ? R * 0.38 : R * 0.56);
+                const outerR = R * 1.00;
+
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(rad) * innerR, Math.sin(rad) * innerR);
+                ctx.lineTo(Math.cos(rad) * outerR, Math.sin(rad) * outerR);
+
+                if (isPrincipal) {
+                    ctx.strokeStyle = 'rgba(234, 179, 8, 0.42)';
+                    ctx.lineWidth = 1.4;
+                } else if (isHalfWind) {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.24)';
+                    ctx.lineWidth = 0.9;
+                } else {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.13)';
+                    ctx.lineWidth = 0.7;
+                }
+                ctx.stroke();
+
+                // Kleine graadstreepjes op de buitenrand
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(rad) * R * 1.00, Math.sin(rad) * R * 1.00);
+                ctx.lineTo(Math.cos(rad) * R * 1.04, Math.sin(rad) * R * 1.04);
+                ctx.strokeStyle = isPrincipal ? '#facc15' : 'rgba(212, 175, 55, 0.4)';
+                ctx.lineWidth = isPrincipal ? 2.0 : 1.0;
+                ctx.stroke();
+            }
+
+            // Centrale 8-puntige kompasster (Pyxis Nautica)
+            const starOuter = R * 0.16;
+            const starInner = R * 0.048;
+            for (let i = 0; i < 8; i++) {
+                const a = (i * 45 - 90) * Math.PI / 180;
+                const aLeft = a - Math.PI / 8;
+                const aRight = a + Math.PI / 8;
+
+                // Rechterhelft van het sterpunt (Goud)
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(a) * starOuter, Math.sin(a) * starOuter);
+                ctx.lineTo(Math.cos(aRight) * starInner, Math.sin(aRight) * starInner);
+                ctx.closePath();
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(234, 179, 8, 0.65)' : 'rgba(220, 38, 38, 0.55)';
+                ctx.fill();
+
+                // Linkerhelft van het sterpunt (Donker goud/rood voor 3D-reliëf)
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(aLeft) * starInner, Math.sin(aLeft) * starInner);
+                ctx.lineTo(Math.cos(a) * starOuter, Math.sin(a) * starOuter);
+                ctx.closePath();
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(161, 98, 7, 0.65)' : 'rgba(153, 27, 27, 0.55)';
+                ctx.fill();
+            }
+
+            // Labels van de 8 Hoofdwinden van Janssonius langs de buitenring
+            EIGHT_PRINCIPAL_WINDS.forEach((w) => {
+                const rad = (w.angleDeg - 90) * Math.PI / 180;
+                const labelR = R * 1.11;
+                const lx = Math.cos(rad) * labelR;
+                const ly = Math.sin(rad) * labelR;
+
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.font = 'bold 11px Cinzel, serif';
+                ctx.fillStyle = '#fde047';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(w.name, 0, -5);
+
+                ctx.font = '10px JetBrains Mono, monospace';
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText(`${w.angleDeg}°`, 0, 8);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        // Optioneel: Gelinieerd notitieblok-papier zoals op afbeelding 1
+        function drawNotebookLines(w, h) {
+            if (!showLinedPaper) return;
+            ctx.save();
+            ctx.fillStyle = 'rgba(241, 245, 249, 0.04)';
+            ctx.fillRect(0, 0, w, h);
+
+            const spacing = 28;
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+            ctx.lineWidth = 1;
+            for (let y = spacing; y < h; y += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Teken pijl voor snelheids- en Coriolisvectoren
+        function drawVectorArrow(x1, y1, vx, vy, color, label) {
+            const len = Math.hypot(vx, vy);
+            if (len < 2) return;
+            const x2 = x1 + vx;
+            const y2 = y1 + vy;
+            const angle = Math.atan2(vy, vx);
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2.2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Pijlpunt
+            const head = 8;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            if (label) {
+                ctx.font = 'bold 11px JetBrains Mono, monospace';
+                ctx.fillText(label, x2 + 6 * Math.cos(angle), y2 + 6 * Math.sin(angle));
+            }
+            ctx.restore();
+        }
+
+        // Teken Modus 1: De twee handgetekende Coriolis-curven uit het notitieblok
+        function drawNotebookSketchMode(cx, cy, R, dt) {
+            generateNotebookSketchCurves(R);
+
+            sketchTime = (sketchTime + dt * 0.22) % 1.0;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            // 1. Teken drukkernen (L en H) voor de onderste Lemniscaat
+            const aLem = 0.66 * R * (0.75 + 0.25 * pressureStrength);
+            const leftCoreX = -0.02 * R - 0.46 * aLem;
+            const leftCoreY = 0.24 * R;
+            const rightCoreX = -0.02 * R + 0.46 * aLem;
+            const rightCoreY = 0.24 * R;
+
+            // Linker lob kern (Cyclonale Lage Druk + Ekman-spiraalput)
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+            ctx.beginPath();
+            ctx.arc(leftCoreX, leftCoreY, 26, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 12px JetBrains Mono';
+            ctx.fillStyle = '#38bdf8';
+            ctx.textAlign = 'center';
+            ctx.fillText('L (Cycloon + Ekman-krul)', leftCoreX, leftCoreY + 42);
+
+            // Rechter lob kern (Anticyclonale Hoge Druk)
+            ctx.fillStyle = 'rgba(251, 146, 60, 0.14)';
+            ctx.beginPath();
+            ctx.arc(rightCoreX, rightCoreY, 26, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fb923c';
+            ctx.fillText('H (Anticycloon)', rightCoreX, rightCoreY + 42);
+
+            // 2. Teken Bovenste Figuur (Inertiële / Ekman-spiraal) als 'both' geselecteerd is
+            if (sketchFocus === 'both' && upperSpiralPoints.length > 1) {
+                // Volledige blauw-gouden balpenlijn zoals in het schrift
+                ctx.beginPath();
+                upperSpiralPoints.forEach((pt, idx) => {
+                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                });
+                ctx.strokeStyle = 'rgba(96, 165, 250, 0.45)';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Geanimeerd opbouwend spoor op de bovenste spiraal
+                const activeIdxU = Math.min(upperSpiralPoints.length - 2, Math.floor(sketchTime * (upperSpiralPoints.length - 1)));
+                ctx.beginPath();
+                for (let i = 0; i <= activeIdxU; i++) {
+                    if (i === 0) ctx.moveTo(upperSpiralPoints[i].x, upperSpiralPoints[i].y);
+                    else ctx.lineTo(upperSpiralPoints[i].x, upperSpiralPoints[i].y);
+                }
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 3.2;
+                ctx.stroke();
+
+                // Deeltje + vectoren op bovenste spiraal
+                const pU = upperSpiralPoints[activeIdxU];
+                const pU_next = upperSpiralPoints[activeIdxU + 1];
+                const vxU = (pU_next.x - pU.x) * 18;
+                const vyU = (pU_next.y - pU.y) * 18;
+                const signH = latitudeDeg >= 0 ? 1 : -1;
+                // Corioliskracht loodrecht op snelheid
+                drawVectorArrow(pU.x, pU.y, vxU, vyU, '#34d399', 'v');
+                drawVectorArrow(pU.x, pU.y, -signH * vyU * 0.75, signH * vxU * 0.75, '#22d3ee', 'F_c');
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(pU.x, pU.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.font = '11px JetBrains Mono';
+                ctx.fillStyle = '#93c5fd';
+                ctx.fillText('Bovenste schets: Inertiële / Ekman-spiraal', upperSpiralPoints[0].x + 20, upperSpiralPoints[0].y - 82);
+            }
+
+            // 3. Teken Onderste Figuur (Gekoppelde Lemniscaat ∞ met linker inwaartse krul)
+            if (lowerLemniscatePoints.length > 1) {
+                // Referentielijn (zoals met pen getekend in het schrift)
+                ctx.beginPath();
+                lowerLemniscatePoints.forEach((pt, idx) => {
+                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                });
+                ctx.strokeStyle = 'rgba(250, 204, 21, 0.35)';
+                ctx.lineWidth = 2.8;
+                ctx.stroke();
+
+                // Actief geanimeerd traject tot aan sketchTime
+                const activeIdxL = Math.min(lowerLemniscatePoints.length - 2, Math.floor(sketchTime * (lowerLemniscatePoints.length - 1)));
+                ctx.beginPath();
+                for (let i = 0; i <= activeIdxL; i++) {
+                    if (i === 0) ctx.moveTo(lowerLemniscatePoints[i].x, lowerLemniscatePoints[i].y);
+                    else ctx.lineTo(lowerLemniscatePoints[i].x, lowerLemniscatePoints[i].y);
+                }
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = 3.8;
+                ctx.stroke();
+
+                // Huidig bewegend luchtdeeltje op de lemniscaat + krul
+                const pL = lowerLemniscatePoints[activeIdxL];
+                const pL_next = lowerLemniscatePoints[activeIdxL + 1];
+                const vxL = (pL_next.x - pL.x) * 20;
+                const vyL = (pL_next.y - pL.y) * 20;
+                const signH = latitudeDeg >= 0 ? 1 : -1;
+
+                // Snelheidsvector v (groen) en Corioliskracht F_c (cyaan, loodrecht op v)
+                drawVectorArrow(pL.x, pL.y, vxL, vyL, '#34d399', 'v');
+                drawVectorArrow(pL.x, pL.y, -signH * vyL * 0.8, signH * vxL * 0.8, '#22d3ee', 'F_c');
+
+                // Deeltje zelf
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(pL.x, pL.y, 6.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Update live telemetrie op basis van dit punt
+                updateLiveTelemetryFromPoint(pL.x, pL.y, vxL, vyL, R);
+            }
+
+            ctx.restore();
+        }
+
+        // ============================================================================
+        // 7. TELEMETRIE & ATAN2(Y, X) 32-STREKEN BEREKENING
+        // ============================================================================
+        function updateLiveTelemetryFromPoint(x, y, vx, vy, R) {
+            // Bereken kompasrichting in graden (0° = Noord = -Y, 90° = Oost = +X)
+            let compassDeg = (Math.atan2(y, x) * 180 / Math.PI) + 90;
+            if (compassDeg < 0) compassDeg += 360;
+
+            const streekIndex = Math.round(compassDeg / 11.25) % 32;
+            const streekNaam = THIRTY_TWO_STREKEN[streekIndex];
+            const quad = compassDeg < 90 ? 'I (NO)' : (compassDeg < 180 ? 'II (ZO)' : (compassDeg < 270 ? 'III (ZW)' : 'IV (NW)'));
+
+            document.getElementById('tel-streek').textContent = `${streekNaam.split(' ')[0]} (${compassDeg.toFixed(1)}°)`;
+            document.getElementById('tel-quadrant').textContent = `Streek ${streekIndex + 1}/32 • Kwadrant ${quad}`;
+
+            // Fysische Coriolisparameter f = 2 * Omega_Earth * sin(lat)
+            const sinLat = Math.sin(latitudeDeg * Math.PI / 180);
+            const realF = (2 * 7.2921e-5 * sinLat * (omegaScale / 1.25));
+            const fFormatted = (realF * 1e4).toFixed(2);
+            document.getElementById('tel-f').textContent = `${realF >= 0 ? '+' : ''}${fFormatted}×10⁻⁴ rad/s`;
+
+            const vMag = Math.hypot(vx, vy) * 0.25;
+            const acMag = Math.abs(realF * 1e4 * vMag * 0.35);
+            document.getElementById('tel-ac').textContent = `${acMag.toFixed(2)} m/s²`;
+
+            const rossby = (vMag / (Math.abs(realF * 1e4 * 12) + 0.1)).toFixed(2);
+            document.getElementById('tel-rossby').textContent = `Rossby-getal Ro = ${rossby}`;
+        }
+
+        function updatePhysicsParams() {
+            latitudeDeg = parseFloat(document.getElementById('slider-lat').value);
+            omegaScale = parseFloat(document.getElementById('slider-omega').value);
+            gammaDamp = parseFloat(document.getElementById('slider-gamma').value);
+            pressureStrength = parseFloat(document.getElementById('slider-pressure').value);
+
+            // Update UI labels
+            const hemiChar = latitudeDeg >= 0 ? 'N' : 'Z';
+            const cityHint = Math.abs(latitudeDeg - 52.3) < 1.5 ? ' (Amsterdam)' : (Math.abs(latitudeDeg) < 1.0 ? ' (Evenaar)' : '');
+            document.getElementById('lbl-lat').textContent = `${latitudeDeg >= 0 ? '+' : ''}${latitudeDeg.toFixed(1)}° ${hemiChar}${cityHint}`;
+            document.getElementById('lbl-omega').textContent = `${omegaScale.toFixed(2)} rad/s`;
+            document.getElementById('lbl-gamma').textContent = `${gammaDamp.toFixed(2)} s⁻¹`;
+            document.getElementById('lbl-pressure').textContent = `${pressureStrength.toFixed(2)}×`;
+
+            const badge = document.getElementById('hemisphere-badge');
+            const buysEl = document.getElementById('tel-buys');
+            if (Math.abs(latitudeDeg) < 0.5) {
+                badge.textContent = 'EVENAAR (f = 0 • Geen Coriolis-afbuiging)';
+                badge.className = 'mono text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-slate-500/40 font-semibold';
+                buysEl.textContent = 'Evenaar: Rechtlijnige baan';
+                buysEl.className = 'mono text-[10px] text-slate-400';
+            } else if (latitudeDeg > 0) {
+                badge.textContent = 'NOORDELIJK HALFROND (Afbuiging Rechts ↻)';
+                badge.className = 'mono text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold';
+                buysEl.textContent = 'Wet v. Buys Ballot: Rechts (↻)';
+                buysEl.className = 'mono text-[10px] text-emerald-400';
+            } else {
+                badge.textContent = 'ZUIDELIJK HALFROND (Afbuiging Links ↺)';
+                badge.className = 'mono text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold';
+                buysEl.textContent = 'Wet v. Buys Ballot: Links (↺)';
+                buysEl.className = 'mono text-[10px] text-amber-400';
+            }
+        }
+
+        // ============================================================================
+        // 8. MODUS-WISSELING & INTERACTIE (KLIK OP WINDROOS OF SLEEP VECTOR)
+        // ============================================================================
+        function setMode(mode) {
+            currentMode = mode;
+            const modes = ['sketch', 'windrose', 'draw'];
+            modes.forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                if (m === mode) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/50 transition';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800/70 transition';
+                }
+            });
+
+            if (mode === 'windrose' && particles.length === 0) {
+                // Lanceer standaard Zephyrus (West) en Tramontana (Noord)
+                triggerHistoricalWind(6, true);
+                triggerHistoricalWind(0, true);
+            }
+        }
+
+        function focusSketchPart(part) {
+            sketchFocus = part;
+            if (currentMode !== 'sketch') setMode('sketch');
+            document.getElementById('btn-sketch-both').className = part === 'both'
+                ? 'p-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-left transition'
+                : 'p-2 rounded-lg bg-slate-900/80 border border-slate-700/80 hover:border-amber-400/40 text-left transition';
+            document.getElementById('btn-sketch-lem').className = part === 'lemniscate'
+                ? 'p-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-left transition'
+                : 'p-2 rounded-lg bg-slate-900/80 border border-slate-700/80 hover:border-amber-400/40 text-left transition';
+        }
+
+        function toggleLinedPaper() {
+            showLinedPaper = document.getElementById('chk-lined-paper').checked;
+        }
+
+        function toggleReferenceFrame() {
+            isRotatingFrame = !isRotatingFrame;
+            const btn = document.getElementById('btn-frame');
+            if (isRotatingFrame) {
+                btn.textContent = 'Stelsel: Meedraaiend (Aarde)';
+                btn.className = 'px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] mono font-semibold transition';
+            } else {
+                btn.textContent = 'Stelsel: Inertieel (Ruimte)';
+                btn.className = 'px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] mono font-semibold transition';
+            }
+        }
+
+        // Muis / Touch interactie op het canvas
+        canvas.addEventListener('pointerdown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left - canvas.width / 2;
+            const my = e.clientY - rect.top - canvas.height / 2;
+            const R = Math.min(canvas.width, canvas.height) * 0.39;
+
+            // Als de gebruiker op de buitenrand van de Janssonius-windroos klikt, lanceer die windstreek!
+            const distFromCenter = Math.hypot(mx, my);
+            if (distFromCenter > R * 0.82 && distFromCenter < R * 1.18) {
+                let clickDeg = (Math.atan2(my, mx) * 180 / Math.PI) + 90;
+                if (clickDeg < 0) clickDeg += 360;
+                const nearestWind = Math.round(clickDeg / 45) % 8;
+                triggerHistoricalWind(nearestWind);
+                return;
+            }
+
+            // Anders: start een aangepaste snelheidsvector-lancering
+            if (currentMode === 'sketch') setMode('draw');
+            isDraggingLaunch = true;
+            dragStart = { x: mx, y: my };
+            dragCurrent = { x: mx, y: my };
+            userDrawnLoop = [{ x: mx, y: my }];
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDraggingLaunch) return;
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left - canvas.width / 2;
+            const my = e.clientY - rect.top - canvas.height / 2;
+            dragCurrent = { x: mx, y: my };
+            userDrawnLoop.push({ x: mx, y: my });
+        });
+
+        window.addEventListener('pointerup', () => {
+            if (!isDraggingLaunch) return;
+            isDraggingLaunch = false;
+
+            if (dragStart && dragCurrent) {
+                const dx = dragCurrent.x - dragStart.x;
+                const dy = dragCurrent.y - dragStart.y;
+                const dragLen = Math.hypot(dx, dy);
+
+                // Bereken omsloten oppervlakte / circulatie via de stelling van Green (Planimeter-formule)
+                if (userDrawnLoop.length > 5) {
+                    let signedArea = 0;
+                    for (let i = 0; i < userDrawnLoop.length - 1; i++) {
+                        signedArea += (userDrawnLoop[i].x * userDrawnLoop[i + 1].y - userDrawnLoop[i + 1].x * userDrawnLoop[i].y);
+                    }
+                    signedArea = signedArea / 2000;
+                    document.getElementById('tel-area').textContent = `∮ v·dr = ${signedArea >= 0 ? '+' : ''}${signedArea.toFixed(1)}`;
+                }
+
+                // Lanceer nieuw Coriolis-deeltje langs de getrokken vector
+                const vx = dragLen > 8 ? dx * 1.8 : 110;
+                const vy = dragLen > 8 ? dy * 1.8 : -40;
+
+                particles.push({
+                    x: dragStart.x,
+                    y: dragStart.y,
+                    vx,
+                    vy,
+                    ac_x: 0,
+                    ac_y: 0,
+                    press_x: 0,
+                    press_y: 0,
+                    name: 'Vrije Lancering',
+                    color: '#facc15',
+                    age: 0,
+                    trail: [{ x: dragStart.x, y: dragStart.y }]
+                });
+            }
+            dragStart = null;
+            dragCurrent = null;
+        });
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // ============================================================================
+        // 9. HOOFD-ANIMATIELUS
+        // ============================================================================
+        let lastFrameTime = performance.now();
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+            const dt = Math.min(0.04, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const R = Math.min(w, h) * 0.39;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Optionele schriftlijnen (zoals in het notitieblok)
+            drawNotebookLines(w, h);
+
+            // 2. Rotatie van de Aarde/Windroos bij inertieel referentiekader
+            const sinLat = Math.sin(latitudeDeg * Math.PI / 180);
+            if (!isRotatingFrame) {
+                worldRotationAngle += dt * omegaScale * (sinLat >= 0 ? -0.35 : 0.35);
+            } else {
+                worldRotationAngle = 0;
+            }
+
+            // 3. Teken de 1650 Janssonius Windroos op de achtergrond
+            drawJanssoniusCompassRose(cx, cy, R);
+
+            // 4. Teken hetzij de Notitieblok-Schetsanalyse, hetzij de RK4 Luchtdeeltjes
+            if (currentMode === 'sketch') {
+                drawNotebookSketchMode(cx, cy, R, dt);
+            } else {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Update en teken alle RK4 luchtdeeltjes
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    stepParticleRK4(p, dt, R);
+
+                    // Teken baanspoor (met geleidelijke transparantie)
+                    if (p.trail.length > 1) {
+                        ctx.beginPath();
+                        for (let j = 0; j < p.trail.length; j++) {
+                            if (j === 0) ctx.moveTo(p.trail[j].x, p.trail[j].y);
+                            else ctx.lineTo(p.trail[j].x, p.trail[j].y);
+                        }
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = 2.6;
+                        ctx.stroke();
+                    }
+
+                    // Teken snelheidsvector v (groen) en Corioliskracht a_c (cyaan)
+                    drawVectorArrow(p.x, p.y, p.vx * 0.22, p.vy * 0.22, '#34d399', 'v');
+                    drawVectorArrow(p.x, p.y, p.ac_x * 0.16, p.ac_y * 0.16, '#22d3ee', 'a_c');
+                    if (pressureStrength > 0.1) {
+                        drawVectorArrow(p.x, p.y, p.press_x * 0.15, p.press_y * 0.15, '#fb7185', '');
+                    }
+
+                    // Teken het luchtdeeltje
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 4.8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Label bij het nieuwste deeltje
+                    if (i === particles.length - 1) {
+                        updateLiveTelemetryFromPoint(p.x, p.y, p.vx, p.vy, R);
+                    }
+                }
+
+                // Als de gebruiker een lanceringspijl sleept
+                if (isDraggingLaunch && dragStart && dragCurrent) {
+                    drawVectorArrow(
+                        dragStart.x,
+                        dragStart.y,
+                        dragCurrent.x - dragStart.x,
+                        dragCurrent.y - dragStart.y,
+                        '#facc15',
+                        'Lanceer v₀'
+                    );
+                }
+
+                ctx.restore();
+            }
+        }
+
+        window.onload = function () {
+            resizeCanvas();
+            updatePhysicsParams();
+            animate(performance.now());
+        };
+    </script>
+</body>
+</html>
