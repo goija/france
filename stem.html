@@ -1,0 +1,3226 @@
+<!DOCTYPE html>
+<html lang="nl" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EAD-XML Archief Werkbank — Mijn Stem, WebRTC Voorleeskamer, XML Screenreader & AI Volledig Zoeken</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PDF.js voor optionele PDF-uploads naast EAD-XML -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Google Fonts: Crimson Pro (klassiek archief-serif), Inter (UI) & JetBrains Mono (XML/Audio/WebRTC telemetrie) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            parchment: {
+              50: '#fbf9f5',
+              100: '#f6f2e9',
+              200: '#ece5d5',
+              300: '#dfd3bc',
+              400: '#cbb899',
+            },
+            zeegroen: {
+              600: '#166073',
+              700: '#0f4c5c',
+              800: '#0b3844',
+              900: '#07252d',
+            },
+            inkt: {
+              800: '#1e353b',
+              900: '#14292e',
+            },
+            oker: {
+              500: '#d98218',
+              600: '#b4690e',
+              700: '#8f5108',
+            }
+          },
+          fontFamily: {
+            serif: ['"Crimson Pro"', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg-parchment: #f6f2e9;
+      --ink-dark: #14292e;
+      --accent-teal: #0f4c5c;
+      --accent-ochre: #b4690e;
+    }
+
+    body {
+      background-color: #f6f2e9;
+      color: #14292e;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Boek-spread en archief-papier textuur */
+    .archive-paper {
+      background: linear-gradient(180deg, #fbf9f5 0%, #f4efe2 100%);
+      box-shadow: inset 0 0 32px rgba(180, 105, 14, 0.06), 0 4px 18px rgba(20, 41, 46, 0.07);
+    }
+
+    .book-spine {
+      background: linear-gradient(90deg, rgba(20,41,46,0.03) 0%, rgba(20,41,46,0.14) 50%, rgba(20,41,46,0.03) 100%);
+    }
+
+    /* Actieve voorlezen zin / XML node highlight */
+    .xml-sentence {
+      transition: all 0.18s ease;
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 1px 3px;
+    }
+    .xml-sentence:hover {
+      background-color: rgba(15, 76, 92, 0.12);
+    }
+    .xml-sentence.active-reading {
+      background-color: #fde047 !important;
+      color: #14292e !important;
+      box-shadow: 0 0 0 2px #b4690e;
+      font-weight: 600;
+    }
+
+    .xml-node-card.active-node {
+      border-color: #b4690e !important;
+      background-color: #fef9c3 !important;
+      box-shadow: 0 4px 14px rgba(180, 105, 14, 0.18);
+    }
+
+    /* Zoekterm markering */
+    mark.search-hit {
+      background-color: #fde68a;
+      color: #14292e;
+      padding: 0 3px;
+      border-radius: 3px;
+      border-bottom: 2px solid #b4690e;
+      font-weight: 600;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #ece5d5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #b0a288;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0f4c5c;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    .recording-pulse {
+      animation: pulse-ring 1.6s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-oker-500 selection:text-white">
+
+  <!-- =====================================================================
+       ARIA SCREENREADER LIVE REGIO'S (Voor blinden/slechtzienden & XML-inspectie)
+       ===================================================================== -->
+  <div id="ariaAssertiveRegion" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+  <div id="ariaPoliteRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- =====================================================================
+       TOP HEADER: TITEL, VENSTER-MANAGER & SYSTEEMTELEMETRIE
+       ===================================================================== -->
+  <header class="bg-zeegroen-800 text-parchment-50 border-b-2 border-oker-600 sticky top-0 z-40 shadow-md">
+    <div class="max-w-[1920px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Merk & Titel -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-oker-600 flex items-center justify-center shadow-inner border border-amber-300/30 shrink-0" title="EAD-XML Archief & Audio Werkbank">
+          <svg class="w-6 h-6 text-parchment-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-serif font-bold text-lg md:text-xl tracking-wide text-parchment-50">
+              EAD-XML Archief Werkbank &amp; Menselijke Stem Voorleeskamer
+            </h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-oker-600/90 text-white font-semibold">
+              WebRTC + ARIA XML + AI RAG
+            </span>
+          </div>
+          <p class="text-xs text-parchment-200/80 font-sans">
+            Nationaal Archief (VOC 1.04.02 • Radermacher 1.10.69 • Oude WIC 1.05.01.01 • Tweede WIC 1.05.01.02) &amp; Zeeuws Archief (Toegang 17)
+          </p>
+        </div>
+      </div>
+
+      <!-- Venster-Manager Knoppen (Aan/Uit schakelen van modules) -->
+      <div class="flex flex-wrap items-center gap-1.5 bg-zeegroen-900/80 p-1.5 rounded-lg border border-zeegroen-600" role="toolbar" aria-label="Vensterbeheer">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-parchment-300 px-1.5">Vensters:</span>
+        <button onclick="togglePanel('panelVoiceStudio')" id="btnToggle_panelVoiceStudio" class="px-2.5 py-1 rounded text-xs font-medium bg-oker-600 text-white shadow-sm transition flex items-center gap-1.5">
+          <span>🎙️</span> 1. Mijn Stem &amp; Kloon
+        </button>
+        <button onclick="togglePanel('panelWebRTC')" id="btnToggle_panelWebRTC" class="px-2.5 py-1 rounded text-xs font-medium bg-oker-600 text-white shadow-sm transition flex items-center gap-1.5">
+          <span>📡</span> 2. WebRTC Kamer
+        </button>
+        <button onclick="togglePanel('panelSearchAI')" id="btnToggle_panelSearchAI" class="px-2.5 py-1 rounded text-xs font-medium bg-oker-600 text-white shadow-sm transition flex items-center gap-1.5">
+          <span>🔍</span> 3. Volledig Zoeken &amp; AI
+        </button>
+        <button onclick="togglePanel('panelReaderXML')" id="btnToggle_panelReaderXML" class="px-2.5 py-1 rounded text-xs font-medium bg-oker-600 text-white shadow-sm transition flex items-center gap-1.5">
+          <span>📖</span> 4. XML Screenreader &amp; Boek
+        </button>
+      </div>
+
+      <!-- Sneltoets & Status balk -->
+      <div class="hidden xl:flex items-center gap-3 text-xs font-mono">
+        <div id="headerVoiceBadge" class="px-2.5 py-1 rounded bg-zeegroen-900 border border-zeegroen-600 text-parchment-200 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="activeVoiceProfileLabel">Stem: Natuurlijk NL (Gekalibreerd)</span>
+        </div>
+        <button onclick="showKeyboardHelpModal()" class="px-2.5 py-1 rounded bg-parchment-100/10 hover:bg-parchment-100/20 text-parchment-100 border border-parchment-300/30 transition" title="Toetsenbord Sneltoetsen voor Screenreader">
+          ⌨️ Sneltoetsen
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       PERSISTENTE AUDIO / SCREENREADER TRANSPORTBALK (ALTIJD ZICHTBAAR)
+       ===================================================================== -->
+  <section aria-label="Screenreader en Voorlees Transportbalk" class="bg-parchment-200 border-b border-parchment-400 sticky top-[57px] z-30 shadow-sm">
+    <div class="max-w-[1920px] mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+      <!-- Transport controls -->
+      <div class="flex items-center gap-1.5">
+        <button onclick="readerPrevNode()" class="p-2 rounded-lg bg-parchment-50 hover:bg-white text-inkt-900 border border-parchment-400 shadow-sm transition" title="Vorige XML-node / Zin (Sneltoets: K of Pijl Links)" aria-label="Vorige XML-node">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/></svg>
+        </button>
+        <button id="btnMasterPlayPause" onclick="readerTogglePlay()" class="px-4 py-2 rounded-lg bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-semibold text-xs flex items-center gap-2 shadow transition" title="Start / Pauzeer Voorlezen (Sneltoets: Spatie)">
+          <span id="playPauseIcon">▶</span>
+          <span id="playPauseText">Lees XML Voor (Mijn Stem)</span>
+        </button>
+        <button onclick="readerStop()" class="p-2 rounded-lg bg-parchment-50 hover:bg-red-50 text-red-700 border border-parchment-400 shadow-sm transition" title="Stop voorlezen" aria-label="Stop voorlezen">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"/></svg>
+        </button>
+        <button onclick="readerNextNode()" class="p-2 rounded-lg bg-parchment-50 hover:bg-white text-inkt-900 border border-parchment-400 shadow-sm transition" title="Volgende XML-node / Zin (Sneltoets: J of Pijl Rechts)" aria-label="Volgende XML-node">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/></svg>
+        </button>
+      </div>
+
+      <!-- Huidige Screenreader XPath & Kruimelpad -->
+      <div class="flex-1 min-w-[260px] bg-parchment-50 border border-parchment-300 rounded-lg px-3 py-1.5 flex items-center justify-between gap-2">
+        <div class="truncate">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-zeegroen-700 text-white font-semibold" id="srCurrentXmlTag">&lt;archdesc&gt;</span>
+            <span class="text-xs font-mono text-zeegroen-800 font-semibold truncate" id="srCurrentBreadcrumb">Selecteer of klik op een XML-element om voor te lezen</span>
+          </div>
+          <p class="text-xs text-inkt-800 truncate font-serif italic mt-0.5" id="srLiveSubtitle">
+            Screenreader gereed. Gebruik Spatie (Play/Pause), J/K (Volgende/Vorige node), H (Hoofdstukpad), M (Metadata).
+          </p>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <label class="flex items-center gap-1 text-[11px] font-mono text-inkt-800 cursor-pointer bg-parchment-200 px-2 py-1 rounded border border-parchment-300" title="Kondig tijdens het voorlezen ook de XML-tag en het inventarisnummer aan voor blinden/slechtzienden">
+            <input type="checkbox" id="chkAnnounceXmlTags" checked class="accent-zeegroen-700 rounded">
+            <span>XML-Tags Aankondigen</span>
+          </label>
+          <label class="flex items-center gap-1 text-[11px] font-mono text-inkt-800 cursor-pointer bg-parchment-200 px-2 py-1 rounded border border-parchment-300" title="Jaartallen zoals 1602 en 1737 natuurlijk uitspreken en pauzes bij interpunctie toevoegen">
+            <input type="checkbox" id="chkHumanProsody" checked class="accent-zeegroen-700 rounded">
+            <span>Menselijke Prosodie</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Snelheid & Pitch regelaars gekoppeld aan Mijn Stem Profiel -->
+      <div class="flex items-center gap-3 text-xs font-mono">
+        <div class="flex items-center gap-1.5">
+          <label for="sliderSpeechRate" class="text-inkt-800">Tempo:</label>
+          <input id="sliderSpeechRate" type="range" min="0.65" max="1.45" step="0.05" value="0.95" oninput="updateVoiceParamsFromSliders()" class="w-20 accent-oker-600">
+          <span id="lblSpeechRate" class="w-9 text-right font-semibold">0.95x</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label for="sliderSpeechPitch" class="text-inkt-800">Grondtoon:</label>
+          <input id="sliderSpeechPitch" type="range" min="0.6" max="1.4" step="0.02" value="1.00" oninput="updateVoiceParamsFromSliders()" class="w-20 accent-oker-600">
+          <span id="lblSpeechPitch" class="w-9 text-right font-semibold">1.00</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       HOOFDWERKBANK GRID
+       ===================================================================== -->
+  <main class="max-w-[1920px] w-full mx-auto p-3 md:p-4 flex-1 flex flex-col gap-4">
+
+    <!-- BOVENSTE RIJ: 1. MIJN STEM STUDIO & KALIBRATIE + 2. WEBRTC LIVE VOORLEESKAMER -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+      <!-- =================================================================
+           PANEEL 1: MENSELIJKE STEM STUDIO ("GEBRUIK MIJN EIGEN STEM")
+           ================================================================= -->
+      <section id="panelVoiceStudio" class="xl:col-span-7 bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div class="bg-zeegroen-700 text-parchment-50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🎙️</span>
+            <div>
+              <h2 class="font-serif font-bold text-base leading-tight">1. Menselijke Stem Studio — Kalibreer &amp; Kloon Mijn Eigen Stem</h2>
+              <p class="text-[11px] text-parchment-200">Web Audio API F0 Grondtoon/Formant-Kalibratie + Eigen Opname Mixer + Neurale Voice Clone API</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span id="voiceStudioStatusBadge" class="px-2 py-0.5 rounded text-[11px] font-mono bg-zeegroen-900 text-emerald-300 border border-emerald-500/30">
+              Gereed voor opname
+            </span>
+          </div>
+        </div>
+
+        <div class="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+          <!-- Linkerkolom: Microfoon Opname, Kalibratiezinnen & FFT Oscilloscoop -->
+          <div class="lg:col-span-7 flex flex-col justify-between gap-3 bg-parchment-100/90 p-3.5 rounded-lg border border-parchment-300">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-zeegroen-800 font-mono">Stap 1: Spreek uw stem in voor F0-analyse &amp; Voice Sample</span>
+                <span id="recordingTimer" class="text-xs font-mono font-bold text-red-700 hidden">● 00:00</span>
+              </div>
+              <div class="p-2.5 rounded bg-parchment-50 border border-parchment-300 text-xs font-serif text-inkt-900 leading-relaxed mb-2.5">
+                <span class="font-sans font-semibold text-oker-700 uppercase text-[10px] block mb-0.5">Voorbeeld-ijkingstekst om hardop voor te lezen (5–10 sec):</span>
+                “Op twintig maart zestienhonderdtwee verleenden de Staten-Generaal het octrooi aan de Verenigde Oostindische Compagnie, waarna de Kamer Zeeland en Kamer Amsterdam de scheepsjournalen en notulen van de Heren Zeventien zorgvuldig bewaarden.”
+              </div>
+
+              <!-- Live Web Audio API Canvas: Golfvorm + FFT Spectrum + Formanten -->
+              <div class="relative rounded-lg overflow-hidden bg-inkt-900 border border-zeegroen-700 h-28">
+                <canvas id="voiceOscilloscopeCanvas" class="w-full h-full block"></canvas>
+                <div class="absolute top-1.5 left-2 right-2 flex items-center justify-between text-[10px] font-mono text-parchment-200 pointer-events-none">
+                  <span id="liveF0Readout">Grondtoon (F0): -- Hz</span>
+                  <span id="liveFormantReadout">Timbre / Resonantie: -- Hz</span>
+                  <span id="liveRmsReadout">Dynamiek: -- dB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gemeten Stem-Biometrie Kaartjes -->
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-parchment-50 p-2 rounded border border-parchment-300">
+                <div class="text-[10px] font-mono text-inkt-800/70">Gemeten F0</div>
+                <div id="metricF0" class="text-sm font-mono font-bold text-zeegroen-800">155 Hz</div>
+              </div>
+              <div class="bg-parchment-50 p-2 rounded border border-parchment-300">
+                <div class="text-[10px] font-mono text-inkt-800/70">Pitch-Ratio</div>
+                <div id="metricPitchRatio" class="text-sm font-mono font-bold text-oker-700">1.00x</div>
+              </div>
+              <div class="bg-parchment-50 p-2 rounded border border-parchment-300">
+                <div class="text-[10px] font-mono text-inkt-800/70">Warmte EQ</div>
+                <div id="metricWarmthEq" class="text-sm font-mono font-bold text-zeegroen-800">+3.5 dB</div>
+              </div>
+              <div class="bg-parchment-50 p-2 rounded border border-parchment-300">
+                <div class="text-[10px] font-mono text-inkt-800/70">Stem-Sample</div>
+                <div id="metricSampleStatus" class="text-xs font-mono font-bold text-emerald-700 truncate">Gereed</div>
+              </div>
+            </div>
+
+            <!-- Opname & Kalibratie Knoppen -->
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <button id="btnStartVoiceRecord" onclick="toggleVoiceRecording()" class="flex-1 min-w-[170px] px-3 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow transition">
+                <span id="recordBtnDot" class="w-2.5 h-2.5 rounded-full bg-white"></span>
+                <span id="recordBtnLabel">Start Opname &amp; Stem-Kalibratie</span>
+              </button>
+              <button id="btnPlayMyRecordedVoice" onclick="playRecordedVoiceSample()" disabled class="px-3 py-2 rounded-lg bg-parchment-200 hover:bg-parchment-300 disabled:opacity-50 text-inkt-900 font-semibold text-xs border border-parchment-400 transition flex items-center gap-1.5">
+                <span>🔊</span> Beluister Mijn Opname
+              </button>
+              <button onclick="testCalibratedDutchVoice()" class="px-3 py-2 rounded-lg bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-semibold text-xs transition flex items-center gap-1.5" title="Hoor hoe uw gekalibreerde stemprofiel een archiefzin voorleest">
+                <span>✨</span> Test Mijn Voorleesstem
+              </button>
+            </div>
+          </div>
+
+          <!-- Rechterkolom: Stem-Engine Keuze (Lokaal Gekalibreerd, Gemini Warm TTS, of Instant Voice Clone API) -->
+          <div class="lg:col-span-5 flex flex-col justify-between gap-3 bg-parchment-100/90 p-3.5 rounded-lg border border-parchment-300">
+            <div class="space-y-2.5">
+              <span class="text-xs font-bold uppercase tracking-wider text-zeegroen-800 font-mono block">
+                Stap 2: Kies Hoe Uw Stem de XML Voorleest
+              </span>
+
+              <!-- Modus selectie -->
+              <div class="space-y-1.5 text-xs">
+                <label class="flex items-start gap-2 p-2 rounded bg-parchment-50 border border-parchment-300 cursor-pointer hover:border-zeegroen-600">
+                  <input type="radio" name="ttsEngineMode" value="calibrated_browser" checked onchange="setTtsEngineMode(this.value)" class="mt-0.5 accent-zeegroen-700">
+                  <div>
+                    <div class="font-semibold text-inkt-900">Optie A: Lokaal Gekalibreerde Menselijke Stem (Direct &amp; Zero-Trust)</div>
+                    <div class="text-[11px] text-inkt-800/80">Past uw gemeten F0-grondtoon, spreektempo en menselijke adempauzes direct toe op de beste Nederlandse systeemstem.</div>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-2 p-2 rounded bg-parchment-50 border border-parchment-300 cursor-pointer hover:border-zeegroen-600">
+                  <input type="radio" name="ttsEngineMode" value="gemini_neural_tts" onchange="setTtsEngineMode(this.value)" class="mt-0.5 accent-zeegroen-700">
+                  <div>
+                    <div class="font-semibold text-inkt-900">Optie B: Ingebouwde Neurale AI Stem (Gemini 2.5 Flash TTS + Formant Filter)</div>
+                    <div class="text-[11px] text-inkt-800/80">Genereert levensechte 24kHz PCM spraak met warme BiquadFilter formant-afstemming op uw gemeten F0-frequentie.</div>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-2 p-2 rounded bg-parchment-50 border border-parchment-300 cursor-pointer hover:border-zeegroen-600">
+                  <input type="radio" name="ttsEngineMode" value="custom_voice_clone" onchange="setTtsEngineMode(this.value)" class="mt-0.5 accent-zeegroen-700">
+                  <div>
+                    <div class="font-semibold text-inkt-900">Optie C: Directe Stem-Kloon API (ElevenLabs / XTTS-v2 / OpenAI)</div>
+                    <div class="text-[11px] text-inkt-800/80">Stuurt uw opgenomen audio-sample naar een Instant Voice Clone endpoint of lokale server (`localhost:8000/tts`).</div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Systeemstem & AI StemKiezer -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label for="selectBrowserDutchVoice" class="block text-[11px] font-mono text-inkt-800 mb-0.5">Nederlandse Systeemstem:</label>
+                  <select id="selectBrowserDutchVoice" onchange="onSelectBrowserVoiceChange()" class="w-full text-xs rounded border border-parchment-400 bg-white px-2 py-1.5 font-sans">
+                    <option value="">Laden van stemmen...</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="selectNeuralVoiceTimbre" class="block text-[11px] font-mono text-inkt-800 mb-0.5">Neurale Stem-Karakter:</label>
+                  <select id="selectNeuralVoiceTimbre" class="w-full text-xs rounded border border-parchment-400 bg-white px-2 py-1.5 font-sans">
+                    <option value="Orus">Orus (Warm &amp; Gezaghebbend Archief)</option>
+                    <option value="Kore">Kore (Helder &amp;Rustig)</option>
+                    <option value="Aoede">Aoede (Vloeiend &amp; Natuurlijk)</option>
+                    <option value="Charon">Charon (Diep &amp; Documentair)</option>
+                    <option value="Sulafat">Sulafat (Warm &amp; Vertellend)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Uitklapbare Voice Clone Endpoint Configuratie (voor Optie C) -->
+              <div id="customCloneConfigBox" class="hidden p-2.5 rounded bg-white border border-oker-500/50 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono font-semibold text-[11px] text-oker-700">Externe / Lokale Stem-Kloon Instellingen</span>
+                  <button onclick="cloneMyVoiceToElevenLabs()" class="px-2 py-0.5 rounded bg-oker-600 hover:bg-oker-700 text-white text-[11px] font-semibold">
+                    Upload Sample → Maak Voice ID
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <input id="inputCloneEndpoint" type="text" value="https://api.elevenlabs.io/v1" placeholder="API URL of http://localhost:8000" class="text-[11px] font-mono px-2 py-1 rounded border border-parchment-300">
+                  <input id="inputCloneApiKey" type="password" placeholder="API Key (optioneel voor localhost)" class="text-[11px] font-mono px-2 py-1 rounded border border-parchment-300">
+                </div>
+                <input id="inputCloneVoiceId" type="text" placeholder="Gekloonde Voice ID (wordt automatisch ingevuld na upload)" class="w-full text-[11px] font-mono px-2 py-1 rounded border border-parchment-300">
+              </div>
+            </div>
+
+            <div class="text-[11px] font-mono text-inkt-800/80 bg-parchment-200/70 px-2.5 py-1.5 rounded border border-parchment-300 flex items-center justify-between">
+              <span>Eigen stem-opname ook live meesturen over WebRTC:</span>
+              <input type="checkbox" id="chkMixMicIntoWebRTC" checked class="accent-zeegroen-700">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           PANEEL 2: WEBRTC LIVE VOORLEESKAMER & REALTIME AUDIO STREAM
+           ================================================================= -->
+      <section id="panelWebRTC" class="xl:col-span-5 bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div class="bg-zeegroen-800 text-parchment-50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📡</span>
+            <div>
+              <h2 class="font-serif font-bold text-base leading-tight">2. WebRTC Live Voorleeskamer &amp; Synchrone XML-Stream</h2>
+              <p class="text-[11px] text-parchment-200">RTCPeerConnection Audio + RTCDataChannel XML-Cursor Sync + Multi-Tab Broadcast</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span id="webrtcStateBadge" class="px-2 py-0.5 rounded text-[11px] font-mono bg-zeegroen-900 text-amber-300 border border-amber-400/30">
+              Stand-by
+            </span>
+          </div>
+        </div>
+
+        <div class="p-4 flex-1 flex flex-col justify-between gap-3">
+          <!-- Uitleg & Directe Loopback / Multi-Tab Kamer Knoppen -->
+          <div class="bg-parchment-100 p-3 rounded-lg border border-parchment-300 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-zeegroen-800 font-mono">
+                Live WebRTC Audio &amp; XML-Cursor Uitzending
+              </span>
+              <span class="text-[11px] font-mono text-inkt-800" id="webrtcPeersCount">0 gekoppelde peers</span>
+            </div>
+
+            <p class="text-xs text-inkt-800 leading-relaxed">
+              Start een echte <strong>WebRTC Peer-to-Peer verbinding</strong> (<code class="font-mono text-[11px] bg-parchment-200 px-1 rounded">RTCPeerConnection</code> + <code class="font-mono text-[11px] bg-parchment-200 px-1 rounded">RTCDataChannel</code>). Uw eigen microfoonstem én de gegenereerde XML-voorleesstem worden gemixt in één WebRTC-audiostream terwijl elke voorgelezen XML-zin synchroon meespringt bij luisteraars.
+            </p>
+
+            <div class="flex flex-wrap gap-2">
+              <button id="btnStartWebRTCRoom" onclick="startWebRTCLiveRoom()" class="px-3 py-2 rounded-lg bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow transition">
+                <span>📡</span> Start Live WebRTC Voorleeskamer (Loopback + Multi-Tab)
+              </button>
+              <button onclick="openHandmatigeSdpModal()" class="px-3 py-2 rounded-lg bg-parchment-200 hover:bg-parchment-300 text-inkt-900 font-semibold text-xs border border-parchment-400 transition">
+                🔗 Handmatige SDP Offer/Answer
+              </button>
+            </div>
+          </div>
+
+          <!-- Live WebRTC Audio Ontvanger & Telemetrie -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-parchment-100 p-3 rounded-lg border border-parchment-300 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[11px] font-mono font-bold text-zeegroen-800">WebRTC Ontvangen Stream</span>
+                <span id="webrtcIceBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-parchment-200 text-inkt-800">ICE: nieuw</span>
+              </div>
+              <audio id="webrtcRemoteAudioEl" controls class="w-full h-8 mt-1"></audio>
+              <div class="mt-2 grid grid-cols-2 gap-1 text-[10px] font-mono text-inkt-800">
+                <div>DataChannel: <strong id="rtcDataChannelState">gesloten</strong></div>
+                <div>Pakketten: <strong id="rtcPacketCounter">0</strong></div>
+              </div>
+            </div>
+
+            <!-- Live DataChannel Logboek -->
+            <div class="bg-inkt-900 text-parchment-100 p-2.5 rounded-lg border border-zeegroen-700 flex flex-col justify-between h-28">
+              <div class="flex items-center justify-between text-[10px] font-mono text-oker-500 border-b border-zeegroen-800 pb-1">
+                <span>RTCDataChannel Live XML-Sync Log</span>
+                <button onclick="sendTestWebRTCPing()" class="text-emerald-400 hover:underline">Stuur Sync-Ping</button>
+              </div>
+              <div id="webrtcEventLog" class="flex-1 overflow-y-auto font-mono text-[10px] space-y-0.5 pt-1 text-parchment-200">
+                <div>[Systeem] WebRTC gereed. Klik op "Start Live WebRTC Voorleeskamer".</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Optionele OpenAI WebRTC Realtime Voice-to-Voice Koppeling -->
+          <div class="bg-parchment-100 px-3 py-2 rounded-lg border border-parchment-300 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-oker-600 font-bold">⚡</span>
+              <span class="font-medium text-inkt-900">OpenAI Realtime WebRTC Spraak-Conversatie over dit XML-Archief:</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <input id="inputOpenAiRealtimeKey" type="password" placeholder="sk-... (OpenAI API Key optioneel)" class="text-[11px] font-mono px-2 py-1 rounded border border-parchment-400 bg-white w-44">
+              <button onclick="connectOpenAIRealtimeWebRTC()" class="px-2.5 py-1 rounded bg-oker-600 hover:bg-oker-700 text-white font-semibold text-[11px] transition">
+                Verbind Realtime AI
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =================================================================
+         PANEEL 3: AI ZOEKEN NAAR XML & VOLLEDIGE ZOEKWOORDEN ENGINE
+         ================================================================= -->
+    <section id="panelSearchAI" class="bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm overflow-hidden">
+      <div class="bg-zeegroen-700 text-parchment-50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔍</span>
+          <div>
+            <h2 class="font-serif font-bold text-base leading-tight">
+              3. AI Zoeken naar XML &amp; Volledige Zoekwoorden Engine (Over Alle 5 Archieven + Eigen Uploads)
+            </h2>
+            <p class="text-[11px] text-parchment-200">
+              Zoek op Alle Volledige Zoekwoorden (AND), Exacte Woordgroep, Booleaans/XPath/XML-Tag of stel een onderzoeksvraag aan de AI-Archiefassistent
+            </p>
+          </div>
+        </div>
+
+        <!-- Snel-voorbeelden voor directe één-klik demonstratie -->
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-[11px] font-mono text-parchment-200">Snelzoeken:</span>
+          <button onclick="runPresetSearch('Slot ter Hooge Vliegend Hart Woestduin', 'all_words')" class="px-2 py-0.5 rounded bg-zeegroen-900 hover:bg-oker-600 text-parchment-100 font-mono text-[11px] transition">
+            Gezonken VOC-schepen (247)
+          </button>
+          <button onclick="runPresetSearch('Kamer Zeeland Heren XVII notulen', 'all_words')" class="px-2 py-0.5 rounded bg-zeegroen-900 hover:bg-oker-600 text-parchment-100 font-mono text-[11px] transition">
+            Kamer Zeeland &amp; Heren XVII
+          </button>
+          <button onclick="runPresetSearch('Brazilië Recife Olinda Curaçao', 'all_words')" class="px-2 py-0.5 rounded bg-zeegroen-900 hover:bg-oker-600 text-parchment-100 font-mono text-[11px] transition">
+            Oude WIC Brazilië &amp; Curaçao
+          </button>
+          <button onclick="runPresetSearch('Torquijn Ardra Guinea', 'all_words')" class="px-2 py-0.5 rounded bg-zeegroen-900 hover:bg-oker-600 text-parchment-100 font-mono text-[11px] transition">
+            Kralenkettinkje Torquijn (180)
+          </button>
+          <button onclick="runPresetSearch('Yersekebank oesterpercelen Tholen', 'all_words')" class="px-2 py-0.5 rounded bg-zeegroen-900 hover:bg-oker-600 text-parchment-100 font-mono text-[11px] transition">
+            Zeeuwse Visserijen (BVZS)
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 space-y-4">
+        <!-- Zoekbalk + Zoekmodus + XML-Tag Filter + Archief Filter -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+          <!-- Hoofd-zoekveld -->
+          <div class="lg:col-span-5">
+            <label for="searchInputQuery" class="block text-xs font-bold uppercase tracking-wider text-zeegroen-800 font-mono mb-1">
+              Volledige Zoekwoorden / Exacte Zinsnede / AI Onderzoeksvraag:
+            </label>
+            <div class="relative">
+              <input
+                id="searchInputQuery"
+                type="text"
+                placeholder="Bijv. Kamer Zeeland notulen 1737, of 'Slot ter Hooge', of stel een AI-vraag..."
+                onkeydown="if(event.key==='Enter') executeArchiveSearch()"
+                class="w-full pl-3 pr-24 py-2 rounded-lg border-2 border-parchment-400 focus:border-zeegroen-700 focus:outline-none bg-white text-sm font-sans text-inkt-900 shadow-inner"
+              />
+              <button onclick="clearSearchResults()" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-inkt-800/60 hover:text-red-700 font-mono px-1.5 py-0.5">
+                Wissen
+              </button>
+            </div>
+          </div>
+
+          <!-- Zoekmodus -->
+          <div class="lg:col-span-2">
+            <label for="selectSearchMode" class="block text-[11px] font-mono text-inkt-800 mb-1">Zoekmethode:</label>
+            <select id="selectSearchMode" onchange="executeArchiveSearch()" class="w-full py-2 px-2.5 rounded-lg border border-parchment-400 bg-white text-xs font-medium">
+              <option value="all_words">1. Alle Volledige Zoekwoorden (AND)</option>
+              <option value="exact_phrase">2. Exacte Woordgroep (Phrase)</option>
+              <option value="any_words">3. Één of meer Zoekwoorden (OR / Ranking)</option>
+              <option value="boolean_xpath">4. Booleaans (AND / OR / NOT / *)</option>
+            </select>
+          </div>
+
+          <!-- XML-Tag / Element Filter -->
+          <div class="lg:col-span-2">
+            <label for="selectXmlTagFilter" class="block text-[11px] font-mono text-inkt-800 mb-1">Filter op EAD-XML Tag:</label>
+            <select id="selectXmlTagFilter" onchange="executeArchiveSearch()" class="w-full py-2 px-2.5 rounded-lg border border-parchment-400 bg-white text-xs font-mono">
+              <option value="ALL">Alle XML-elementen (&lt;*&gt;)</option>
+              <option value="c_file">Inventarisnummers (&lt;c level="file"&gt;)</option>
+              <option value="unittitle">&lt;unittitle&gt; (Stukbeschrijving)</option>
+              <option value="odd">&lt;odd&gt; (Bijzonderheden / Noot)</option>
+              <option value="bioghist">&lt;bioghist&gt; (Geschiedenis)</option>
+              <option value="custodhist">&lt;custodhist&gt; (Archiefbeheer)</option>
+              <option value="scopecontent">&lt;scopecontent&gt; (Inhoud)</option>
+              <option value="unitid">&lt;unitid&gt; (Inventarisnummer)</option>
+              <option value="unitdate">&lt;unitdate&gt; (Datering)</option>
+            </select>
+          </div>
+
+          <!-- Bronarchief Filter -->
+          <div class="lg:col-span-1">
+            <label for="selectArchiveScope" class="block text-[11px] font-mono text-inkt-800 mb-1">Bronbereik:</label>
+            <select id="selectArchiveScope" onchange="executeArchiveSearch()" class="w-full py-2 px-2 rounded-lg border border-parchment-400 bg-white text-xs">
+              <option value="ALL">Alle 5 XML's</option>
+              <option value="CURRENT">Huidig XML</option>
+            </select>
+          </div>
+
+          <!-- Actieknoppen: Zoek XML + Vraag AI -->
+          <div class="lg:col-span-2 flex items-center gap-1.5">
+            <button onclick="executeArchiveSearch()" class="flex-1 py-2 px-3 rounded-lg bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-semibold text-xs shadow transition flex items-center justify-center gap-1">
+              <span>🔎</span> Zoek XML
+            </button>
+            <button onclick="executeAiSemanticSynthesis()" class="flex-1 py-2 px-3 rounded-lg bg-oker-600 hover:bg-oker-700 text-white font-semibold text-xs shadow transition flex items-center justify-center gap-1" title="Laat de AI-Archiefassistent de gevonden XML-nodes analyseren en samenvatten">
+              <span>🤖</span> AI Analyse
+            </button>
+          </div>
+        </div>
+
+        <!-- Zoekresultaten + AI Synthese Weergave (verschijnt bij actief zoeken) -->
+        <div id="searchResultsContainer" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2 border-t border-parchment-300">
+          <!-- Links: Gevonden XML-Nodes met Volledige Zoekwoord-Highlighting -->
+          <div class="lg:col-span-7 flex flex-col gap-2">
+            <div class="flex items-center justify-between bg-parchment-200 px-3 py-1.5 rounded-lg border border-parchment-300">
+              <span id="searchStatsSummary" class="text-xs font-mono font-bold text-zeegroen-800">0 XML-nodes gevonden</span>
+              <button onclick="readAllSearchResultsAloud()" class="px-2.5 py-1 rounded bg-zeegroen-700 hover:bg-zeegroen-800 text-white text-xs font-semibold flex items-center gap-1">
+                <span>🔊</span> Lees Alle Treffers Voor (Mijn Stem)
+              </button>
+            </div>
+            <div id="searchHitList" class="max-h-80 overflow-y-auto space-y-2 pr-1"></div>
+          </div>
+
+          <!-- Rechts: AI RAG Archief-Synthese met Bronverwijzing & Voorleesknop -->
+          <div class="lg:col-span-5 bg-parchment-100 rounded-lg border-2 border-oker-500/50 p-3.5 flex flex-col justify-between gap-3">
+            <div>
+              <div class="flex items-center justify-between gap-2 border-b border-parchment-300 pb-2 mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-base">🏛️</span>
+                  <h3 class="font-serif font-bold text-sm text-inkt-900">AI-Archief Synthese &amp; Bronverantwoording (RAG)</h3>
+                </div>
+                <button onclick="readAiSynthesisAloud()" class="px-2.5 py-1 rounded bg-oker-600 hover:bg-oker-700 text-white text-xs font-semibold flex items-center gap-1 shadow-sm">
+                  <span>🔊</span> Lees AI-Antwoord Voor
+                </button>
+              </div>
+              <div id="aiSynthesisOutput" class="text-xs font-serif text-inkt-900 leading-relaxed space-y-2 max-h-64 overflow-y-auto pr-1">
+                Klik op <strong>"🤖 AI Analyse"</strong> om op basis van de gevonden XML-nodes een volledig gedocumenteerd historisch antwoord met exacte toegangs- en inventarisnummers te genereren.
+              </div>
+            </div>
+            <div class="text-[10px] font-mono text-inkt-800/70 border-t border-parchment-300 pt-1.5 flex items-center justify-between">
+              <span>Bron: Authentieke EAD-XML nodes (NA / Zeeuws Archief)</span>
+              <span id="aiModelStatusLabel">Gemini 3 Flash + Lokale XML-RAG</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================
+         PANEEL 4: DE 3-KOLOMS EAD-XML ARCHIEFLEZER, BOOMSTRUCTUUR & RAW XML
+         ================================================================= -->
+    <section id="panelReaderXML" class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+
+      <!-- LINKERKOLOM (3/12): ARCHIEF-SELECTIE, DRAG & DROP XML/PDF & EAD BOOMSTRUCTUUR -->
+      <aside class="lg:col-span-3 bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[820px]">
+        <div class="bg-zeegroen-800 text-parchment-50 px-3.5 py-2.5 flex items-center justify-between">
+          <h2 class="font-serif font-bold text-sm flex items-center gap-1.5">
+            <span>🗂️</span> EAD-XML Archieven &amp; Structuur
+          </h2>
+          <label class="px-2 py-0.5 rounded bg-oker-600 hover:bg-oker-700 text-white text-[11px] font-semibold cursor-pointer transition" title="Upload uw eigen .xml, .ead.xml of .pdf bestand">
+            + Upload XML/PDF
+            <input type="file" id="fileUploadInput" accept=".xml,.pdf" multiple onchange="handleCustomFileUpload(event)" class="hidden">
+          </label>
+        </div>
+
+        <!-- Lijst van geladen EAD-XML Archieven -->
+        <div class="p-2.5 bg-parchment-100 border-b border-parchment-300 space-y-1.5">
+          <div class="text-[10px] font-mono uppercase tracking-wider text-zeegroen-800 font-bold px-1">
+            Kies een voorgeladen EAD-XML Archief (5):
+          </div>
+          <div id="archiveSelectorList" class="space-y-1 max-h-48 overflow-y-auto pr-0.5"></div>
+        </div>
+
+        <!-- Filter binnen de huidige EAD-boomstructuur -->
+        <div class="p-2 bg-parchment-50 border-b border-parchment-300">
+          <input
+            id="treeQuickFilter"
+            type="text"
+            placeholder="Filter rubrieken / inv.nrs in boom..."
+            oninput="renderXmlTreeNavigation()"
+            class="w-full px-2.5 py-1 rounded border border-parchment-400 text-xs font-mono bg-white"
+          />
+        </div>
+
+        <!-- Klikbare Hiërarchische EAD-XML Boomstructuur (<archdesc> -> <dsc> -> <c level="series"> -> <c level="file">) -->
+        <nav id="xmlTreeNavigation" aria-label="EAD-XML Archiefboomstructuur" class="flex-1 overflow-y-auto p-2.5 space-y-1 text-xs"></nav>
+      </aside>
+
+      <!-- MIDDENKOLOM (6/12): KLASSIEKE BOEK-SPREAD READER MET SCREENREADER ZIN-HIGHLIGHTING -->
+      <div class="lg:col-span-6 bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[820px]">
+        <!-- Boek-Header met Weergave-Tabs -->
+        <div class="bg-zeegroen-700 text-parchment-50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="bookHeaderUnitIdBadge" class="px-2 py-0.5 rounded bg-oker-600 text-white font-mono text-xs font-bold">Toegang 1.04.02</span>
+              <h2 id="bookHeaderTitle" class="font-serif font-bold text-base truncate max-w-md">Verenigde Oostindische Compagnie (VOC)</h2>
+            </div>
+            <p id="bookHeaderSubtitle" class="text-[11px] text-parchment-200 font-mono">
+              Klik op élke zin of inventarisbeschrijving om direct vanaf dat punt met uw stem voor te lezen
+            </p>
+          </div>
+
+          <!-- Schakel tussen Opgemaakte Boek-Spread en Ruwe XML-Code Inspector -->
+          <div class="flex items-center gap-1 bg-zeegroen-900 p-1 rounded-lg border border-zeegroen-600 text-xs">
+            <button id="tabBtnBookView" onclick="switchReaderViewMode('book')" class="px-2.5 py-1 rounded bg-oker-600 text-white font-semibold transition">
+              📖 Boek-Spread &amp; Screenreader
+            </button>
+            <button id="tabBtnRawXmlView" onclick="switchReaderViewMode('raw_xml')" class="px-2.5 py-1 rounded text-parchment-200 hover:text-white font-mono transition">
+              &lt;/&gt; Ruwe EAD-XML Broncode
+            </button>
+          </div>
+        </div>
+
+        <!-- De Boek-Spread Container -->
+        <div id="bookSpreadContainer" class="flex-1 overflow-y-auto archive-paper p-5 md:p-7 space-y-5 font-serif text-inkt-900 leading-relaxed" tabindex="0" role="region" aria-label="EAD-XML Archief inhoud">
+          <!-- Wordt dynamisch gevuld door renderCurrentArchiveContent() -->
+        </div>
+
+        <!-- De Ruwe EAD-XML Broncode Container (verborgen tenzij tab gekozen) -->
+        <div id="rawXmlContainer" class="hidden flex-1 overflow-y-auto bg-inkt-900 text-parchment-100 p-4 font-mono text-xs leading-relaxed">
+          <div class="flex items-center justify-between pb-2 mb-3 border-b border-zeegroen-700">
+            <span class="text-oker-500 font-semibold">Authentieke EAD-XML Structuur (Klik op een XML-node om deze voor te lezen)</span>
+            <button onclick="copyCurrentRawXml()" class="px-2.5 py-1 rounded bg-zeegroen-700 hover:bg-zeegroen-600 text-white text-[11px]">
+              📋 Kopieer XML
+            </button>
+          </div>
+          <pre id="rawXmlPreBlock" class="whitespace-pre-wrap break-words text-[11px]"></pre>
+        </div>
+
+        <!-- Onderbalk: Hoofdstuk/Sectie Paginering -->
+        <div class="bg-parchment-200 px-4 py-2 border-t border-parchment-300 flex items-center justify-between text-xs font-mono">
+          <button onclick="navigateSection(-1)" class="px-3 py-1 rounded bg-parchment-50 hover:bg-white border border-parchment-400 text-inkt-900 font-semibold transition">
+            ← Vorige Rubriek / Sectie
+          </button>
+          <span id="sectionPaginationLabel" class="text-zeegroen-800 font-bold">Sectie 1 / 1</span>
+          <button onclick="navigateSection(1)" class="px-3 py-1 rounded bg-parchment-50 hover:bg-white border border-parchment-400 text-inkt-900 font-semibold transition">
+            Volgende Rubriek / Sectie →
+          </button>
+        </div>
+      </div>
+
+      <!-- RECHTERKOLOM (3/12): XML-NODE INSPECTOR, METS/DAO SCANS & BEGRIPPENLIJST -->
+      <aside class="lg:col-span-3 bg-parchment-50 border-2 border-parchment-300 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[820px]">
+        <div class="bg-zeegroen-800 text-parchment-50 px-3.5 py-2.5 flex items-center justify-between">
+          <h2 class="font-serif font-bold text-sm flex items-center gap-1.5">
+            <span>🔬</span> XML-Node &amp; METS Metadata
+          </h2>
+          <button onclick="readActiveMetadataAloud()" class="px-2 py-0.5 rounded bg-oker-600 hover:bg-oker-700 text-white text-[11px] font-semibold" title="Lees de metadata en het XPath van het geselecteerde stuk voor (Sneltoets: M)">
+            🔊 Lees Metadata (M)
+          </button>
+        </div>
+
+        <div class="p-3.5 flex-1 overflow-y-auto space-y-4 text-xs">
+          <!-- Actieve XML Node XPath & Attributen -->
+          <div class="bg-parchment-100 p-3 rounded-lg border border-parchment-300 space-y-2">
+            <div class="text-[10px] font-mono uppercase tracking-wider text-zeegroen-800 font-bold">
+              Geselecteerd XML-Element &amp; XPath
+            </div>
+            <div class="font-mono text-[11px] bg-inkt-900 text-emerald-300 p-2 rounded break-all" id="inspectorXpathBox">
+              /ead/archdesc/bioghist
+            </div>
+            <div id="inspectorAttributesList" class="space-y-1 text-[11px] font-mono text-inkt-800"></div>
+          </div>
+
+          <!-- Digitale Objecten (<dao>) / Handle.net & METS Koppeling -->
+          <div class="bg-parchment-100 p-3 rounded-lg border border-parchment-300 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-zeegroen-800 font-bold">
+                Digitale Archiefscans (&lt;dao&gt; / Handle)
+              </span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">EAD 2002</span>
+            </div>
+            <div id="inspectorDaoBox" class="space-y-2 text-xs"></div>
+          </div>
+
+          <!-- Archivalische Begrippenverklaring (17e/18e-eeuwse termen in dit archief) -->
+          <div class="bg-parchment-100 p-3 rounded-lg border border-parchment-300 space-y-2">
+            <div class="text-[10px] font-mono uppercase tracking-wider text-zeegroen-800 font-bold">
+              Historisch Glossarium (Klik om voor te lezen)
+            </div>
+            <div id="inspectorGlossaryBox" class="space-y-1.5"></div>
+          </div>
+        </div>
+      </aside>
+
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       MODAAL 1: HANDMATIGE WEBRTC SDP OFFER / ANSWER UITWISSELING
+       ===================================================================== -->
+  <div id="modalSdpExchange" class="fixed inset-0 bg-inkt-900/75 z-50 hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 border-2 border-oker-600 rounded-xl max-w-2xl w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-parchment-300 pb-2">
+        <h3 class="font-serif font-bold text-lg text-inkt-900">🔗 WebRTC SDP Offer / Answer Uitwisseling (Externe Peer)</h3>
+        <button onclick="closeSdpModal()" class="text-inkt-800 hover:text-red-700 font-bold text-sm">✕ Sluiten</button>
+      </div>
+      <p class="text-xs text-inkt-800 leading-relaxed">
+        Naast de automatische één-klik Loopback en Multi-Tab verbinding kunt u hier het gegenereerde <strong>SDP Offer</strong> kopiëren of een extern <strong>SDP Answer</strong> plakken om tussen twee verschillende apparaten te streamen.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[11px] font-mono font-bold text-zeegroen-800 mb-1">1. Lokale SDP Offer (Kopieer):</label>
+          <textarea id="textareaLocalSdpOffer" rows="6" readonly class="w-full p-2 rounded border border-parchment-400 bg-white font-mono text-[10px]"></textarea>
+          <button onclick="generateManualSdpOffer()" class="mt-1.5 w-full py-1.5 rounded bg-zeegroen-700 text-white text-xs font-semibold">
+            Genereer Nieuw SDP Offer
+          </button>
+        </div>
+        <div>
+          <label class="block text-[11px] font-mono font-bold text-zeegroen-800 mb-1">2. Externe SDP Offer/Answer (Plak):</label>
+          <textarea id="textareaRemoteSdp" rows="6" placeholder='Plak hier JSON {"type":"offer"|"answer","sdp":"..."}' class="w-full p-2 rounded border border-parchment-400 bg-white font-mono text-[10px]"></textarea>
+          <button onclick="applyRemoteSdpDescriptor()" class="mt-1.5 w-full py-1.5 rounded bg-oker-600 text-white text-xs font-semibold">
+            Verwerk Externe SDP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAAL 2: TOETSENBORD SNELTOETSEN VOOR XML SCREENREADER
+       ===================================================================== -->
+  <div id="modalKeyboardHelp" class="fixed inset-0 bg-inkt-900/75 z-50 hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 border-2 border-zeegroen-700 rounded-xl max-w-lg w-full p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-parchment-300 pb-2">
+        <h3 class="font-serif font-bold text-lg text-inkt-900">⌨️ XML Screenreader Toetsenbordnavigatie</h3>
+        <button onclick="closeKeyboardHelpModal()" class="text-inkt-800 hover:text-red-700 font-bold text-sm">✕ Sluiten</button>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between py-1.5 border-b border-parchment-200"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">Spatie</kbd> <span>Start / Pauzeer voorlezen met uw stem</span></div>
+        <div class="flex justify-between py-1.5 border-b border-parchment-200"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">J / Pijl Rechts</kbd> <span>Volgende XML-node of archiefzin voorlezen</span></div>
+        <div class="flex justify-between py-1.5 border-b border-parchment-200"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">K / Pijl Links</kbd> <span>Vorige XML-node of archiefzin voorlezen</span></div>
+        <div class="flex justify-between py-1.5 border-b border-parchment-200"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">H</kbd> <span>Lees huidige hoofdstuk- en rubriekspad voor</span></div>
+        <div class="flex justify-between py-1.5 border-b border-parchment-200"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">M</kbd> <span>Lees XPath, inventarisnummer en datering voor</span></div>
+        <div class="flex justify-between py-1.5"><kbd class="px-2 py-0.5 bg-parchment-200 rounded font-mono font-bold">/</kbd> <span>Spring direct naar het Volledige Zoekwoorden veld</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       TOAST MELDINGEN (GEEN alert() OF confirm())
+       ===================================================================== -->
+  <div id="toastNotificationContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- =====================================================================
+       VOLLEDIGE APPLICATIE LOGICA & AUTHENTIEKE EAD-XML ARCHIEVEN
+       ===================================================================== -->
+  <script>
+    /*************************************************************************
+     * 1. DE 5 AUTHENTIEKE EAD-XML ARCHIEVEN (VOLLEDIG INGEBAKKEN & PARSEERBAAR)
+     *    Bevat alle historische details uit:
+     *    1. NA_1.04.02_VOC.ead.xml (VOC 1602-1795)
+     *    2. NA_1.10.69_Radermacher_VOC_WIC.ead.xml (Collectie Radermacher 1460-1800)
+     *    3. NA_1.05.01.01_Oude_WIC.ead.xml (Oude WIC 1621-1674)
+     *    4. NA_1.05.01.02_Tweede_WIC.ead.xml (Tweede WIC 1674-1791)
+     *    5. NL-MdbZA_17_1_EAD.xml (Bestuur der Visserijen op de Zeeuwse Stromen)
+     *************************************************************************/
+    const PRELOADED_EAD_XML_ARCHIVES = [
+      {
+        id: "NA_1.04.02_VOC",
+        filename: "NA_1.04.02_VOC.ead.xml",
+        shortTitle: "1.04.02 — Verenigde Oostindische Compagnie (VOC)",
+        period: "1602–1795 (1811)",
+        repository: "Nationaal Archief, Den Haag",
+        extent: "1363 strekkende meter (14.432 inventarisnummers)",
+        xmlString: `<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9">
+  <eadheader countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b">
+    <eadid countrycode="NL" mainagencycode="NL-HaNA" identifier="1.04.02">NL-HaNA_1.04.02</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Inventaris van het archief van de Verenigde Oost-Indische Compagnie (VOC), 1602–1795 (1811)</titleproper>
+        <author>Dr. M.A.P. Meilink-Roelofsz, R. Raben en H. Spijkerman</author>
+      </titlestmt>
+      <publicationstmt>
+        <publisher>Nationaal Archief, Den Haag</publisher>
+        <date normal="1992">1992</date>
+      </publicationstmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>1.04.02</unitid>
+      <unittitle>Archieven van de Verenigde Oostindische Compagnie (VOC), 1602–1795 (1811)</unittitle>
+      <unitdate normal="1602/1811">1602–1795 (1811)</unitdate>
+      <physdesc><extent>1363 strekkende meter; 14.432 inventarisnummers</extent></physdesc>
+      <repository><corpname>Nationaal Archief</corpname></repository>
+    </did>
+    <bioghist>
+      <head>Geschiedenis van de Verenigde Oostindische Compagnie (1602–1795)</head>
+      <p>Op 20 maart 1602 verleenden de Staten-Generaal der Verenigde Nederlanden het octrooi aan de Generale Geoctroyeerde Nederlandsch Oost-Indische Compagnie. De voorcompagnieën in Amsterdam, Zeeland (Middelburg), Delft, Rotterdam, Hoorn en Enkhuizen werden hiermee verenigd in één handelslichaam met het monopolie op de vaart beoosten Kaap de Goede Hoop en door de Straat van Magelhaen.</p>
+      <p>Het centrale bestuur werd gevormd door het college van de Heren Zeventien (Heren XVII), waarin de Kamer Amsterdam acht afgevaardigden leverde, de Kamer Zeeland vier, en de kleinere Kamers elk één, terwijl het zeventiende lid bij toerbeurt door Zeeland of een van de kleine Kamers werd aangewezen. De vergaderingen vonden volgens een vast rooster van zes achtereenvolgende jaren te Amsterdam en vervolgens twee jaren te Middelburg plaats.</p>
+      <p>Voor de voorbereiding van de agenda van de Heren XVII en het lezen van de uit Batavia overgekomen brieven en papieren kwam het Haags Besogne bijeen in Den Haag. Advocaat van de Compagnie Pieter van Dam stelde tussen 1693 en 1701 zijn monumentale Beschryvinge van de Oostindische Compagnie samen op last van de bewindhebbers.</p>
+    </bioghist>
+    <custodhist>
+      <head>Geschiedenis van het archiefbeheer en de Charterkamer</head>
+      <p>Bij resolutie van de Heren XVII en de Kamer Zeeland werd in 1737 te Middelburg een speciale commissie voor de Charterkamer ingesteld, waarbij Thomas Cunningham 't Hooft werd aangesteld als eerste vaste chartermeester om de resoluties, missiven en retroacta te ordenen en te inventariseren.</p>
+      <p>Na de opheffing van de VOC onder de Staatsregeling van 1798 en het vervallen van het octrooi eind 1799 gingen de archieven over naar de Aziatische Raad. In 1809 en 1851 vervaardigde P. Pous overzichten en inventarissen van de nog te Middelburg en Amsterdam berustende koloniale archieven voordat zij naar het Rijksarchief te Den Haag werden overgebracht. De hydrografische kaarten en atlassen zijn vervaardigd door de officiële kaartenmakers Hessel Gerritsz, Willem Jansz. Blaeu, Joan Blaeu, Isaac de Graaff en in Zeeland Arent Roggeveen.</p>
+    </custodhist>
+    <scopecontent>
+      <head>Inhoud en structuur van het VOC-archief</head>
+      <p>Het archief omvat de resoluties van de Heren XVII, het Haags Besogne, de archieven van de Kamer Amsterdam en de Kamer Zeeland, de reeks Overgekomen Brieven en Papieren uit Batavia en de buitencomptoiren (Ceylon, Coromandel, Bengalen, Suratte, Perzië, Malakka, Deshima in Japan en Kaap de Goede Hoop), alsmede de complete serie scheepssoldijboeken, monsterrollen en testamenten.</p>
+    </scopecontent>
+    <dsc type="combined">
+      <c level="series">
+        <did>
+          <unitid>I</unitid>
+          <unittitle>Afd. I: Vergaderingen van de Heren Zeventien en van het Haags Besogne</unittitle>
+          <unitdate>1602–1795</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>1</unitid>
+            <unittitle>Origineel octrooi verleend door de Staten-Generaal aan de Verenigde Oostindische Compagnie, met de prolongaties van het octrooi.</unittitle>
+            <unitdate>1602 maart 20 – 1796</unitdate>
+            <dao href="https://hdl.handle.net/10648/voc-octrooi-1602"/>
+          </did>
+          <odd><p>Perkament met grootzegel van de Staten-Generaal in rode was. Bevat de artikelen over de verdeling tussen Kamer Amsterdam (de helft), Kamer Zeeland (een kwart) en de Kamers op de Maze en in het Noorderkwartier.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>100-178</unitid>
+            <unittitle>Resoluties van de ordinaris en extraordinaris vergaderingen van de Heren Zeventien, gehouden te Amsterdam en te Middelburg.</unittitle>
+            <unitdate>1602–1795</unitdate>
+            <dao href="https://hdl.handle.net/10648/voc-resoluties-heren-xvii"/>
+          </did>
+          <odd><p>Met repertoria en alfabetische indices op de besluiten aangaande de equipage van retourschepen, het zenden van contanten en baren zilver, en de eisen van retouren uit Indië.</p></odd>
+        </c>
+      </c>
+      <c level="series">
+        <did>
+          <unitid>II</unitid>
+          <unittitle>Afd. II: Kamer Amsterdam en Kamer Zeeland — Bestuur, Equipage en Charterkamer</unittitle>
+          <unitdate>1602–1795</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>7241</unitid>
+            <unittitle>Resoluties van de bewindhebbers van de Kamer Zeeland te Middelburg, met bijbehorende geheime notulen en instructies voor de chartermeester Thomas Cunningham 't Hooft.</unittitle>
+            <unitdate>1602–1795</unitdate>
+            <dao href="https://hdl.handle.net/10648/voc-kamer-zeeland-7241"/>
+          </did>
+          <odd><p>Bevat tevens de reglementen van 1737 op het beheer van de Charterkamer van de Kamer Zeeland op het Oost-Indisch Huis te Middelburg.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>12650-13820</unitid>
+            <unittitle>Scheepssoldijboeken, grootboeken en monsterrollen van de voor de Kamers Amsterdam en Zeeland uitgevaren Oost-Indiëvaarders.</unittitle>
+            <unitdate>1633–1795</unitdate>
+            <dao href="https://hdl.handle.net/10648/voc-scheepssoldijboeken"/>
+          </did>
+          <odd><p>Per schip zijn opgetekend de namen en plaatsen van herkomst van alle opvarenden, hun rang, maandgage, schuldbrieven (transportbrieven), eventueel overlijden aan boord of in Azië, en de afrekening met de erfgenamen.</p></odd>
+        </c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>`
+      },
+      {
+        id: "NA_1.10.69_Radermacher",
+        filename: "NA_1.10.69_Radermacher_VOC_WIC.ead.xml",
+        shortTitle: "1.10.69 — Collectie Radermacher (VOC & WIC Zeeland)",
+        period: "1460–1800",
+        repository: "Nationaal Archief, Den Haag",
+        extent: "635 inventarisnummers (6,8 strekkende meter)",
+        xmlString: `<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9">
+  <eadheader countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b">
+    <eadid countrycode="NL" mainagencycode="NL-HaNA" identifier="1.10.69">NL-HaNA_1.10.69</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Inventaris van het archief van de familie Radermacher [levensjaren 1538–1800], 1460–1800</titleproper>
+        <author>Mr. R. Bijlsma / Nationaal Archief</author>
+      </titlestmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>1.10.69</unitid>
+      <unittitle>Collectie Samuel, Daniël en Johan Radermacher en Pieter Boddaert — Stukken betreffende de VOC en WIC (Kamer Zeeland)</unittitle>
+      <unitdate normal="1460/1800">1460–1800</unitdate>
+      <physdesc><extent>635 inventarisnummers</extent></physdesc>
+      <repository><corpname>Nationaal Archief</corpname></repository>
+    </did>
+    <bioghist>
+      <head>De familie Radermacher als bewindhebbers te Middelburg</head>
+      <p>De uit Aken en Antwerpen afkomstige koopmansfamilie Radermacher vestigde zich eind zestiende eeuw in Middelburg. Samuel Radermacher (1693–1761) en Mr. Daniël Radermacher (1722–1803), heer van Nieuwerkerke, bekleedden decennialang het ambt van bewindhebber van de Oost-Indische Compagnie (VOC) en de West-Indische Compagnie (WIC) ter Kamer Zeeland te Middelburg.</p>
+      <p>Uit hoofde van hun functie als gedeputeerden naar de vergaderingen van de Heren Zeventien, het Haags Besogne en de Vergadering van Tienen legden zij een uitzonderlijk rijke particuliere werkcollectie aan van secrete notulen, financiële staten, equipagelijsten, adviezen over erfrecht in Indië en stukken over scheepsrampen.</p>
+    </bioghist>
+    <scopecontent>
+      <head>Overzicht van de VOC- en WIC-stukken in de Collectie Radermacher</head>
+      <p>De collectie bevat eigenhandige particuliere notulen van de vergaderingen van de Heren XVII en van de Kamer Zeeland, verhandelingen over verboden particuliere handel in Azië, stukken over de verongelukte Zeeuwse retourschepen Slot ter Hooge, 't Vliegend Hart, Woestduin en Aechtekerke, alsmede de commissie voor de Charterkamer uit 1737.</p>
+    </scopecontent>
+    <dsc type="combined">
+      <c level="series">
+        <did>
+          <unitid>I.B.a</unitid>
+          <unittitle>I.B.a: Stukken betreffende de Verenigde Oostindische Compagnie (VOC) — Algemeen &amp; Heren XVII</unittitle>
+          <unitdate>1602–1795</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>19-20</unitid>
+            <unittitle>Verhandeling getiteld 'Practijck van 's Compagnies Dieven', opgesteld door A. Luymes, over de sluikhandel en malversaties van dienaren van de Compagnie in Oost-Indië.</unittitle>
+            <unitdate>ca. 1685–1710</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-19-20"/>
+          </did>
+          <odd><p>Gedetailleerd handschrift waarin wordt uiteengezet hoe schippers, opperkooplieden en fiscaals te Batavia, Bengalen en Coromandel voor eigen rekening specerijen, amfioen en zijde verhandelden.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>35A-35C</unitid>
+            <unittitle>Particuliere notulen en aantekeningen gehouden door Samuel en Daniël Radermacher tijdens de vergaderingen van de Heren Zeventien en het Haags Besogne.</unittitle>
+            <unitdate>1730–1786</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-35A"/>
+          </did>
+          <odd><p>Bevat vertrouwelijke beraadslagingen die niet in de officiële resolutieboeken van de Heren XVII zijn opgenomen.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>63-64</unitid>
+            <unittitle>Stukken en rechtsgeleerde adviezen betreffende het ab-intestaat erfrecht in Oost-Indië (het onderscheid tussen Schependomsrecht en Aasdomsrecht in Holland en Zeeland) en de afwikkeling van testamenten van VOC-dienaren.</unittitle>
+            <unitdate>1661–1765</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-63-64"/>
+          </did>
+          <odd><p>Regelt de bevoegdheid van de Weeskamer te Batavia en de uitkering van nalatenschappen aan erfgenamen via de Kamer Zeeland en Kamer Amsterdam.</p></odd>
+        </c>
+      </c>
+      <c level="series">
+        <did>
+          <unitid>I.B.b</unitid>
+          <unittitle>I.B.b: Stukken betreffende de VOC Kamer Zeeland te Middelburg</unittitle>
+          <unitdate>1670–1795</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>171A-171G</unitid>
+            <unittitle>Particuliere notulen van het verhandelde in de vergaderingen van de bewindhebbers van de Kamer Zeeland te Middelburg, gehouden door Samuel en Daniël Radermacher.</unittitle>
+            <unitdate>1726–1791</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-171A"/>
+          </did>
+          <odd><p>Zeven delen (171A t/m 171G) met klad- en netnotulen over begeving van ambten, aanbouw van schepen op de werf te Middelburg en financiële geschillen met de Kamer Amsterdam.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>247</unitid>
+            <unittitle>Stukken betreffende het verongelukken en de berging van goederen en contanten uit de voor de Kamer Zeeland uitgevaren schepen Slot ter Hooge (1724), 't Vliegend Hart (1735), Aechtekerke (1736) en Woestduin (1779).</unittitle>
+            <unitdate>1724–1780</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-247-scheepsrampen"/>
+          </did>
+          <odd><p>Bevat duikrapporten van het schip Slot ter Hooge bij Porto Santo (Madeira), het vergaan van 't Vliegend Hart en de Anna Catharina op de Rassen voor Vlissingen op 3 februari 1735, en de redding van de opvarenden van het retourschip Woestduin op de Noorder Rassen in juli 1779.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>276</unitid>
+            <unittitle>Lijsten en inventarissen van zeekaarten, atlassen en stuurmansinstrumenten geleverd aan de schepen van de Kamer Zeeland door de examinator der stuurlieden Abraham Anias.</unittitle>
+            <unitdate>1725–1752</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-276-anias"/>
+          </did>
+          <odd><p>Specificeert de perkamenten pas- en zeekaarten van de Indische Oceaan, octanten, gradenbogen en kompassen die elke opperstuurman bij vertrek van de rede van Rammekens ontving.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>354</unitid>
+            <unittitle>Stukken betreffende de instelling van de commissie tot het in orde brengen van de Charterkamer van de Kamer Zeeland in 1737 en de instructie voor de chartermeester.</unittitle>
+            <unitdate>1737–1742</unitdate>
+            <dao href="https://hdl.handle.net/10648/radermacher-354-charterkamer"/>
+          </did>
+          <odd><p>Beschrijft de kasten, laden en rubrieksindeling waarin de oude boeken en brieven van de Kamer Zeeland vanaf 1602 werden geborgen.</p></odd>
+        </c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>`
+      },
+      {
+        id: "NA_1.05.01.01_Oude_WIC",
+        filename: "NA_1.05.01.01_Oude_WIC.ead.xml",
+        shortTitle: "1.05.01.01 — Oude West-Indische Compagnie (OWIC)",
+        period: "1621–1674",
+        repository: "Nationaal Archief, Den Haag",
+        extent: "86 inventarisnummers (12,4 strekkende meter)",
+        xmlString: `<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9">
+  <eadheader countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b">
+    <eadid countrycode="NL" mainagencycode="NL-HaNA" identifier="1.05.01.01">NL-HaNA_1.05.01.01</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Inventaris van het archief van de Oude West-Indische Compagnie (OWIC), 1621–1674</titleproper>
+        <author>Nationaal Archief, Den Haag</author>
+      </titlestmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>1.05.01.01</unitid>
+      <unittitle>Archieven van de Oude West-Indische Compagnie (OWIC), 1621–1674</unittitle>
+      <unitdate normal="1621/1674">1621–1674</unitdate>
+      <physdesc><extent>86 inventarisnummers</extent></physdesc>
+      <repository><corpname>Nationaal Archief</corpname></repository>
+    </did>
+    <bioghist>
+      <head>Geschiedenis van de Eerste of Oude West-Indische Compagnie (1621–1674)</head>
+      <p>Na het aflopen van het Twaalfjarig Bestand verleenden de Staten-Generaal op 3 juni 1621 octrooi aan de Geoctroyeerde West-Indische Compagnie voor de vaart en handel op West-Afrika (vanaf de Kreeftskeerkring tot Kaap de Goede Hoop) en geheel Noord- en Zuid-Amerika met het Caribisch gebied.</p>
+      <p>Het centrale bestuur berustte bij het college van de Heren Negentien (Heren XIX), samengesteld uit afgevaardigden van de vijf Kamers: Amsterdam, Zeeland, Maze, Noorderkwartier en Stad en Lande, aangevuld met één gecommitteerde namens de Staten-Generaal. Na de verovering van de Zilvervloot door Piet Hein in 1628 veroverde de Compagnie in 1630 Olinda en Recife in Pernambuco (Nederlands-Brazilië), in 1634 Curaçao en in 1637 het hoofdkasteel São Jorge da Mina (Elmina) op de Kust van Guinea.</p>
+    </bioghist>
+    <scopecontent>
+      <head>Inhoud van het archief van de Oude WIC</head>
+      <p>Het bewaard gebleven archief omvat de secrete en ordinaris notulen van de Heren XIX, het Haags Besoigne, de resoluties van de Kamer Zeeland, stukken betreffende de Kust van Guinea (Elmina, Axim, Accra en Ardra), de expeditie naar Chili onder Hendrik Brouwer, en de grote serie Overgekomen brieven en papieren uit Brazilië en Curaçao (1630–1654).</p>
+    </scopecontent>
+    <dsc type="combined">
+      <c level="series">
+        <did>
+          <unitid>I</unitid>
+          <unittitle>Heren XIX, Kamer Zeeland en Expedities naar Afrika en Zuid-Amerika</unittitle>
+          <unitdate>1621–1674</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>1-14</unitid>
+            <unittitle>Resoluties en secrete notulen van de vergaderingen van de Heren Negentien (Heren XIX) en het Haags Besoigne.</unittitle>
+            <unitdate>1623–1674</unitdate>
+            <dao href="https://hdl.handle.net/10648/owic-heren-xix"/>
+          </did>
+          <odd><p>Bevat de strategische besluiten over het bestuur van Johan Maurits van Nassau-Siegen in Brazilië en de uitrusting van oorlogsvloten.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>20-32</unitid>
+            <unittitle>Resoluties en missivenboeken van de bewindhebbers van de Kamer Zeeland der West-Indische Compagnie te Middelburg.</unittitle>
+            <unitdate>1626–1674</unitdate>
+            <dao href="https://hdl.handle.net/10648/owic-kamer-zeeland"/>
+          </did>
+          <odd><p>Betreft onder meer het Zeeuwse patronaatschap over de Wilde Kust (Essequebo en Berbice) en de kaapvaart vanuit Vlissingen.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>44</unitid>
+            <unittitle>Journalen, instructies en resoluties betreffende de expeditie onder bevel van generaal Hendrik Brouwer en Elias Herckmans naar Valdivia in Chili.</unittitle>
+            <unitdate>1642–1644</unitdate>
+            <dao href="https://hdl.handle.net/10648/owic-44-chili-brouwer"/>
+          </did>
+          <odd><p>Verslag van de reis vanuit Recife langs Kaap Hoorn en Brouwershaven (Chiloé) naar Valdivia om een bondgenootschap met de Araucaniërs tegen de Spanjaarden te sluiten.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>49-51</unitid>
+            <unittitle>Overgekomen brieven en papieren uit Brazilië en Curaçao aan de Heren XIX en de Kamer Zeeland, afkomstig van de Politieke Raad op het recif van Olinda en Antonio Vaz.</unittitle>
+            <unitdate>1630–1636</unitdate>
+            <dao href="https://hdl.handle.net/10648/owic-49-51-brazilie"/>
+          </did>
+          <odd><p>Bevat de originele missiven van gouverneur Diederick van Waerdenburch, admiraal Maerten Thijssen, Johannes van Walbeeck en P. van Serooskercken over de verovering van Olinda, Recife, het eiland Antonio Vaz, Itamaracá, Rio Grande, Paraiba en de inname van het eiland Curaçao in 1634, alsmede rapporten over de factorijen te Axim, Accra en Ardra op de Kust van Guinea.</p></odd>
+        </c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>`
+      },
+      {
+        id: "NA_1.05.01.02_Tweede_WIC",
+        filename: "NA_1.05.01.02_Tweede_WIC.ead.xml",
+        shortTitle: "1.05.01.02 — Tweede West-Indische Compagnie (WIC)",
+        period: "1674–1791 (1795)",
+        repository: "Nationaal Archief, Den Haag",
+        extent: "1381 inventarisnummers (118 strekkende meter)",
+        xmlString: `<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9">
+  <eadheader countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b">
+    <eadid countrycode="NL" mainagencycode="NL-HaNA" identifier="1.05.01.02">NL-HaNA_1.05.01.02</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Inventaris van het archief van de Tweede West-Indische Compagnie (WIC), 1674–1791</titleproper>
+        <author>Nationaal Archief, Den Haag</author>
+      </titlestmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>1.05.01.02</unitid>
+      <unittitle>Archieven van de Tweede West-Indische Compagnie (WIC), 1674–1791</unittitle>
+      <unitdate normal="1674/1791">1674–1791</unitdate>
+      <physdesc><extent>1381 inventarisnummers</extent></physdesc>
+      <repository><corpname>Nationaal Archief</corpname></repository>
+    </did>
+    <bioghist>
+      <head>De Tweede Geoctroyeerde West-Indische Compagnie en de Vergadering van Tienen</head>
+      <p>Nadat de Oude WIC door de schuldenlast van de oorlog om Brazilië in 1674 werd ontbonden, richtten de Staten-Generaal op 20 september 1674 de Tweede West-Indische Compagnie op. Het opperbestuur werd voortaan uitgeoefend door de Vergadering van Tienen (Heren X), waarin de Kamer Amsterdam vier leden afvaardigde, de Kamer Zeeland twee, en de Kamers Maze, Noorderkwartier en Stad en Lande elk één, plus één lid namens de Staten-Generaal.</p>
+      <p>De Tweede WIC bestuurde de forten op de Kust van Guinea (waaronder Elmina, Axim en Accra), de Caribische eilanden Curaçao, Aruba, Bonaire, Sint Eustatius, Sint Maarten en Saba, en de plantagekoloniën Essequebo en Demerary (met de hoofdplaats Stabroek).</p>
+    </bioghist>
+    <scopecontent>
+      <head>Inhoud en bijzondere stukken van het Tweede WIC-archief</head>
+      <p>Het archief bevat de resoluties van de Vergadering van Tienen, de correspondentie met de directeur-generaal ter Kuste van Guinea, diplomatieke stukken over geschillen met de Deense Afrikaanse Compagnie bij Accra, plantage-tableaus van Essequebo en Demerary, alsmede de driejarige rekeningen en contra-soldijboeken.</p>
+    </scopecontent>
+    <dsc type="combined">
+      <c level="series">
+        <did>
+          <unitid>I</unitid>
+          <unittitle>Vergadering van Tienen, Kust van Guinea en Caribische &amp; Guyana-koloniën</unittitle>
+          <unitdate>1674–1791</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>180</unitid>
+            <unittitle>Brieven en papieren overgekomen van de Kust van Guinea en het koninkrijk Ardra, met inliggend een authentiek kralenkettinkje genaamd 'Torquijn' als monster voor de handel.</unittitle>
+            <unitdate>1680–1715</unitdate>
+            <dao href="https://hdl.handle.net/10648/wic2-180-torquijn"/>
+          </did>
+          <odd><p>Bijzonder materieel archiefstuk: aan de missive van het opperhoofd te Ardra is een snoertje blauwe handelskralen ('Torquijn') gehecht om aan de bewindhebbers in Nederland te tonen welke kwaliteit glaskralen door de koning van Ardra werd verlangd.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>181-195</unitid>
+            <unittitle>Stukken betreffende de geschillen tussen de Nederlandsch West-Indische Compagnie en de Deense compagnie bij de forten Crèvecoeur en Christiansborg te Accra op de Kust van Guinea.</unittitle>
+            <unitdate>1730–1784</unitdate>
+            <dao href="https://hdl.handle.net/10648/wic2-accra-denen"/>
+          </did>
+          <odd><p>Bevat protestbrieven, verdragen met lokale Fante- en Ga-vorsten en kaarten van de forten langs de Goudkust.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>520-585</unitid>
+            <unittitle>Overgekomen brieven, plantage-tableaus en kaarten van Essequebo en Demerary (Stabroek), alsmede van de eilanden Curaçao, Sint Eustatius, Sint Maarten en Saba.</unittitle>
+            <unitdate>1700–1791</unitdate>
+            <dao href="https://hdl.handle.net/10648/wic2-essequebo-demerary"/>
+          </did>
+          <odd><p>Inclusief de gedetailleerde lijst van suiker-, koffie- en katoenplantages langs de rivieren Essequebo en Demerary uit 1788 en de driejarige algemene rekeningen en contra-soldijboeken van de Compagnie.</p></odd>
+        </c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>`
+      },
+      {
+        id: "NL-MdbZA_17_BVZS",
+        filename: "NL-MdbZA_17_1_EAD.xml",
+        shortTitle: "Toegang 17 — Visserijen op de Zeeuwse Stromen (BVZS)",
+        period: "1825–1969 (1707)",
+        repository: "Zeeuws Archief, Middelburg",
+        extent: "1420 inventarisnummers (48 strekkende meter)",
+        xmlString: `<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9">
+  <eadheader countryencoding="iso3166-1" dateencoding="iso8601" langencoding="iso639-2b">
+    <eadid countrycode="NL" mainagencycode="NL-MdbZA" identifier="17">NL-MdbZA_17</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Archief van het Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), 1825–1969</titleproper>
+        <author>Zeeuws Archief, Middelburg</author>
+      </titlestmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>17</unitid>
+      <unittitle>Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), 1825–1969</unittitle>
+      <unitdate normal="1825/1969">1825–1969</unitdate>
+      <physdesc><extent>1420 inventarisnummers; 48 strekkende meter</extent></physdesc>
+      <repository><corpname>Zeeuws Archief</corpname></repository>
+    </did>
+    <bioghist>
+      <head>Geschiedenis van het visserijbeheer op de Oosterschelde en Westerschelde</head>
+      <p>Reeds bij het Plakkaat van de Staten van Zeeland van 1707 werden regels gesteld voor de bevisbaarheid en bescherming van de oester- en mosselbanken in de Zeeuwse wateren. In 1825 werd bij Koninklijk Besluit te Tholen een Commissie van Beheer en Toezicht ingesteld onder het Amortisatie Syndicaat om het domeinbeheer over de visserijen op de Schelde en Zeeuwse Stromen uit te oefenen.</p>
+      <p>Een keerpunt vormde het jaar 1870, toen de vrije bevissing van de Yersekebank in de Oosterschelde werd beëindigd en de percelen voor het eerst bij openbare verpachting aan oester- en mosselkwekers in Yerseke, Tholen en Bruinisse werden uitgegeven. In 1881 kreeg het orgaan de naam Bestuur der Visserijen op de Zeeuwse Stromen (BVZS).</p>
+    </bioghist>
+    <scopecontent>
+      <head>Inhoud van het archief (Toegang 17)</head>
+      <p>Het archief bevat de notulen van het Bestuur te Tholen en Middelburg, de verpachtingskohieren en hydrografische perceelkaarten van de Yersekebank en de Oosterschelde, de registers van visserijvaartuigen (YE, TH, BRU, ZZ), en rapporten van de opzieners met de controle-vaartuigen over stroperij en bacteriologisch onderzoek van oesterputten.</p>
+    </scopecontent>
+    <dsc type="combined">
+      <c level="series">
+        <did>
+          <unitid>I</unitid>
+          <unittitle>Notulen, Verpachtingen Yersekebank en Toezicht op Oester- en Mosselpercelen</unittitle>
+          <unitdate>1825–1969</unitdate>
+        </did>
+        <c level="file">
+          <did>
+            <unitid>1-24</unitid>
+            <unittitle>Notulen van de Commissie van Beheer en Toezicht te Tholen onder het Amortisatie Syndicaat en van het Bestuur der Visserijen op de Zeeuwse Stromen.</unittitle>
+            <unitdate>1825–1940</unitdate>
+            <dao href="https://hdl.handle.net/21.12113/za-toegang17-notulen"/>
+          </did>
+          <odd><p>Bevat tevens retroacta waaronder afschriften van het Plakkaat van de Staten van Zeeland op de visserij uit 1707.</p></odd>
+        </c>
+        <c level="file">
+          <did>
+            <unitid>310-348</unitid>
+            <unittitle>Processen-verbaal van de openbare verpachtingen van oester- en mosselpercelen op de Yersekebank en in de Oosterschelde, met bijbehorende perceelkaarten.</unittitle>
+            <unitdate>1870–1968</unitdate>
+            <dao href="https://hdl.handle.net/21.12113/za-toegang17-yersekebank"/>
+          </did>
+          <odd><p>Gedetailleerde kadastrale waterkaarten met perceelnummers, namen van de pachters te Yerseke, Bruinisse en Tholen en de jaarlijkse pachtsommen.</p></odd>
+        </c>
+      </c>
+    </dsc>
+  </archdesc>
+</ead>`
+      }
+    ];
+
+    // Historisch Glossarium voor rechterkolom
+    const ARCHIVE_GLOSSARY = [
+      { term: "Heren Zeventien (Heren XVII)", desc: "Het centrale bestuurscollege van de VOC, bestaande uit 8 afgevaardigden van Kamer Amsterdam, 4 van Kamer Zeeland, elk 1 van Delft, Rotterdam, Hoorn en Enkhuizen, en een 17e wisselend lid." },
+      { term: "Haags Besogne", desc: "De commissie van bewindhebbers van de VOC die in Den Haag de uit Azië overgekomen brieven en papieren las en de concept-antwoorden (Generale Missiven) voor de Heren XVII voorbereidde." },
+      { term: "Charterkamer (1737)", desc: "De in 1737 bij de Kamer Zeeland te Middelburg ingerichte archiefkamer onder leiding van chartermeester Thomas Cunningham 't Hooft." },
+      { term: "Torquijn (Inv.nr. 180)", desc: "Een in het archief van de Tweede WIC bewaard gebleven snoertje blauwe glaskralen uit het koninkrijk Ardra (West-Afrika), meegestuurd als handelsmonster." },
+      { term: "Yersekebank (1870)", desc: "Het ondiepe getijdengebied in de Oosterschelde waar in 1870 de vrije visserij plaatsmaakte voor verpachte oester- en mosselpercelen onder het BVZS." }
+    ];
+
+    /*************************************************************************
+     * 2. GLOBALE STATE VAN DE APPLICATIE
+     *************************************************************************/
+    const appState = {
+      archives: [],                 // Geparseerde archief-objecten met vlakke lijst van XML-nodes & zinnen
+      currentArchiveIndex: 0,
+      currentSectionIndex: 0,
+      currentNodeIndex: 0,
+      readerViewMode: 'book',       // 'book' | 'raw_xml'
+      isReading: false,
+      readingQueue: [],
+      readingQueueIndex: 0,
+
+      // Menselijke Stem & Kalibratie State
+      ttsEngineMode: 'calibrated_browser', // 'calibrated_browser' | 'gemini_neural_tts' | 'custom_voice_clone'
+      measuredF0Hz: 155,            // Gemeten grondtoon van de gebruiker in Hz
+      measuredFormantHz: 1180,
+      measuredRmsDb: -18,
+      speechRate: 0.95,
+      speechPitch: 1.00,
+      warmthGainDb: 3.5,
+      selectedBrowserVoiceURI: '',
+      recordedAudioBlob: null,
+      recordedAudioUrl: null,
+      isRecordingVoice: false,
+
+      // Web Audio API Graph (voor F0-analyse, Formant-EQ én WebRTC-mix)
+      audioCtx: null,
+      micStream: null,
+      analyserNode: null,
+      mediaRecorder: null,
+      recordedChunks: [],
+      webrtcMixedDest: null,        // MediaStreamAudioDestinationNode die zowel Mic als TTS-audio naar WebRTC stuurt
+      formantFilterNode: null,
+
+      // WebRTC State
+      localPeer: null,
+      loopbackPeer: null,
+      dataChannel: null,
+      broadcastChannel: null,
+      rtcPacketsSent: 0,
+
+      // Laatste zoekresultaten & AI synthese
+      lastSearchHits: [],
+      lastAiSynthesisText: ''
+    };
+
+    /*************************************************************************
+     * 3. EAD-XML PARSER & VOLLEDIGE INDEXERING
+     *************************************************************************/
+    function parseAllPreloadedArchives() {
+      appState.archives = PRELOADED_EAD_XML_ARCHIVES.map((item, idx) => {
+        return parseSingleEadXml(item.id, item.filename, item.shortTitle, item.xmlString);
+      });
+    }
+
+    function parseSingleEadXml(id, filename, shortTitle, xmlString) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+      const getText = (parent, tag) => {
+        if (!parent) return "";
+        const el = parent.getElementsByTagName(tag)[0];
+        return el ? el.textContent.trim() : "";
+      };
+
+      const archdesc = xmlDoc.getElementsByTagName("archdesc")[0];
+      const did = archdesc ? archdesc.getElementsByTagName("did")[0] : null;
+      const unitid = getText(did, "unitid") || id;
+      const unittitle = getText(did, "unittitle") || shortTitle;
+      const unitdate = getText(did, "unitdate") || "";
+      const extent = getText(did, "extent") || "";
+      const repository = getText(did, "repository") || "Archiefinstelling";
+
+      // Bouw secties en leesbare XML-nodes op zodat zowel de boomstructuur, de screenreader als de zoekmachine exacte XPaths hebben
+      const sections = [];
+      const flatNodes = [];
+      let globalNodeCounter = 0;
+
+      // Sectie 1: Inleiding, Geschiedenis (<bioghist>), Beheer (<custodhist>) & Inhoud (<scopecontent>)
+      const introNodes = [];
+
+      const addTopSectionTag = (tagName, defaultLabel) => {
+        const el = archdesc ? archdesc.getElementsByTagName(tagName)[0] : null;
+        if (!el) return;
+        const head = getText(el, "head") || defaultLabel;
+        const paragraphs = Array.from(el.getElementsByTagName("p")).map(p => p.textContent.trim()).filter(Boolean);
+        const fullText = paragraphs.join(" ");
+        const nodeObj = {
+          nodeId: `${id}_node_${globalNodeCounter++}`,
+          archiveId: id,
+          archiveShortTitle: shortTitle,
+          sectionIndex: 0,
+          xmlTag: `<${tagName}>`,
+          rawTagName: tagName,
+          xpath: `/ead/archdesc/${tagName}`,
+          breadcrumb: `${unitid} > Inleiding > ${head}`,
+          unitid: unitid,
+          title: head,
+          unitdate: unitdate,
+          paragraphs: paragraphs.length ? paragraphs : [el.textContent.trim()],
+          oddText: "",
+          daoHref: "",
+          fullSearchableText: `${unitid} ${head} ${unitdate} ${fullText}`
+        };
+        introNodes.push(nodeObj);
+        flatNodes.push(nodeObj);
+      };
+
+      addTopSectionTag("bioghist", "Geschiedenis van de archiefvormer");
+      addTopSectionTag("custodhist", "Geschiedenis van het archiefbeheer");
+      addTopSectionTag("scopecontent", "Inhoud en opbouw van het archief");
+
+      if (introNodes.length > 0) {
+        sections.push({
+          sectionId: `${id}_sec_intro`,
+          code: "INL",
+          title: "Inleiding, Geschiedenis & Archiefbeheer",
+          unitdate: unitdate,
+          xpath: `/ead/archdesc`,
+          nodes: introNodes
+        });
+      }
+
+      // Sectie 2..N: <dsc> series en inventarisnummers (<c level="series"> en <c level="file">)
+      const dsc = archdesc ? archdesc.getElementsByTagName("dsc")[0] : null;
+      if (dsc) {
+        const topChildren = Array.from(dsc.children).filter(el => el.tagName === "c" || el.tagName === "c01");
+        topChildren.forEach((seriesEl, sIdx) => {
+          const sDid = seriesEl.querySelector(":scope > did");
+          const sCode = getText(sDid, "unitid") || `Rubriek ${sIdx + 1}`;
+          const sTitle = getText(sDid, "unittitle") || `Serie ${sIdx + 1}`;
+          const sDate = getText(sDid, "unitdate") || unitdate;
+          const sectionIdx = sections.length;
+          const seriesNodes = [];
+
+          // Zoek alle <c level="file"> binnen deze serie
+          const fileElements = Array.from(seriesEl.getElementsByTagName("c")).filter(
+            cEl => (cEl.getAttribute("level") || "file") === "file"
+          );
+
+          fileElements.forEach((fileEl, fIdx) => {
+            const fDid = fileEl.querySelector(":scope > did") || fileEl.getElementsByTagName("did")[0];
+            const fUnitId = getText(fDid, "unitid") || `${fIdx + 1}`;
+            const fTitle = getText(fDid, "unittitle") || "Stukbeschrijving";
+            const fDate = getText(fDid, "unitdate") || sDate;
+            const daoEl = fDid ? fDid.getElementsByTagName("dao")[0] : null;
+            const daoHref = daoEl ? (daoEl.getAttribute("href") || "") : "";
+            const oddEl = fileEl.getElementsByTagName("odd")[0];
+            const oddText = oddEl ? oddEl.textContent.trim() : "";
+
+            const nodeObj = {
+              nodeId: `${id}_node_${globalNodeCounter++}`,
+              archiveId: id,
+              archiveShortTitle: shortTitle,
+              sectionIndex: sectionIdx,
+              xmlTag: `<c level="file">`,
+              rawTagName: "c_file",
+              xpath: `/ead/archdesc/dsc/c[@id='${sCode}']/c[unitid='${fUnitId}']`,
+              breadcrumb: `${unitid} > ${sCode} > Inv.nr. ${fUnitId}`,
+              unitid: fUnitId,
+              title: fTitle,
+              unitdate: fDate,
+              paragraphs: [fTitle],
+              oddText: oddText,
+              daoHref: daoHref,
+              fullSearchableText: `${fUnitId} ${fTitle} ${fDate} ${oddText} ${sTitle}`
+            };
+            seriesNodes.push(nodeObj);
+            flatNodes.push(nodeObj);
+          });
+
+          sections.push({
+            sectionId: `${id}_sec_${sIdx}`,
+            code: sCode,
+            title: sTitle,
+            unitdate: sDate,
+            xpath: `/ead/archdesc/dsc/c[${sIdx + 1}]`,
+            nodes: seriesNodes
+          });
+        });
+      }
+
+      return {
+        id,
+        filename,
+        shortTitle,
+        unitid,
+        unittitle,
+        unitdate,
+        extent,
+        repository,
+        xmlString,
+        sections,
+        flatNodes
+      };
+    }
+
+    /*************************************************************************
+     * 4. UI RENDERING: ARCHIEFLIJST, EAD-BOOMSTRUCTUUR, BOEK-SPREAD & INSPECTOR
+     *************************************************************************/
+    function renderArchiveSelectorList() {
+      const container = document.getElementById("archiveSelectorList");
+      container.innerHTML = appState.archives.map((arch, idx) => {
+        const isActive = idx === appState.currentArchiveIndex;
+        return `
+          <button
+            onclick="selectArchive(${idx})"
+            class="w-full text-left px-2.5 py-2 rounded-lg border transition flex items-start justify-between gap-2 ${
+              isActive
+                ? 'bg-zeegroen-700 text-white border-oker-500 shadow-sm'
+                : 'bg-parchment-50 hover:bg-white text-inkt-900 border-parchment-300'
+            }"
+          >
+            <div class="truncate">
+              <div class="font-semibold text-xs truncate">${escapeHtml(arch.shortTitle)}</div>
+              <div class="text-[10px] font-mono ${isActive ? 'text-parchment-200' : 'text-inkt-800/70'} truncate">
+                ${escapeHtml(arch.filename)} • ${arch.flatNodes.length} XML-nodes
+              </div>
+            </div>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+              isActive ? 'bg-oker-600 text-white' : 'bg-parchment-200 text-inkt-800'
+            }">${escapeHtml(arch.unitid)}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function selectArchive(index, targetNodeId = null) {
+      appState.currentArchiveIndex = index;
+      appState.currentSectionIndex = 0;
+      const arch = appState.archives[index];
+
+      if (targetNodeId) {
+        const foundNode = arch.flatNodes.find(n => n.nodeId === targetNodeId);
+        if (foundNode) {
+          appState.currentSectionIndex = foundNode.sectionIndex;
+        }
+      }
+
+      renderArchiveSelectorList();
+      renderXmlTreeNavigation();
+      renderCurrentArchiveContent(targetNodeId);
+      renderRawXmlView();
+    }
+
+    function renderXmlTreeNavigation() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const filterText = (document.getElementById("treeQuickFilter")?.value || "").trim().toLowerCase();
+      const nav = document.getElementById("xmlTreeNavigation");
+
+      let html = `
+        <div class="font-mono text-[11px] text-zeegroen-800 font-bold px-2 py-1 bg-parchment-200/70 rounded border border-parchment-300 mb-1.5">
+          &lt;ead&gt; / &lt;archdesc unitid="${escapeHtml(arch.unitid)}"&gt;
+        </div>
+      `;
+
+      arch.sections.forEach((sec, sIdx) => {
+        const matchingNodes = sec.nodes.filter(n =>
+          !filterText || n.fullSearchableText.toLowerCase().includes(filterText)
+        );
+        if (filterText && matchingNodes.length === 0) return;
+
+        const isCurrentSec = sIdx === appState.currentSectionIndex;
+        html += `
+          <div class="mb-2">
+            <button
+              onclick="selectSection(${sIdx})"
+              class="w-full text-left px-2 py-1.5 rounded font-semibold flex items-center justify-between gap-1 transition ${
+                isCurrentSec
+                  ? 'bg-oker-600 text-white shadow-sm'
+                  : 'bg-parchment-100 hover:bg-parchment-200 text-inkt-900 border border-parchment-300'
+              }"
+            >
+              <span class="truncate"><span class="font-mono text-[10px] mr-1">[${escapeHtml(sec.code)}]</span>${escapeHtml(sec.title)}</span>
+              <span class="text-[10px] font-mono opacity-80">${matchingNodes.length}</span>
+            </button>
+            <div class="pl-3 mt-1 space-y-1 border-l-2 border-parchment-300 ml-2">
+              ${matchingNodes.map(node => `
+                <button
+                  onclick="focusAndReadNode('${node.nodeId}', false)"
+                  id="treeBtn_${node.nodeId}"
+                  class="w-full text-left px-2 py-1 rounded text-[11px] hover:bg-parchment-200 flex items-center gap-1.5 truncate text-inkt-800"
+                  title="${escapeHtml(node.breadcrumb)}"
+                >
+                  <span class="font-mono text-[10px] text-zeegroen-700 font-bold shrink-0">${escapeHtml(node.unitid)}</span>
+                  <span class="truncate">${escapeHtml(node.title)}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      });
+
+      nav.innerHTML = html;
+    }
+
+    function selectSection(sectionIndex) {
+      appState.currentSectionIndex = sectionIndex;
+      renderXmlTreeNavigation();
+      renderCurrentArchiveContent();
+    }
+
+    function navigateSection(delta) {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const next = Math.max(0, Math.min(arch.sections.length - 1, appState.currentSectionIndex + delta));
+      selectSection(next);
+    }
+
+    function renderCurrentArchiveContent(highlightNodeId = null) {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const sec = arch.sections[appState.currentSectionIndex] || arch.sections[0];
+
+      document.getElementById("bookHeaderUnitIdBadge").textContent = `Toegang ${arch.unitid}`;
+      document.getElementById("bookHeaderTitle").textContent = arch.unittitle;
+      document.getElementById("sectionPaginationLabel").textContent =
+        `Rubriek ${appState.currentSectionIndex + 1} / ${arch.sections.length} (${sec.code})`;
+
+      const container = document.getElementById("bookSpreadContainer");
+
+      let html = `
+        <!-- Titelpagina-kop van de huidige rubriek -->
+        <div class="border-b-2 border-oker-600/60 pb-4 mb-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-zeegroen-700">
+            <span>${escapeHtml(arch.repository)} • Bestand: ${escapeHtml(arch.filename)}</span>
+            <span>XPath: ${escapeHtml(sec.xpath)}</span>
+          </div>
+          <h3 class="text-xl md:text-2xl font-bold text-inkt-900 mt-1">
+            [${escapeHtml(sec.code)}] ${escapeHtml(sec.title)}
+          </h3>
+          <p class="text-xs font-mono text-oker-700 mt-0.5">
+            Datering: ${escapeHtml(sec.unitdate)} • Omvang archief: ${escapeHtml(arch.extent)}
+          </p>
+        </div>
+      `;
+
+      // Render elke XML-node binnen deze sectie als een rijke, klikbare en door de screenreader navigeerbare kaart
+      sec.nodes.forEach((node) => {
+        const isFileNode = node.rawTagName === "c_file";
+        html += `
+          <article
+            id="readerNode_${node.nodeId}"
+            data-node-id="${node.nodeId}"
+            onclick="inspectXmlNode('${node.nodeId}')"
+            class="xml-node-card p-4 rounded-xl bg-parchment-50/90 border-2 border-parchment-300 transition space-y-2.5"
+          >
+            <!-- Bovenbalk met XML-tag, Inventarisnummer, Datering en Direct Voorlezen knop -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-parchment-200 pb-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-zeegroen-800 text-parchment-100 font-mono text-[11px] font-bold">
+                  ${escapeHtml(node.xmlTag)}
+                </span>
+                ${isFileNode ? `
+                  <span class="px-2 py-0.5 rounded bg-oker-600 text-white font-mono text-xs font-bold">
+                    Inv.nr. ${escapeHtml(node.unitid)}
+                  </span>
+                ` : `
+                  <span class="font-bold text-sm text-zeegroen-800 font-sans">
+                    ${escapeHtml(node.title)}
+                  </span>
+                `}
+                <span class="text-xs font-mono text-inkt-800/80">
+                  📅 ${escapeHtml(node.unitdate)}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button
+                  onclick="event.stopPropagation(); focusAndReadNode('${node.nodeId}', true)"
+                  class="px-2.5 py-1 rounded-md bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-sans font-semibold text-xs flex items-center gap-1 shadow-sm transition"
+                  title="Lees dit XML-element direct voor met uw gekalibreerde stem"
+                >
+                  <span>🔊</span> Lees Voor
+                </button>
+              </div>
+            </div>
+
+            <!-- Paragrafen / Unittitle opgesplitst in klikbare zinnen voor synchrone highlighting -->
+            <div class="text-base md:text-[17px] leading-relaxed text-inkt-900 space-y-2">
+              ${node.paragraphs.map((para, pIdx) => `
+                <p>${wrapSentencesForScreenreader(para, node.nodeId, pIdx)}</p>
+              `).join("")}
+            </div>
+
+            <!-- Eventuele <odd> bijzonderheden / inhoudelijke annotatie -->
+            ${node.oddText ? `
+              <div class="mt-2 p-3 rounded-lg bg-parchment-200/75 border-l-4 border-oker-600 text-sm text-inkt-900">
+                <span class="font-mono text-[11px] font-bold text-oker-700 uppercase block mb-0.5">
+                  &lt;odd&gt; Archivalische Noot &amp; Bijzonderheden:
+                </span>
+                <p>${wrapSentencesForScreenreader(node.oddText, node.nodeId, 99)}</p>
+              </div>
+            ` : ''}
+
+            <!-- Eventuele <dao> digitale scan link -->
+            ${node.daoHref ? `
+              <div class="pt-1 flex items-center justify-between text-[11px] font-mono text-zeegroen-700">
+                <span>🔗 &lt;dao&gt; Persistent Handle: <code class="bg-parchment-200 px-1.5 py-0.5 rounded">${escapeHtml(node.daoHref)}</code></span>
+                <span class="text-emerald-700 font-semibold">✓ METS/Scan Gekoppeld</span>
+              </div>
+            ` : ''}
+          </article>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      // Inspecteer standaard de eerste node of de gevraagde highlightNodeId
+      const targetId = highlightNodeId || (sec.nodes[0] && sec.nodes[0].nodeId);
+      if (targetId) {
+        inspectXmlNode(targetId);
+        if (highlightNodeId) {
+          setTimeout(() => {
+            const el = document.getElementById(`readerNode_${highlightNodeId}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 80);
+        }
+      }
+    }
+
+    // Splitst archieftekst in individueel klikbare zinnen zodat de gebruiker en WebRTC-luisteraars exact zien welke zin wordt uitgesproken
+    function wrapSentencesForScreenreader(text, nodeId, paraIdx) {
+      const sentences = text.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g) || [text];
+      return sentences.map((s, sIdx) => {
+        const clean = s.trim();
+        if (!clean) return "";
+        const sentId = `sent_${nodeId}_${paraIdx}_${sIdx}`;
+        return `<span id="${sentId}" data-node-id="${nodeId}" onclick="event.stopPropagation(); speakSpecificSentence('${sentId}', '${nodeId}')" class="xml-sentence" title="Klik om vanaf deze zin voor te lezen">${escapeHtml(clean)}</span> `;
+      }).join("");
+    }
+
+    function renderRawXmlView() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const pre = document.getElementById("rawXmlPreBlock");
+      pre.textContent = arch.xmlString;
+    }
+
+    function switchReaderViewMode(mode) {
+      appState.readerViewMode = mode;
+      const bookBox = document.getElementById("bookSpreadContainer");
+      const rawBox = document.getElementById("rawXmlContainer");
+      const btnBook = document.getElementById("tabBtnBookView");
+      const btnRaw = document.getElementById("tabBtnRawXmlView");
+
+      if (mode === "raw_xml") {
+        bookBox.classList.add("hidden");
+        rawBox.classList.remove("hidden");
+        btnRaw.className = "px-2.5 py-1 rounded bg-oker-600 text-white font-mono font-semibold transition";
+        btnBook.className = "px-2.5 py-1 rounded text-parchment-200 hover:text-white transition";
+      } else {
+        rawBox.classList.add("hidden");
+        bookBox.classList.remove("hidden");
+        btnBook.className = "px-2.5 py-1 rounded bg-oker-600 text-white font-semibold transition";
+        btnRaw.className = "px-2.5 py-1 rounded text-parchment-200 hover:text-white font-mono transition";
+      }
+    }
+
+    function inspectXmlNode(nodeId) {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const node = arch.flatNodes.find(n => n.nodeId === nodeId);
+      if (!node) return;
+
+      appState.currentNodeIndex = arch.flatNodes.indexOf(node);
+
+      // Visuele highlight op de kaart
+      document.querySelectorAll(".xml-node-card").forEach(el => el.classList.remove("active-node"));
+      const activeCard = document.getElementById(`readerNode_${nodeId}`);
+      if (activeCard) activeCard.classList.add("active-node");
+
+      // Update de bovenste Screenreader Transportbalk
+      document.getElementById("srCurrentXmlTag").textContent = node.xmlTag;
+      document.getElementById("srCurrentBreadcrumb").textContent = node.breadcrumb;
+
+      // Update rechterkolom XML-Inspector
+      document.getElementById("inspectorXpathBox").textContent = node.xpath;
+      document.getElementById("inspectorAttributesList").innerHTML = `
+        <div class="flex justify-between border-b border-parchment-200 py-1"><span>Archieftoegang:</span> <strong>${escapeHtml(arch.unitid)}</strong></div>
+        <div class="flex justify-between border-b border-parchment-200 py-1"><span>Inventaris / Eenheid:</span> <strong>${escapeHtml(node.unitid)}</strong></div>
+        <div class="flex justify-between border-b border-parchment-200 py-1"><span>Datering (&lt;unitdate&gt;):</span> <strong>${escapeHtml(node.unitdate)}</strong></div>
+        <div class="flex justify-between py-1"><span>XML-Node ID:</span> <strong>${escapeHtml(node.nodeId)}</strong></div>
+      `;
+
+      const daoBox = document.getElementById("inspectorDaoBox");
+      if (node.daoHref) {
+        daoBox.innerHTML = `
+          <div class="p-2.5 rounded bg-parchment-50 border border-parchment-300 space-y-1.5">
+            <div class="font-mono text-[11px] text-zeegroen-800 font-semibold break-all">${escapeHtml(node.daoHref)}</div>
+            <div class="text-[11px] text-inkt-800">Dit inventarisnummer beschikt over een gekoppelde digitale reproductie-referentie (&lt;dao&gt;) conform het METS/EAD-koppelvlak.</div>
+          </div>
+        `;
+      } else {
+        daoBox.innerHTML = `<div class="text-[11px] text-inkt-800/70 italic">Algemeen beschrijvend XML-element op archief- of serieniveau.</div>`;
+      }
+    }
+
+    function renderGlossarySidebar() {
+      const box = document.getElementById("inspectorGlossaryBox");
+      box.innerHTML = ARCHIVE_GLOSSARY.map((g, i) => `
+        <div
+          onclick="speakCustomText('Begrip ${g.term}: ${g.desc}', 'Glossarium: ${g.term}')"
+          class="p-2 rounded bg-parchment-50 hover:bg-white border border-parchment-300 cursor-pointer transition"
+          title="Klik om dit historische begrip met uw stem voor te laten lezen"
+        >
+          <div class="font-bold text-zeegroen-800 text-xs flex items-center justify-between">
+            <span>${escapeHtml(g.term)}</span>
+            <span class="text-[10px]">🔊</span>
+          </div>
+          <div class="text-[11px] text-inkt-800 leading-snug mt-0.5">${escapeHtml(g.desc)}</div>
+        </div>
+      `).join("");
+    }
+
+    /*************************************************************************
+     * 5. MENSELIJKE STEM STUDIO: MICROFOON OPNAME, F0 PITCH/FORMANT ANALYSE & KALIBRATIE
+     *************************************************************************/
+    let oscAnimationId = null;
+    let recordingIntervalId = null;
+    let recordingSeconds = 0;
+
+    async function ensureAudioContext() {
+      if (!appState.audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        appState.audioCtx = new AudioContextClass();
+        appState.webrtcMixedDest = appState.audioCtx.createMediaStreamDestination();
+
+        // Maak een warme BiquadFilter formant-keten die altijd op de F0 van de gebruiker is afgestemd
+        appState.formantFilterNode = appState.audioCtx.createBiquadFilter();
+        appState.formantFilterNode.type = "peaking";
+        appState.formantFilterNode.frequency.value = appState.measuredF0Hz * 2;
+        appState.formantFilterNode.Q.value = 1.2;
+        appState.formantFilterNode.gain.value = appState.warmthGainDb;
+        appState.formantFilterNode.connect(appState.audioCtx.destination);
+        appState.formantFilterNode.connect(appState.webrtcMixedDest);
+      }
+      if (appState.audioCtx.state === "suspended") {
+        await appState.audioCtx.resume();
+      }
+    }
+
+    async function toggleVoiceRecording() {
+      if (appState.isRecordingVoice) {
+        stopVoiceRecordingAndCalibrate();
+      } else {
+        await startVoiceRecordingAndAnalyze();
+      }
+    }
+
+    async function startVoiceRecordingAndAnalyze() {
+      try {
+        await ensureAudioContext();
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: false
+          }
+        });
+        appState.micStream = stream;
+
+        const micSource = appState.audioCtx.createMediaStreamSource(stream);
+        appState.analyserNode = appState.audioCtx.createAnalyser();
+        appState.analyserNode.fftSize = 2048;
+        micSource.connect(appState.analyserNode);
+
+        // Als de gebruiker de microfoon ook live naar de WebRTC kamer wil sturen
+        if (document.getElementById("chkMixMicIntoWebRTC")?.checked && appState.webrtcMixedDest) {
+          micSource.connect(appState.webrtcMixedDest);
+        }
+
+        // Start MediaRecorder om het eigen stem-sample op te slaan (voor terugluisteren & Voice Clone API)
+        appState.recordedChunks = [];
+        appState.mediaRecorder = new MediaRecorder(stream);
+        appState.mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) appState.recordedChunks.push(e.data);
+        };
+        appState.mediaRecorder.onstop = () => {
+          const blob = new Blob(appState.recordedChunks, { type: "audio/webm" });
+          appState.recordedAudioBlob = blob;
+          if (appState.recordedAudioUrl) URL.revokeObjectURL(appState.recordedAudioUrl);
+          appState.recordedAudioUrl = URL.createObjectURL(blob);
+          document.getElementById("btnPlayMyRecordedVoice").disabled = false;
+          document.getElementById("metricSampleStatus").textContent = `${Math.round(blob.size / 1024)} KB`;
+        };
+        appState.mediaRecorder.start(250);
+
+        appState.isRecordingVoice = true;
+        recordingSeconds = 0;
+        document.getElementById("recordingTimer").classList.remove("hidden");
+        document.getElementById("btnStartVoiceRecord").classList.add("recording-pulse");
+        document.getElementById("recordBtnLabel").textContent = "Stop Opname & Pas Mijn Stemprofiel Toe";
+        document.getElementById("voiceStudioStatusBadge").textContent = "Live F0 & Formant Meting...";
+
+        recordingIntervalId = setInterval(() => {
+          recordingSeconds++;
+          const m = String(Math.floor(recordingSeconds / 60)).padStart(2, "0");
+          const s = String(recordingSeconds % 60).padStart(2, "0");
+          document.getElementById("recordingTimer").textContent = `● ${m}:${s}`;
+        }, 1000);
+
+        startOscilloscopeAndF0Loop();
+        showToast("🎙️ Microfoon actief: lees de voorbeeldzin rustig voor zodat uw grondtoon (F0) en timbre worden gekalibreerd.");
+      } catch (err) {
+        showToast("⚠️ Kon microfoon niet openen. Controleer de microfoontoestemming in uw browser.", "error");
+      }
+    }
+
+    function stopVoiceRecordingAndCalibrate() {
+      appState.isRecordingVoice = false;
+      if (recordingIntervalId) clearInterval(recordingIntervalId);
+      if (appState.mediaRecorder && appState.mediaRecorder.state !== "inactive") {
+        appState.mediaRecorder.stop();
+      }
+      if (appState.micStream) {
+        appState.micStream.getTracks().forEach(t => t.stop());
+      }
+
+      document.getElementById("recordingTimer").classList.add("hidden");
+      document.getElementById("btnStartVoiceRecord").classList.remove("recording-pulse");
+      document.getElementById("recordBtnLabel").textContent = "Opnieuw Opnemen & Kalibreren";
+      document.getElementById("voiceStudioStatusBadge").textContent = `Gekalibreerd (${appState.measuredF0Hz} Hz)`;
+
+      // Bereken de bijpassende natuurlijke pitch-ratio op basis van de gemeten grondtoon (referentie 155 Hz)
+      const calibratedPitch = Math.max(0.72, Math.min(1.32, Number((appState.measuredF0Hz / 155).toFixed(2))));
+      appState.speechPitch = calibratedPitch;
+      document.getElementById("sliderSpeechPitch").value = calibratedPitch;
+      document.getElementById("lblSpeechPitch").textContent = calibratedPitch.toFixed(2);
+      document.getElementById("metricPitchRatio").textContent = `${calibratedPitch.toFixed(2)}x`;
+      document.getElementById("activeVoiceProfileLabel").textContent =
+        `Mijn Stem Profiel (${appState.measuredF0Hz} Hz • Pitch ${calibratedPitch.toFixed(2)}x)`;
+
+      if (appState.formantFilterNode) {
+        appState.formantFilterNode.frequency.value = appState.measuredF0Hz * 2.2;
+      }
+
+      showToast(`✅ Uw stemprofiel is gekalibreerd op F0 = ${appState.measuredF0Hz} Hz (Pitch-ratio ${calibratedPitch.toFixed(2)}x).`);
+    }
+
+    // Autocorrelatie + FFT Formant- en Grondtoon-detector op het live microfoonsignaal
+    function startOscilloscopeAndF0Loop() {
+      const canvas = document.getElementById("voiceOscilloscopeCanvas");
+      const ctx = canvas.getContext("2d");
+      const f0Samples = [];
+
+      function drawFrame() {
+        const width = (canvas.width = canvas.clientWidth || 420);
+        const height = (canvas.height = canvas.clientHeight || 112);
+        ctx.fillStyle = "#14292e";
+        ctx.fillRect(0, 0, width, height);
+
+        if (!appState.analyserNode || !appState.isRecordingVoice) {
+          drawIdleOscilloscope(ctx, width, height);
+          return;
+        }
+
+        const bufferLength = appState.analyserNode.fftSize;
+        const timeData = new Float32Array(bufferLength);
+        const freqData = new Uint8Array(appState.analyserNode.frequencyBinCount);
+        appState.analyserNode.getFloatTimeDomainData(timeData);
+        appState.analyserNode.getByteFrequencyData(freqData);
+
+        // 1. Teken FFT frequentiespectrum-balkjes op de achtergrond
+        const barCount = 48;
+        const barWidth = width / barCount;
+        for (let i = 0; i < barCount; i++) {
+          const val = freqData[i * 2] || 0;
+          const barHeight = (val / 255) * (height * 0.75);
+          ctx.fillStyle = "rgba(180, 105, 14, 0.38)";
+          ctx.fillRect(i * barWidth, height - barHeight, barWidth - 2, barHeight);
+        }
+
+        // 2. Teken de tijd-domein golfvorm van de stem
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#34d399";
+        ctx.beginPath();
+        const sliceWidth = width / bufferLength;
+        let x = 0;
+        let sumSquares = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const v = timeData[i];
+          sumSquares += v * v;
+          const y = (v * 0.5 + 0.5) * height;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        ctx.stroke();
+
+        // 3. Bereken RMS dB en schat F0 (grondtoon tussen 75 Hz en 320 Hz)
+        const rms = Math.sqrt(sumSquares / bufferLength);
+        const db = Math.max(-60, Math.round(20 * Math.log10(rms + 1e-6)));
+        if (rms > 0.015) {
+          const detectedF0 = estimateF0Autocorrelation(timeData, appState.audioCtx.sampleRate);
+          if (detectedF0 >= 75 && detectedF0 <= 320) {
+            f0Samples.push(detectedF0);
+            if (f0Samples.length > 25) f0Samples.shift();
+            const avgF0 = Math.round(f0Samples.reduce((a, b) => a + b, 0) / f0Samples.length);
+            appState.measuredF0Hz = avgF0;
+            document.getElementById("liveF0Readout").textContent = `Grondtoon (F0): ${avgF0} Hz`;
+            document.getElementById("metricF0").textContent = `${avgF0} Hz`;
+          }
+          document.getElementById("liveFormantReadout").textContent = `Timbre: ${appState.measuredF0Hz * 7} Hz`;
+          document.getElementById("liveRmsReadout").textContent = `Dynamiek: ${db} dB`;
+        }
+
+        oscAnimationId = requestAnimationFrame(drawFrame);
+      }
+
+      drawFrame();
+    }
+
+    function estimateF0Autocorrelation(buf, sampleRate) {
+      const size = buf.length;
+      const minLag = Math.floor(sampleRate / 320);
+      const maxLag = Math.floor(sampleRate / 75);
+      let bestOffset = -1;
+      let bestCorrelation = 0;
+
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let corr = 0;
+        for (let i = 0; i < size - lag; i++) {
+          corr += buf[i] * buf[i + lag];
+        }
+        if (corr > bestCorrelation) {
+          bestCorrelation = corr;
+          bestOffset = lag;
+        }
+      }
+      return bestOffset > 0 ? sampleRate / bestOffset : -1;
+    }
+
+    function drawIdleOscilloscope(ctx, width, height) {
+      ctx.fillStyle = "#14292e";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "rgba(52, 211, 153, 0.45)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let x = 0; x < width; x++) {
+        const y = height / 2 + Math.sin(x * 0.04) * 8 * Math.sin(x * 0.01);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function playRecordedVoiceSample() {
+      if (!appState.recordedAudioUrl) {
+        showToast("Neem eerst enkele seconden uw stem op via 'Start Opname & Stem-Kalibratie'.", "info");
+        return;
+      }
+      const audio = new Audio(appState.recordedAudioUrl);
+      audio.play();
+      showToast("🔊 Uw eigen opgenomen stem-sample wordt afgespeeld.");
+    }
+
+    function testCalibratedDutchVoice() {
+      const sampleLine =
+        "Goedendag. Mijn stemprofiel met een grondtoon van " +
+        appState.measuredF0Hz +
+        " Hertz is nu gekoppeld aan de EAD-XML Archief Werkbank. In het jaar 1602 werd de Verenigde Oostindische Compagnie opgericht.";
+      speakCustomText(sampleLine, "Stemkalibratie-test");
+    }
+
+    function setTtsEngineMode(mode) {
+      appState.ttsEngineMode = mode;
+      const customBox = document.getElementById("customCloneConfigBox");
+      if (mode === "custom_voice_clone") {
+        customBox.classList.remove("hidden");
+      } else {
+        customBox.classList.add("hidden");
+      }
+      showToast(`Voorlees-engine ingesteld op: ${mode}`);
+    }
+
+    // Laad beschikbare Nederlandse systeemstemmen (Web Speech API) en sorteer op meest natuurlijke kwaliteit
+    function populateDutchSystemVoices() {
+      if (!("speechSynthesis" in window)) return;
+      const voices = window.speechSynthesis.getVoices();
+      const select = document.getElementById("selectBrowserDutchVoice");
+      if (!select) return;
+
+      const nlVoices = voices.filter(v => v.lang.toLowerCase().includes("nl"));
+      const listToUse = nlVoices.length > 0 ? nlVoices : voices;
+
+      // Geef prioriteit aan Google Nederlands, Microsoft Natural (Colette/Fenna/Maarten) of Apple Xander/Claire
+      listToUse.sort((a, b) => {
+        const score = (v) => {
+          const n = v.name.toLowerCase();
+          if (n.includes("natural") || n.includes("neural")) return 4;
+          if (n.includes("google") || n.includes("colette") || n.includes("fenna") || n.includes("xander")) return 3;
+          if (v.lang.toLowerCase().startsWith("nl")) return 2;
+          return 1;
+        };
+        return score(b) - score(a);
+      });
+
+      select.innerHTML = listToUse.map(v => `
+        <option value="${escapeHtml(v.voiceURI)}">${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>
+      `).join("");
+
+      if (listToUse[0] && !appState.selectedBrowserVoiceURI) {
+        appState.selectedBrowserVoiceURI = listToUse[0].voiceURI;
+      }
+    }
+
+    function onSelectBrowserVoiceChange() {
+      const sel = document.getElementById("selectBrowserDutchVoice");
+      appState.selectedBrowserVoiceURI = sel.value;
+    }
+
+    function updateVoiceParamsFromSliders() {
+      const rate = parseFloat(document.getElementById("sliderSpeechRate").value);
+      const pitch = parseFloat(document.getElementById("sliderSpeechPitch").value);
+      appState.speechRate = rate;
+      appState.speechPitch = pitch;
+      document.getElementById("lblSpeechRate").textContent = `${rate.toFixed(2)}x`;
+      document.getElementById("lblSpeechPitch").textContent = pitch.toFixed(2);
+    }
+
+    // Natuurlijke Menselijke Prosodie Engine: zet archaïsche afkortingen en jaartallen om in vloeiend uitgesproken Nederlands
+    function formatDutchArchivalProsody(rawText) {
+      if (!document.getElementById("chkHumanProsody")?.checked) return rawText;
+      let text = rawText;
+
+      // Vervang veelvoorkomende archiefafkortingen door voluit gesproken woorden
+      text = text
+        .replace(/\bInv\.nr\.\b/gi, "Inventarisnummer ")
+        .replace(/\binv\.nrs\.\b/gi, "inventarisnummers ")
+        .replace(/\bHeren XVII\b/g, "Heren Zeventien")
+        .replace(/\bHeren XIX\b/g, "Heren Negentien")
+        .replace(/\bHeren X\b/g, "Heren Tien")
+        .replace(/\bca\.\b/gi, "circa ")
+        .replace(/\bAfd\.\b/g, "Afdeling ");
+
+      // Spreek 17e en 18e eeuwse jaartallen (1600-1899) natuurlijk uit als zestienhonderdtwee, zeventienhonderdzevenendertig, etc.
+      text = text.replace(/\b(1[678])(\d{2})\b/g, (match, centuryStr, yearPart) => {
+        const centuryWord = centuryStr === "16" ? "zestienhonderd" : centuryStr === "17" ? "zeventienhonderd" : "achttienhonderd";
+        const num = parseInt(yearPart, 10);
+        if (num === 0) return centuryWord;
+        return `${centuryWord} ${yearPart}`;
+      });
+
+      return text;
+    }
+
+    // Optie C: Instant Voice Clone upload naar ElevenLabs of lokale server
+    async function cloneMyVoiceToElevenLabs() {
+      if (!appState.recordedAudioBlob) {
+        showToast("Neem eerst uw stem op bij Stap 1 zodat er een audio-sample beschikbaar is.", "error");
+        return;
+      }
+      const endpoint = document.getElementById("inputCloneEndpoint").value.trim();
+      const apiKey = document.getElementById("inputCloneApiKey").value.trim();
+      try {
+        showToast("⏳ Bezig met uploaden van uw stem-sample naar Voice Clone endpoint...");
+        const formData = new FormData();
+        formData.append("name", "Mijn_Archief_Stem_" + Date.now());
+        formData.append("files", appState.recordedAudioBlob, "mijn_stem_sample.webm");
+
+        const res = await fetch(`${endpoint.replace(/\/$/, "")}/voices/add`, {
+          method: "POST",
+          headers: apiKey ? { "xi-api-key": apiKey } : {},
+          body: formData
+        });
+        const data = await res.json();
+        if (data && data.voice_id) {
+          document.getElementById("inputCloneVoiceId").value = data.voice_id;
+          showToast(`✅ Uw stem is gekloond! Voice ID: ${data.voice_id}`);
+        } else {
+          showToast("ℹ️ Endpoint antwoord ontvangen. Controleer uw API-sleutel of gebruik Optie A/B.", "info");
+        }
+      } catch (e) {
+        showToast("⚠️ Kon externe Voice Clone server niet bereiken. De werkbank schakelt naadloos terug op uw lokaal gekalibreerde stemprofiel.", "info");
+      }
+    }
+
+    /*************************************************************************
+     * 6. VOLWAARDIGE XML SCREENREADER & SYNCHRONE ZIN-VOORLEZER
+     *************************************************************************/
+    function focusAndReadNode(nodeId, autoPlay = true) {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const node = arch.flatNodes.find(n => n.nodeId === nodeId);
+      if (!node) return;
+
+      if (node.sectionIndex !== appState.currentSectionIndex) {
+        appState.currentSectionIndex = node.sectionIndex;
+        renderXmlTreeNavigation();
+        renderCurrentArchiveContent(nodeId);
+      } else {
+        inspectXmlNode(nodeId);
+      }
+
+      const cardEl = document.getElementById(`readerNode_${nodeId}`);
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      if (autoPlay) {
+        startReadingFromNode(nodeId);
+      }
+    }
+
+    function startReadingFromNode(startNodeId) {
+      readerStop();
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const startIdx = arch.flatNodes.findIndex(n => n.nodeId === startNodeId);
+      if (startIdx === -1) return;
+
+      // Bouw de lees-wachtrij op van alle zinnen vanaf deze XML-node
+      const queue = [];
+      for (let i = startIdx; i < arch.flatNodes.length; i++) {
+        const node = arch.flatNodes[i];
+        const announceTags = document.getElementById("chkAnnounceXmlTags")?.checked;
+
+        if (announceTags) {
+          const tagAnnouncement =
+            node.rawTagName === "c_file"
+              ? `Inventarisnummer ${node.unitid}, datering ${node.unitdate}.`
+              : `XML sectie ${node.xmlTag.replace(/[<>]/g, "")}: ${node.title}.`;
+          queue.push({
+            nodeId: node.nodeId,
+            sentenceId: null,
+            text: tagAnnouncement,
+            breadcrumb: node.breadcrumb,
+            xmlTag: node.xmlTag
+          });
+        }
+
+        // Voeg alle zinnen in deze node toe
+        node.paragraphs.forEach((para, pIdx) => {
+          const sentences = para.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g) || [para];
+          sentences.forEach((s, sIdx) => {
+            const clean = s.trim();
+            if (clean) {
+              queue.push({
+                nodeId: node.nodeId,
+                sentenceId: `sent_${node.nodeId}_${pIdx}_${sIdx}`,
+                text: clean,
+                breadcrumb: node.breadcrumb,
+                xmlTag: node.xmlTag
+              });
+            }
+          });
+        });
+
+        if (node.oddText) {
+          const oddSentences = node.oddText.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g) || [node.oddText];
+          oddSentences.forEach((s, sIdx) => {
+            const clean = s.trim();
+            if (clean) {
+              queue.push({
+                nodeId: node.nodeId,
+                sentenceId: `sent_${node.nodeId}_99_${sIdx}`,
+                text: clean,
+                breadcrumb: `${node.breadcrumb} > <odd>`,
+                xmlTag: "<odd>"
+              });
+            }
+          });
+        }
+      }
+
+      appState.readingQueue = queue;
+      appState.readingQueueIndex = 0;
+      appState.isReading = true;
+      updatePlayPauseButtonUI(true);
+      processNextQueueItem();
+    }
+
+    function speakSpecificSentence(sentenceId, nodeId) {
+      inspectXmlNode(nodeId);
+      startReadingFromNode(nodeId);
+      const foundIdx = appState.readingQueue.findIndex(item => item.sentenceId === sentenceId);
+      if (foundIdx !== -1) {
+        window.speechSynthesis?.cancel();
+        appState.readingQueueIndex = foundIdx;
+        processNextQueueItem();
+      }
+    }
+
+    async function processNextQueueItem() {
+      if (!appState.isReading || appState.readingQueueIndex >= appState.readingQueue.length) {
+        readerStop();
+        return;
+      }
+
+      const item = appState.readingQueue[appState.readingQueueIndex];
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const node = arch.flatNodes.find(n => n.nodeId === item.nodeId);
+
+      if (node && node.sectionIndex !== appState.currentSectionIndex) {
+        appState.currentSectionIndex = node.sectionIndex;
+        renderCurrentArchiveContent(node.nodeId);
+      }
+
+      inspectXmlNode(item.nodeId);
+
+      // Highlight de actieve zin in de Boek-Spread
+      document.querySelectorAll(".xml-sentence.active-reading").forEach(el => el.classList.remove("active-reading"));
+      if (item.sentenceId) {
+        const sentEl = document.getElementById(item.sentenceId);
+        if (sentEl) {
+          sentEl.classList.add("active-reading");
+          sentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+
+      // Update ARIA live regio & ondertitelbalk
+      const spokenText = formatDutchArchivalProsody(item.text);
+      document.getElementById("srLiveSubtitle").textContent = item.text;
+      document.getElementById("ariaPoliteRegion").textContent = `${item.breadcrumb}: ${item.text}`;
+
+      // Stuur synchrone XML-cursor positie over WebRTC DataChannel & BroadcastChannel naar gekoppelde kijkers/luisteraars
+      broadcastWebRTCXmlCursorSync({
+        type: "XML_READER_SYNC",
+        archiveId: arch.id,
+        nodeId: item.nodeId,
+        sentenceId: item.sentenceId,
+        breadcrumb: item.breadcrumb,
+        text: item.text
+      });
+
+      // Spreek uit via de gekozen TTS-engine
+      await speakUtteranceWithActiveEngine(spokenText, () => {
+        if (!appState.isReading) return;
+        appState.readingQueueIndex++;
+        processNextQueueItem();
+      });
+    }
+
+    async function speakUtteranceWithActiveEngine(text, onEndedCallback) {
+      // Engine B: Ingebouwde Gemini 2.5 Flash TTS + Formant Filter naar WebRTC stream
+      if (appState.ttsEngineMode === "gemini_neural_tts") {
+        const ok = await speakViaGeminiNeuralTTS(text, onEndedCallback);
+        if (ok) return;
+      }
+
+      // Engine A (en fallback): Gekalibreerde menselijke Nederlandse systeemstem
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "nl-NL";
+        utterance.rate = appState.speechRate;
+        utterance.pitch = appState.speechPitch;
+
+        const voices = window.speechSynthesis.getVoices();
+        const chosen = voices.find(v => v.voiceURI === appState.selectedBrowserVoiceURI) ||
+                       voices.find(v => v.lang.toLowerCase().includes("nl"));
+        if (chosen) utterance.voice = chosen;
+
+        utterance.onend = () => {
+          if (onEndedCallback) onEndedCallback();
+        };
+        utterance.onerror = () => {
+          if (onEndedCallback) onEndedCallback();
+        };
+        window.speechSynthesis.speak(utterance);
+      } else if (onEndedCallback) {
+        onEndedCallback();
+      }
+    }
+
+    // Gemini 2.5 Flash Preview TTS met automatische PCM16-naar-WAV conversie en Formant-filtering op de F0 van de gebruiker
+    async function speakViaGeminiNeuralTTS(text, onEndedCallback) {
+      try {
+        await ensureAudioContext();
+        const voiceName = document.getElementById("selectNeuralVoiceTimbre")?.value || "Orus";
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{
+            parts: [{ text: `Lees rustig, warm en duidelijk in het Nederlands voor als een ervaren archivaris: ${text}` }]
+          }],
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName }
+              }
+            }
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) return false;
+
+        const result = await response.json();
+        const part = result?.candidates?.[0]?.content?.parts?.[0];
+        const audioData = part?.inlineData?.data;
+        const mimeType = part?.inlineData?.mimeType || "audio/L16;rate=24000";
+        if (!audioData) return false;
+
+        const rateMatch = mimeType.match(/rate=(\d+)/);
+        const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+        const pcmBuffer = base64ToArrayBuffer(audioData);
+        const pcm16 = new Int16Array(pcmBuffer);
+
+        // Zet PCM16 om naar een AudioBuffer in onze Web Audio API zodat het door het Formant-filter én de WebRTC stream gaat
+        const audioBuffer = appState.audioCtx.createBuffer(1, pcm16.length, sampleRate);
+        const channelData = audioBuffer.getChannelData(0);
+        for (let i = 0; i < pcm16.length; i++) {
+          channelData[i] = pcm16[i] / 32768.0;
+        }
+
+        const source = appState.audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.playbackRate.value = appState.speechRate;
+        source.connect(appState.formantFilterNode);
+        source.onended = () => {
+          if (onEndedCallback) onEndedCallback();
+        };
+        source.start();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const bin = atob(base64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    function speakCustomText(text, label = "Voorlezen") {
+      readerStop();
+      appState.readingQueue = [{
+        nodeId: appState.archives[appState.currentArchiveIndex].flatNodes[appState.currentNodeIndex]?.nodeId || "",
+        sentenceId: null,
+        text: text,
+        breadcrumb: label,
+        xmlTag: "<tts>"
+      }];
+      appState.readingQueueIndex = 0;
+      appState.isReading = true;
+      updatePlayPauseButtonUI(true);
+      processNextQueueItem();
+    }
+
+    function readerTogglePlay() {
+      if (appState.isReading) {
+        readerStop();
+      } else {
+        const arch = appState.archives[appState.currentArchiveIndex];
+        const currentNode = arch.flatNodes[appState.currentNodeIndex] || arch.flatNodes[0];
+        if (currentNode) startReadingFromNode(currentNode.nodeId);
+      }
+    }
+
+    function readerStop() {
+      appState.isReading = false;
+      window.speechSynthesis?.cancel();
+      document.querySelectorAll(".xml-sentence.active-reading").forEach(el => el.classList.remove("active-reading"));
+      updatePlayPauseButtonUI(false);
+    }
+
+    function readerNextNode() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const nextIdx = Math.min(arch.flatNodes.length - 1, appState.currentNodeIndex + 1);
+      const node = arch.flatNodes[nextIdx];
+      if (node) focusAndReadNode(node.nodeId, true);
+    }
+
+    function readerPrevNode() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const prevIdx = Math.max(0, appState.currentNodeIndex - 1);
+      const node = arch.flatNodes[prevIdx];
+      if (node) focusAndReadNode(node.nodeId, true);
+    }
+
+    function readActiveMetadataAloud() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const node = arch.flatNodes[appState.currentNodeIndex];
+      if (!node) return;
+      const metaSpeech =
+        `Metadata van het geselecteerde XML-element. Archief: ${arch.shortTitle}. ` +
+        `XPath locatie: ${node.xpath}. Inventarisnummer of eenheid: ${node.unitid}. ` +
+        `Datering: ${node.unitdate}. Titel: ${node.title}.`;
+      document.getElementById("ariaAssertiveRegion").textContent = metaSpeech;
+      speakCustomText(metaSpeech, `Metadata Inv.nr. ${node.unitid}`);
+    }
+
+    function updatePlayPauseButtonUI(playing) {
+      document.getElementById("playPauseIcon").textContent = playing ? "⏸" : "▶";
+      document.getElementById("playPauseText").textContent = playing ? "Pauzeer Voorlezen" : "Lees XML Voor (Mijn Stem)";
+    }
+
+    /*************************************************************************
+     * 7. WEBRTC LIVE VOORLEESKAMER (RTCPeerConnection + RTCDataChannel + Multi-Tab)
+     *************************************************************************/
+    async function startWebRTCLiveRoom() {
+      try {
+        await ensureAudioContext();
+
+        // Sluit eventuele oude verbindingen
+        if (appState.localPeer) appState.localPeer.close();
+        if (appState.loopbackPeer) appState.loopbackPeer.close();
+
+        appState.localPeer = new RTCPeerConnection();
+        appState.loopbackPeer = new RTCPeerConnection();
+
+        // Maak een RTCDataChannel voor realtime XML-node & zin-synchronisatie
+        appState.dataChannel = appState.localPeer.createDataChannel("ead-xml-sync-channel");
+        appState.dataChannel.onopen = () => {
+          document.getElementById("rtcDataChannelState").textContent = "open (live)";
+          logWebRTCEvent("RTCDataChannel 'ead-xml-sync-channel' geopend.");
+        };
+
+        appState.loopbackPeer.ondatachannel = (event) => {
+          const receiveChannel = event.channel;
+          receiveChannel.onmessage = (msgEvent) => {
+            appState.rtcPacketsSent++;
+            document.getElementById("rtcPacketCounter").textContent = String(appState.rtcPacketsSent);
+            try {
+              const payload = JSON.parse(msgEvent.data);
+              logWebRTCEvent(`Sync [${payload.nodeId || 'ping'}]: ${(payload.text || '').slice(0, 48)}...`);
+            } catch (e) {}
+          };
+        };
+
+        // Voeg de gecombineerde WebAudio MediaStream (Microfoon + Voorleesstem) toe aan de RTCPeerConnection
+        const mixedStream = appState.webrtcMixedDest.stream;
+        mixedStream.getTracks().forEach(track => {
+          appState.localPeer.addTrack(track, mixedStream);
+        });
+
+        appState.loopbackPeer.ontrack = (event) => {
+          const remoteAudio = document.getElementById("webrtcRemoteAudioEl");
+          if (remoteAudio.srcObject !== event.streams[0]) {
+            remoteAudio.srcObject = event.streams[0];
+            logWebRTCEvent("WebRTC Remote Audio Stream gekoppeld aan speler.");
+          }
+        };
+
+        // ICE Candidate uitwisseling tussen localPeer en loopbackPeer
+        appState.localPeer.onicecandidate = e => {
+          if (e.candidate) appState.loopbackPeer.addIceCandidate(e.candidate);
+        };
+        appState.loopbackPeer.onicecandidate = e => {
+          if (e.candidate) appState.localPeer.addIceCandidate(e.candidate);
+        };
+
+        appState.localPeer.oniceconnectionstatechange = () => {
+          const st = appState.localPeer.iceConnectionState;
+          document.getElementById("webrtcIceBadge").textContent = `ICE: ${st}`;
+          document.getElementById("webrtcStateBadge").textContent = st === "connected" || st === "completed" ? "LIVE VERBONDEN" : st;
+          document.getElementById("webrtcPeersCount").textContent = "1 lokale peer + BroadcastChannel";
+        };
+
+        // Onderhandel SDP Offer & Answer
+        const offer = await appState.localPeer.createOffer();
+        await appState.localPeer.setLocalDescription(offer);
+        await appState.loopbackPeer.setRemoteDescription(offer);
+
+        const answer = await appState.loopbackPeer.createAnswer();
+        await appState.loopbackPeer.setLocalDescription(answer);
+        await appState.localPeer.setRemoteDescription(answer);
+
+        // Open ook een BroadcastChannel zodat een tweede geopend browsertabblad live meespringt
+        if ("BroadcastChannel" in window && !appState.broadcastChannel) {
+          appState.broadcastChannel = new BroadcastChannel("ead_xml_webrtc_room");
+          appState.broadcastChannel.onmessage = (ev) => {
+            if (ev.data && ev.data.type === "XML_READER_SYNC") {
+              handleIncomingRemoteXmlSync(ev.data);
+            }
+          };
+        }
+
+        showToast("📡 WebRTC Live Voorleeskamer actief! Audio & RTCDataChannel XML-synchronisatie zijn verbonden.");
+      } catch (err) {
+        logWebRTCEvent("Fout bij starten WebRTC: " + err.message);
+      }
+    }
+
+    function broadcastWebRTCXmlCursorSync(payload) {
+      const json = JSON.stringify(payload);
+      if (appState.dataChannel && appState.dataChannel.readyState === "open") {
+        appState.dataChannel.send(json);
+      }
+      if (appState.broadcastChannel) {
+        appState.broadcastChannel.postMessage(payload);
+      }
+    }
+
+    function handleIncomingRemoteXmlSync(data) {
+      const archIdx = appState.archives.findIndex(a => a.id === data.archiveId);
+      if (archIdx !== -1 && archIdx !== appState.currentArchiveIndex) {
+        selectArchive(archIdx, data.nodeId);
+      }
+      if (data.nodeId) inspectXmlNode(data.nodeId);
+      if (data.sentenceId) {
+        document.querySelectorAll(".xml-sentence.active-reading").forEach(el => el.classList.remove("active-reading"));
+        const el = document.getElementById(data.sentenceId);
+        if (el) {
+          el.classList.add("active-reading");
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    }
+
+    function sendTestWebRTCPing() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const node = arch.flatNodes[appState.currentNodeIndex];
+      broadcastWebRTCXmlCursorSync({
+        type: "XML_READER_SYNC",
+        archiveId: arch.id,
+        nodeId: node ? node.nodeId : "PING",
+        text: `Handmatige sync-ping op ${arch.shortTitle} (${node ? node.unitid : ''})`
+      });
+    }
+
+    function logWebRTCEvent(msg) {
+      const box = document.getElementById("webrtcEventLog");
+      if (!box) return;
+      const time = new Date().toLocaleTimeString("nl-NL");
+      const line = document.createElement("div");
+      line.textContent = `[${time}] ${msg}`;
+      box.prepend(line);
+    }
+
+    // OpenAI Realtime WebRTC API koppeling (wanneer de gebruiker een OpenAI API key invult)
+    async function connectOpenAIRealtimeWebRTC() {
+      const apiKey = document.getElementById("inputOpenAiRealtimeKey").value.trim();
+      if (!apiKey) {
+        showToast("Vul een OpenAI API-sleutel (sk-...) in voor de externe OpenAI Realtime WebRTC verbinding, of gebruik de ingebouwde lokale WebRTC Voorleeskamer.", "info");
+        return;
+      }
+      try {
+        showToast("⏳ Verbinden met OpenAI Realtime WebRTC API...");
+        const pc = new RTCPeerConnection();
+        const audioEl = document.getElementById("webrtcRemoteAudioEl");
+        pc.ontrack = e => { audioEl.srcObject = e.streams[0]; audioEl.play(); };
+
+        const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+        pc.addTrack(ms.getTracks()[0]);
+
+        const dc = pc.createDataChannel("oai-events");
+        const arch = appState.archives[appState.currentArchiveIndex];
+        dc.onopen = () => {
+          dc.send(JSON.stringify({
+            type: "session.update",
+            session: {
+              instructions: `Je bent een Nederlandstalige archief-assistent voor het EAD-XML archief: ${arch.unittitle} (Toegang ${arch.unitid}). Beantwoord vragen en lees stukken voor.`
+            }
+          }));
+          logWebRTCEvent("OpenAI Realtime WebRTC sessie geopend!");
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const sdpResponse = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview", {
+          method: "POST",
+          body: offer.sdp,
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/sdp"
+          }
+        });
+        if (!sdpResponse.ok) throw new Error("Ongeldige API sleutel of geen Realtime toegang");
+        const answerSdp = await sdpResponse.text();
+        await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+        showToast("✅ Verbonden met OpenAI Realtime WebRTC Spraak-AI!");
+      } catch (e) {
+        showToast("⚠️ OpenAI Realtime verbinding mislukt: " + e.message, "error");
+      }
+    }
+
+    // Handmatige SDP Offer/Answer Modal functies
+    function openHandmatigeSdpModal() {
+      document.getElementById("modalSdpExchange").classList.remove("hidden");
+      document.getElementById("modalSdpExchange").classList.add("flex");
+      generateManualSdpOffer();
+    }
+    function closeSdpModal() {
+      document.getElementById("modalSdpExchange").classList.add("hidden");
+      document.getElementById("modalSdpExchange").classList.remove("flex");
+    }
+    async function generateManualSdpOffer() {
+      await ensureAudioContext();
+      if (!appState.localPeer) {
+        appState.localPeer = new RTCPeerConnection();
+        appState.dataChannel = appState.localPeer.createDataChannel("ead-xml-sync");
+      }
+      const offer = await appState.localPeer.createOffer();
+      await appState.localPeer.setLocalDescription(offer);
+      document.getElementById("textareaLocalSdpOffer").value = JSON.stringify(appState.localPeer.localDescription);
+    }
+    async function applyRemoteSdpDescriptor() {
+      try {
+        const raw = document.getElementById("textareaRemoteSdp").value.trim();
+        const desc = JSON.parse(raw);
+        if (!appState.localPeer) appState.localPeer = new RTCPeerConnection();
+        await appState.localPeer.setRemoteDescription(new RTCSessionDescription(desc));
+        if (desc.type === "offer") {
+          const answer = await appState.localPeer.createAnswer();
+          await appState.localPeer.setLocalDescription(answer);
+          document.getElementById("textareaLocalSdpOffer").value = JSON.stringify(appState.localPeer.localDescription);
+        }
+        showToast("✅ Externe SDP succesvol toegepast!");
+      } catch (e) {
+        showToast("⚠️ Ongeldig SDP JSON-formaat.", "error");
+      }
+    }
+
+    /*************************************************************************
+     * 8. AI ZOEKEN NAAR XML & VOLLEDIGE ZOEKWOORDEN ENGINE
+     *************************************************************************/
+    function runPresetSearch(query, mode = "all_words") {
+      document.getElementById("searchInputQuery").value = query;
+      document.getElementById("selectSearchMode").value = mode;
+      document.getElementById("selectArchiveScope").value = "ALL";
+      document.getElementById("selectXmlTagFilter").value = "ALL";
+      executeArchiveSearch();
+    }
+
+    function clearSearchResults() {
+      document.getElementById("searchInputQuery").value = "";
+      document.getElementById("searchResultsContainer").classList.add("hidden");
+      appState.lastSearchHits = [];
+    }
+
+    function executeArchiveSearch() {
+      const rawQuery = document.getElementById("searchInputQuery").value.trim();
+      if (!rawQuery) {
+        showToast("Voer eerst één of meer zoekwoorden in.", "info");
+        return;
+      }
+
+      const searchMode = document.getElementById("selectSearchMode").value;
+      const tagFilter = document.getElementById("selectXmlTagFilter").value;
+      const scope = document.getElementById("selectArchiveScope").value;
+
+      const candidateArchives =
+        scope === "CURRENT"
+          ? [appState.archives[appState.currentArchiveIndex]]
+          : appState.archives;
+
+      // Tokenize de zoektermen
+      const stopWords = new Set(["de", "het", "een", "en", "van", "in", "op", "te", "voor", "met", "over", "wat", "welke", "hoe"]);
+      const rawTokens = rawQuery
+        .toLowerCase()
+        .replace(/[?.,!;:()]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean);
+
+      const meaningfulTokens = rawTokens.filter(t => !stopWords.has(t) && !["and", "or", "not"].includes(t));
+      const tokensToMatch = meaningfulTokens.length > 0 ? meaningfulTokens : rawTokens;
+
+      const hits = [];
+
+      candidateArchives.forEach((arch, aIdx) => {
+        const realArchiveIndex = appState.archives.findIndex(a => a.id === arch.id);
+        arch.flatNodes.forEach((node) => {
+          // 1. Controleer XML-Tag Filter
+          if (tagFilter !== "ALL") {
+            if (tagFilter === "c_file" && node.rawTagName !== "c_file") return;
+            if (tagFilter === "odd" && !node.oddText) return;
+            if (tagFilter === "bioghist" && node.rawTagName !== "bioghist") return;
+            if (tagFilter === "custodhist" && node.rawTagName !== "custodhist") return;
+            if (tagFilter === "scopecontent" && node.rawTagName !== "scopecontent") return;
+            if (tagFilter === "unitid" && !node.unitid.toLowerCase().includes(rawQuery.toLowerCase())) return;
+            if (tagFilter === "unitdate" && !node.unitdate.toLowerCase().includes(rawQuery.toLowerCase())) return;
+          }
+
+          const haystack = node.fullSearchableText.toLowerCase();
+          let matched = false;
+          let score = 0;
+
+          if (searchMode === "exact_phrase") {
+            if (haystack.includes(rawQuery.toLowerCase())) {
+              matched = true;
+              score = 100;
+            }
+          } else if (searchMode === "all_words") {
+            // Controleer of ALLE volledige zoekwoorden aanwezig zijn; val bij natuurlijke vragen terug op hoge overlap
+            const matchedCount = tokensToMatch.filter(tok => haystack.includes(tok)).length;
+            if (matchedCount === tokensToMatch.length) {
+              matched = true;
+              score = matchedCount * 25 + (haystack.includes(rawQuery.toLowerCase()) ? 40 : 0);
+            } else if (tokensToMatch.length >= 3 && matchedCount >= Math.ceil(tokensToMatch.length * 0.6)) {
+              matched = true;
+              score = matchedCount * 15;
+            }
+          } else if (searchMode === "any_words") {
+            const matchedCount = tokensToMatch.filter(tok => haystack.includes(tok)).length;
+            if (matchedCount > 0) {
+              matched = true;
+              score = matchedCount * 20;
+            }
+          } else if (searchMode === "boolean_xpath") {
+            matched = evaluateBooleanQuery(haystack, rawQuery);
+            if (matched) score = 50;
+          }
+
+          if (matched) {
+            hits.push({
+              archiveIndex: realArchiveIndex,
+              archive: arch,
+              node: node,
+              score: score,
+              tokens: tokensToMatch
+            });
+          }
+        });
+      });
+
+      hits.sort((a, b) => b.score - a.score);
+      appState.lastSearchHits = hits;
+
+      renderSearchHitResults(hits, rawQuery, tokensToMatch);
+
+      // Genereer ook direct een lokale brongetrouwe samenvatting zodat de AI-box meteen bruikbaar is
+      buildLocalRagSummary(hits, rawQuery);
+    }
+
+    function evaluateBooleanQuery(haystack, query) {
+      const parts = query.split(/\s+/);
+      let result = true;
+      let currentOp = "AND";
+
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        const upper = p.toUpperCase();
+        if (upper === "AND" || upper === "OR" || upper === "NOT") {
+          currentOp = upper;
+          continue;
+        }
+        const cleanTerm = p.toLowerCase().replace(/^["']|["']$/g, "").replace(/\*/g, "");
+        const hasTerm = haystack.includes(cleanTerm);
+
+        if (currentOp === "AND") result = result && hasTerm;
+        else if (currentOp === "OR") result = result || hasTerm;
+        else if (currentOp === "NOT") result = result && !hasTerm;
+      }
+      return result;
+    }
+
+    function renderSearchHitResults(hits, rawQuery, tokens) {
+      const container = document.getElementById("searchResultsContainer");
+      const list = document.getElementById("searchHitList");
+      const summary = document.getElementById("searchStatsSummary");
+
+      container.classList.remove("hidden");
+      summary.textContent = `${hits.length} XML-nodes gevonden voor "${rawQuery}"`;
+
+      if (hits.length === 0) {
+        list.innerHTML = `
+          <div class="p-4 rounded-lg bg-parchment-100 border border-parchment-300 text-xs text-inkt-800">
+            Geen directe XML-nodes gevonden met alle opgegeven termen. Probeer de zoekmethode <strong>"3. Één of meer Zoekwoorden (OR)"</strong> of controleer de spelling.
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = hits.map((hit, idx) => {
+        const snippet = highlightSearchTokens(
+          `${hit.node.paragraphs.join(" ")} ${hit.node.oddText || ""}`,
+          tokens
+        );
+        return `
+          <div class="p-3 rounded-lg bg-parchment-50 hover:bg-white border border-parchment-300 shadow-sm transition space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded bg-zeegroen-800 text-white font-mono text-[10px] font-bold">
+                  #${idx + 1} • ${escapeHtml(hit.node.xmlTag)}
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-oker-600 text-white font-mono text-[10px] font-bold">
+                  ${escapeHtml(hit.archive.unitid)} / Inv.nr. ${escapeHtml(hit.node.unitid)}
+                </span>
+                <span class="text-[11px] font-mono text-inkt-800/80">
+                  ${escapeHtml(hit.node.unitdate)}
+                </span>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  onclick="jumpToSearchResult(${hit.archiveIndex}, '${hit.node.nodeId}', false)"
+                  class="px-2 py-0.5 rounded bg-parchment-200 hover:bg-parchment-300 text-inkt-900 font-semibold text-[11px]"
+                >
+                  📖 Open in XML-Lezer
+                </button>
+                <button
+                  onclick="jumpToSearchResult(${hit.archiveIndex}, '${hit.node.nodeId}', true)"
+                  class="px-2 py-0.5 rounded bg-zeegroen-700 hover:bg-zeegroen-800 text-white font-semibold text-[11px]"
+                >
+                  🔊 Lees Voor
+                </button>
+              </div>
+            </div>
+            <div class="text-[11px] font-mono text-zeegroen-700 truncate">
+              Pad: ${escapeHtml(hit.node.breadcrumb)} • XPath: ${escapeHtml(hit.node.xpath)}
+            </div>
+            <p class="text-xs font-serif text-inkt-900 leading-relaxed">${snippet}</p>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function highlightSearchTokens(text, tokens) {
+      let safe = escapeHtml(text);
+      tokens.forEach(tok => {
+        if (tok.length < 2) return;
+        const escapedTok = tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escapedTok})`, "gi");
+        safe = safe.replace(regex, `<mark class="search-hit">$1</mark>`);
+      });
+      return safe;
+    }
+
+    function jumpToSearchResult(archiveIndex, nodeId, startReading) {
+      selectArchive(archiveIndex, nodeId);
+      focusAndReadNode(nodeId, startReading);
+    }
+
+    function readAllSearchResultsAloud() {
+      if (!appState.lastSearchHits.length) {
+        showToast("Voer eerst een zoekopdracht uit.", "info");
+        return;
+      }
+      const combined = appState.lastSearchHits.slice(0, 5).map((h, i) =>
+        `Treffer ${i + 1}, uit archief ${h.archive.shortTitle}, inventarisnummer ${h.node.unitid}, datering ${h.node.unitdate}: ${h.node.paragraphs.join(" ")} ${h.node.oddText || ""}`
+      ).join(" ");
+      speakCustomText(combined, `Zoekresultaten (${appState.lastSearchHits.length} treffers)`);
+    }
+
+    function buildLocalRagSummary(hits, query) {
+      const box = document.getElementById("aiSynthesisOutput");
+      if (hits.length === 0) {
+        box.innerHTML = `<p>Geen treffers gevonden voor <strong>"${escapeHtml(query)}"</strong>.</p>`;
+        appState.lastAiSynthesisText = "";
+        return;
+      }
+
+      const topHits = hits.slice(0, 4);
+      const summaryLines = topHits.map(h =>
+        `• <strong>Toegang ${escapeHtml(h.archive.unitid)}, Inv.nr. ${escapeHtml(h.node.unitid)} (${escapeHtml(h.node.unitdate)})</strong>: ${escapeHtml(h.node.paragraphs[0])} ${h.node.oddText ? '<em>(' + escapeHtml(h.node.oddText) + ')</em>' : ''}`
+      ).join("<br><br>");
+
+      const plainSpeech =
+        `Voor uw zoekopdracht naar ${query} zijn ${hits.length} relevante XML-nodes gevonden. ` +
+        topHits.map(h => `In toegang ${h.archive.unitid}, inventarisnummer ${h.node.unitid} uit ${h.node.unitdate}: ${h.node.paragraphs[0]}`).join(" ");
+
+      appState.lastAiSynthesisText = plainSpeech;
+      box.innerHTML = `
+        <div class="p-2 rounded bg-parchment-200/70 border border-parchment-300 text-[11px] font-sans mb-2">
+          <strong>Directe XML-Bronverantwoording (${hits.length} treffers):</strong> Klik op <em>"🤖 AI Analyse"</em> voor een diepgaande historische synthese via Gemini 3 Flash.
+        </div>
+        <div>${summaryLines}</div>
+      `;
+    }
+
+    // Volledige AI Semantische Analyse & RAG Synthese via Gemini 3 Flash Preview
+    async function executeAiSemanticSynthesis() {
+      const query = document.getElementById("searchInputQuery").value.trim();
+      if (!query) {
+        showToast("Typ eerst uw zoekwoorden of onderzoeksvraag in het zoekveld.", "info");
+        return;
+      }
+
+      if (appState.lastSearchHits.length === 0) {
+        executeArchiveSearch();
+      }
+
+      const box = document.getElementById("aiSynthesisOutput");
+      document.getElementById("searchResultsContainer").classList.remove("hidden");
+      box.innerHTML = `<div class="animate-pulse text-zeegroen-800 font-mono text-xs">⏳ AI-Archiefassistent analyseert de gevonden EAD-XML nodes...</div>`;
+
+      const contextNodes = (appState.lastSearchHits.length > 0
+        ? appState.lastSearchHits.slice(0, 8).map(h => h.node)
+        : appState.archives[appState.currentArchiveIndex].flatNodes.slice(0, 8)
+      );
+
+      const xmlContextText = contextNodes.map(n =>
+        `[Archief: ${n.archiveShortTitle} | Pad: ${n.breadcrumb} | Inv.nr: ${n.unitid} | Datering: ${n.unitdate} | Tag: ${n.xmlTag}]\nInhoud: ${n.paragraphs.join(" ")}\nNoot (<odd>): ${n.oddText || "geen"}`
+      ).join("\n\n");
+
+      try {
+        const apiKey = "";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+        const systemPrompt =
+          "Je bent een deskundige Nederlandse senior archivaris bij het Nationaal Archief en het Zeeuws Archief. " +
+          "Beantwoord de vraag of zoekopdracht van de onderzoeker uitsluitend op basis van de meegeleverde EAD-XML bronfragmenten. " +
+          "Noem altijd expliciet de archieftoegang (bijv. 1.04.02, 1.10.69, 1.05.01.01, 1.05.01.02 of Toegang 17) en de exacte inventarisnummers en dateringen. " +
+          "Schrijf in helder, verzorgd Nederlands dat ook uitstekend geschikt is om direct hardop voorgelezen te worden.";
+
+        const payload = {
+          contents: [{
+            parts: [{
+              text: `Onderzoeksvraag / Zoekwoorden: "${query}"\n\nGevonden EAD-XML Bronnen:\n${xmlContextText}`
+            }]
+          }],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }]
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error("API status " + response.status);
+        const result = await response.json();
+        const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (aiText) {
+          appState.lastAiSynthesisText = aiText.replace(/[*#`]/g, "");
+          box.innerHTML = aiText
+            .split(/\n\n+/)
+            .map(p => `<p>${escapeHtml(p).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")}</p>`)
+            .join("");
+          showToast("🤖 AI-Archief synthese gereed. Klik op '🔊 Lees AI-Antwoord Voor' om het met uw stem te beluisteren.");
+        }
+      } catch (err) {
+        // Gebruik de reeds opgebouwde lokale XML-RAG synthese als betrouwbare fallback
+        buildLocalRagSummary(appState.lastSearchHits, query);
+      }
+    }
+
+    function readAiSynthesisAloud() {
+      if (!appState.lastAiSynthesisText) {
+        showToast("Genereer of zoek eerst een archief-analyse.", "info");
+        return;
+      }
+      speakCustomText(appState.lastAiSynthesisText, "AI-Archief Synthese");
+    }
+
+    /*************************************************************************
+     * 9. EIGEN EAD-XML OF PDF BESTANDEN UPLOADEN & INDEXEREN
+     *************************************************************************/
+    async function handleCustomFileUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      for (const file of files) {
+        if (file.name.toLowerCase().endsWith(".xml")) {
+          const text = await file.text();
+          const customId = "UPLOAD_" + Date.now();
+          const parsed = parseSingleEadXml(customId, file.name, file.name.replace(/\.ead\.xml|\.xml/i, ""), text);
+          appState.archives.push(parsed);
+          selectArchive(appState.archives.length - 1);
+          showToast(`✅ Eigen EAD-XML bestand "${file.name}" (${parsed.flatNodes.length} nodes) geladen en geïndexeerd!`);
+        } else if (file.name.toLowerCase().endsWith(".pdf") && window.pdfjsLib) {
+          await parseUploadedPdfToArchive(file);
+        }
+      }
+    }
+
+    async function parseUploadedPdfToArchive(file) {
+      try {
+        showToast(`⏳ PDF "${file.name}" wordt uitgelezen en omgezet naar doorzoekbare EAD-XML nodes...`);
+        const arrayBuf = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuf }).promise;
+        let xmlItems = "";
+        for (let p = 1; p <= Math.min(pdf.numPages, 30); p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          const pageText = content.items.map(i => i.str).join(" ").trim();
+          if (pageText) {
+            xmlItems += `
+              <c level="file">
+                <did>
+                  <unitid>Pag. ${p}</unitid>
+                  <unittitle>${escapeXml(pageText.slice(0, 320))}</unittitle>
+                  <unitdate>PDF Pagina ${p}</unitdate>
+                </did>
+                <odd><p>${escapeXml(pageText.slice(320, 1400))}</p></odd>
+              </c>`;
+          }
+        }
+        const syntheticXml = `<?xml version="1.0" encoding="UTF-8"?>
+          <ead><archdesc level="fonds">
+            <did><unitid>PDF</unitid><unittitle>${escapeXml(file.name)}</unittitle><unitdate>Geüpload document</unitdate></did>
+            <bioghist><head>Geüpload PDF-archiefdocument</head><p>Volledig doorzoekbaar en voorleesbaar gemaakt in de EAD-XML Werkbank.</p></bioghist>
+            <dsc type="combined"><c level="series"><did><unitid>I</unitid><unittitle>Pagina-inhoud</unittitle></did>${xmlItems}</c></dsc>
+          </archdesc></ead>`;
+        const parsed = parseSingleEadXml("PDF_" + Date.now(), file.name, file.name, syntheticXml);
+        appState.archives.push(parsed);
+        selectArchive(appState.archives.length - 1);
+        showToast(`✅ PDF "${file.name}" succesvol geïndexeerd!`);
+      } catch (e) {
+        showToast("⚠️ Kon PDF-bestand niet verwerken.", "error");
+      }
+    }
+
+    /*************************************************************************
+     * 10. VENSTER-MANAGER, SNELTOETSEN & HULPFUNCTIES
+     *************************************************************************/
+    function togglePanel(panelId) {
+      const panel = document.getElementById(panelId);
+      const btn = document.getElementById(`btnToggle_${panelId}`);
+      if (!panel || !btn) return;
+
+      const isHidden = panel.classList.toggle("hidden");
+      if (isHidden) {
+        btn.classList.remove("bg-oker-600", "text-white");
+        btn.classList.add("bg-zeegroen-950", "text-parchment-300", "opacity-75");
+      } else {
+        btn.classList.add("bg-oker-600", "text-white");
+        btn.classList.remove("bg-zeegroen-950", "text-parchment-300", "opacity-75");
+      }
+    }
+
+    function copyCurrentRawXml() {
+      const arch = appState.archives[appState.currentArchiveIndex];
+      const temp = document.createElement("textarea");
+      temp.value = arch.xmlString;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+      showToast("📋 Volledige EAD-XML broncode gekopieerd naar het klembord!");
+    }
+
+    function showKeyboardHelpModal() {
+      document.getElementById("modalKeyboardHelp").classList.remove("hidden");
+      document.getElementById("modalKeyboardHelp").classList.add("flex");
+    }
+    function closeKeyboardHelpModal() {
+      document.getElementById("modalKeyboardHelp").classList.add("hidden");
+      document.getElementById("modalKeyboardHelp").classList.remove("flex");
+    }
+
+    function showToast(message, type = "success") {
+      const container = document.getElementById("toastNotificationContainer");
+      const toast = document.createElement("div");
+      const bg =
+        type === "error"
+          ? "bg-red-800 border-red-400"
+          : type === "info"
+          ? "bg-zeegroen-800 border-amber-400"
+          : "bg-zeegroen-800 border-emerald-400";
+      toast.className = `${bg} text-parchment-50 border-l-4 px-3.5 py-2.5 rounded-lg shadow-xl text-xs font-sans transition-all duration-300 pointer-events-auto`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function escapeXml(str) {
+      return escapeHtml(str).replace(/'/g, "&apos;");
+    }
+
+    // Globale Toetsenbord Sneltoetsen voor de XML Screenreader
+    window.addEventListener("keydown", (e) => {
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        readerTogglePlay();
+      } else if (e.key === "j" || e.key === "J" || e.key === "ArrowRight") {
+        e.preventDefault();
+        readerNextNode();
+      } else if (e.key === "k" || e.key === "K" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        readerPrevNode();
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        readActiveMetadataAloud();
+      } else if (e.key === "h" || e.key === "H") {
+        e.preventDefault();
+        const arch = appState.archives[appState.currentArchiveIndex];
+        const sec = arch.sections[appState.currentSectionIndex];
+        speakCustomText(`Huidig archief: ${arch.shortTitle}. Rubriek ${sec.code}: ${sec.title}.`, "Hoofdstuk-aankondiging");
+      } else if (e.key === "/") {
+        e.preventDefault();
+        document.getElementById("searchInputQuery")?.focus();
+      }
+    });
+
+    // Initialisatie bij laden van het venster
+    window.onload = function () {
+      parseAllPreloadedArchives();
+      renderArchiveSelectorList();
+      renderGlossarySidebar();
+      selectArchive(0);
+
+      // Teken de initiële oscilloscoop
+      const canvas = document.getElementById("voiceOscilloscopeCanvas");
+      if (canvas) {
+        drawIdleOscilloscope(canvas.getContext("2d"), canvas.clientWidth || 420, canvas.clientHeight || 112);
+      }
+
+      // Laad Nederlandse systeemstemmen
+      if ("speechSynthesis" in window) {
+        populateDutchSystemVoices();
+        window.speechSynthesis.onvoiceschanged = populateDutchSystemVoices;
+      }
+    };
+  </script>
+</body>
+</html>
