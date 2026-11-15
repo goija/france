@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zeeuws Archief Toegang 17 (#inv3t3 Verpachting Visserijpercelen) &amp; 293 Atlassen Hattinga — Weervisserij OSINT Viewer</title>
+<style>
+  :root {
+    --bg: #110f1a;
+    --panel: #191626;
+    --panel2: #221e33;
+    --panel3: #2c2742;
+    --line: #383254;
+    --txt: #eeeaf8;
+    --dim: #9e96b8;
+    --accent: #6d4aff;
+    --accent2: #987eff;
+    --gold: #e4bd5b;
+    --cyan: #38bdf8;
+    --ok: #4ade80;
+    --crimson: #f43f5e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: var(--txt);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- HEADER ---------- */
+  header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .badge.gold {
+    background: #523e12;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+  }
+  .badge.cyan {
+    background: #0f364d;
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--txt);
+  }
+  header .meta {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  header .spacer { flex: 1; }
+  .presetBtn {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .presetBtn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* ---------- STATUS BANNER ---------- */
+  .banner {
+    background: #201b32;
+    border-bottom: 1px solid var(--line);
+    color: var(--dim);
+    font-size: 11.5px;
+    padding: 5px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .banner b { color: var(--gold); }
+  .banner code {
+    background: rgba(0,0,0,.35);
+    color: var(--cyan);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+  }
+
+  /* ---------- MAIN 3-COLUMN GRID ---------- */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  @media (max-width: 1180px) {
+    main { grid-template-columns: 270px 1fr 270px; }
+  }
+  @media (max-width: 900px) {
+    html, body { overflow: auto; height: auto; }
+    main { grid-template-columns: 1fr; height: auto; }
+  }
+
+  /* ---------- LEFT SIDEBAR: INVENTORY & PARSER ---------- */
+  #invPanel {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .panelTitle {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--dim);
+    padding: 10px 12px 6px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #urlParser {
+    padding: 0 12px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  #urlInput {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11.5px;
+    font-family: Consolas, monospace;
+  }
+  .urlBtnRow {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .urlBtnRow button {
+    flex: 1;
+    background: var(--panel2);
+    border: 1px solid var(--accent);
+    color: var(--accent2);
+    border-radius: 6px;
+    padding: 5px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .urlBtnRow button:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Category Filter Tabs */
+  .catRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .catBtn {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--dim);
+    border-radius: 5px;
+    padding: 4px 7px;
+    font-size: 11px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .catBtn:hover { color: var(--txt); border-color: var(--accent2); }
+  .catBtn.active {
+    background: #31275e;
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .catBtn .cnt {
+    background: rgba(0,0,0,.35);
+    padding: 0 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--gold);
+  }
+
+  .searchNavWrap {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  #searchInv {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .navRow {
+    display: flex;
+    gap: 6px;
+  }
+  .navRow button {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .navRow button:hover { border-color: var(--accent); }
+  #jumpInput {
+    flex: 1;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 11.5px;
+    min-width: 0;
+  }
+  #jumpBtn {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  #invList {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .invItem {
+    padding: 9px 12px;
+    border-bottom: 1px solid #26223a;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .invItem:hover { background: var(--panel2); }
+  .invItem.sel {
+    background: #2f2851;
+    border-left: 3px solid var(--gold);
+  }
+  .invTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+  .invTop .num {
+    font-family: Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--accent2);
+    font-weight: 700;
+  }
+  .tagPill {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tagPill.t17 { background: rgba(56,189,248,.16); color: var(--cyan); border: 1px solid rgba(56,189,248,.35); }
+  .tagPill.weer { background: rgba(74,222,128,.16); color: var(--ok); border: 1px solid rgba(74,222,128,.35); }
+  .tagPill.hatt { background: rgba(228,189,91,.16); color: var(--gold); border: 1px solid rgba(228,189,91,.35); }
+  .tagPill.zeel { background: rgba(152,126,255,.16); color: var(--accent2); border: 1px solid rgba(152,126,255,.35); }
+  .invTitle {
+    font-size: 12.5px;
+    color: var(--txt);
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .invSub {
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  /* ---------- CENTER PANEL: VIEWER & TABS ---------- */
+  #viewerPanel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    background: #0d0b14;
+    overflow: hidden;
+  }
+  #viewerBar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .modeTabs {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .modeTab {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--dim);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modeTab:hover { color: var(--txt); border-color: var(--accent2); }
+  .modeTab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .layerToggleBtn {
+    background: #1d2f28;
+    border: 1px solid var(--ok);
+    color: var(--ok);
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .layerToggleBtn.off {
+    background: var(--panel2);
+    border-color: var(--line);
+    color: var(--dim);
+  }
+
+  .tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tools button, .uploadBtn {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    height: 28px;
+    padding: 0 8px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tools button:hover, .uploadBtn:hover { border-color: var(--accent); }
+  #zoomPct {
+    font-size: 11.5px;
+    color: var(--gold);
+    font-family: Consolas, monospace;
+    min-width: 44px;
+    text-align: center;
+  }
+
+  /* ROCK-SOLID CANVAS HOST (Prevents White Screen & 0x0 Sizing Bug) */
+  #canvasHost {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    min-height: 420px;
+    background: #0d0b14;
+    overflow: hidden;
+  }
+  #sheetCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #sheetCanvas:active { cursor: grabbing; }
+
+  /* Live Coordinate HUD in top-right of canvas */
+  #coordHud {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: rgba(20, 17, 32, 0.9);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Interactive Hotspot Popup on Canvas */
+  #hotspotPopup {
+    position: absolute;
+    top: 52px;
+    right: 12px;
+    width: 320px;
+    max-width: calc(100% - 24px);
+    background: rgba(25, 22, 38, 0.96);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.7);
+    z-index: 12;
+    display: none;
+  }
+  #hotspotPopup h4 {
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #hotspotPopup .closePop {
+    cursor: pointer;
+    color: var(--dim);
+    font-size: 15px;
+    padding: 0 4px;
+  }
+  #hotspotPopup .popBody {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--txt);
+  }
+
+  /* Bottom-left Map Info Overlay Card */
+  #mapInfoCard {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    max-width: 500px;
+    background: rgba(25, 22, 38, 0.94);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 12px;
+    z-index: 8;
+    box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  }
+  #mapInfoCard h4 {
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  #mapInfoCard p {
+    font-size: 11.5px;
+    color: var(--dim);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .cardBtnRow {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .miniAction {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font-size: 11px;
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .miniAction:hover { border-color: var(--gold); color: var(--gold); }
+  .miniAction.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Subviews for Libraries (Mode 3) & Newspapers (Mode 4) */
+  .subView {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: none;
+    background: #12101c;
+    min-height: 0;
+  }
+  .subHeader {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .subHeader h2 { font-size: 15px; color: var(--gold); margin-bottom: 3px; }
+  .subHeader p { font-size: 12px; color: var(--dim); }
+  .subFilterInput {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    min-width: 260px;
+  }
+  .cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .refCard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .refCard:hover { border-color: var(--accent2); }
+  .refBadge {
+    font-size: 10.5px;
+    color: var(--cyan);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .refCard h3 { font-size: 13.5px; color: var(--txt); line-height: 1.3; }
+  .refSig {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    color: var(--gold);
+    background: rgba(0,0,0,.28);
+    padding: 4px 7px;
+    border-radius: 4px;
+  }
+  .refCard p { font-size: 12px; color: var(--dim); line-height: 1.45; flex: 1; }
+  .refLinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+  /* Footer Bar */
+  #footerNav {
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #footerNav button {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #footerNav .pos {
+    flex: 1;
+    text-align: center;
+    color: var(--dim);
+    font-size: 12px;
+    font-family: Consolas, monospace;
+  }
+
+  /* ---------- RIGHT SIDEBAR: OSINT & DEEP-LINKS ---------- */
+  #osintPanel {
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  #osintQuery {
+    margin: 0 12px 6px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 12px;
+    width: calc(100% - 24px);
+  }
+  .chipWrap {
+    padding: 0 12px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .qChip {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--dim);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10.5px;
+    cursor: pointer;
+  }
+  .qChip:hover { color: var(--gold); border-color: var(--gold); }
+
+  .recordMeta {
+    margin: 8px 12px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--dim);
+  }
+  .recordMeta b { color: var(--txt); }
+  .recordMeta .mTag {
+    display: inline-block;
+    background: #312854;
+    color: var(--accent2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    margin: 3px 3px 0 0;
+  }
+
+  .osintGroup {
+    padding: 4px 12px 8px;
+  }
+  .osintGroup .gTitle {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--gold);
+    margin: 6px 0;
+    font-weight: 700;
+  }
+  .osintBtn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-size: 11.5px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .osintBtn:hover {
+    border-color: var(--accent);
+    background: #2e2849;
+  }
+  .osintBtn::before {
+    content: "↗ ";
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge cyan">Toegang 17 · #inv3t3</span>
+  <span class="badge gold">Toegang 293 · Hattinga</span>
+  <h1>Zeeuws Archief (mivast=239) — Verpachting Visserijpercelen, Weervisserij &amp; Atlassen Hattinga</h1>
+  <span class="spacer"></span>
+  <button class="presetBtn" id="loadT17UrlBtn" title="Laad jouw Zeeuws Archief Toegang 17 URL (verpachting visserijpercelen #inv3t3)">⚓ Laad Toegang 17 (#inv3t3)</button>
+  <button class="presetBtn" id="loadT293UrlBtn" title="Laad jouw archieven.nl Toegang 293 URL (Atlassen Hattinga)">📜 Laad Toegang 293 (Hattinga)</button>
+</header>
+
+<div class="banner">
+  <div>
+    Actieve Archief-URL: <code id="activeUrlCode">https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&amp;mizig=210&amp;miadt=239&amp;miview=inv2&amp;milang=nl&amp;mizk_alle=verpachting%20visserijpercelen&amp;micode=17#inv3t3</code>
+  </div>
+  <div>
+    Klik op een <b>V-vormige Ansjovisweer (I–VI)</b> of <b>Visserijperceel (A 406–C 408 / 250–403)</b> op de kaart voor pacht- en archiefdetails.
+  </div>
+</div>
+
+<main>
+  <!-- ================= LEFT: INVENTORY & URL PARSER ================= -->
+  <aside id="invPanel">
+    <div class="panelTitle">
+      <span>Archief-URL &amp; Inventaris Parser</span>
+      <span id="totalBadge" style="color:var(--gold)">32 stukken</span>
+    </div>
+    <div id="urlParser">
+      <input id="urlInput" value="https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3" placeholder="Plak zeeuwsarchief.nl / archieven.nl URL of inv.nr.">
+      <div class="urlBtnRow">
+        <button id="urlParseBtn">⚡ Parseer &amp; Toon op Kaart</button>
+        <button id="urlOpenExtBtn">↗ Open Origineel</button>
+      </div>
+    </div>
+
+    <div class="catRow">
+      <button class="catBtn active" data-cat="ALL">Alle <span class="cnt" id="cntALL">0</span></button>
+      <button class="catBtn" data-cat="T17">Toegang 17 (#inv3t3) <span class="cnt" id="cntT17">0</span></button>
+      <button class="catBtn" data-cat="WEER">Weervisserij <span class="cnt" id="cntWEER">0</span></button>
+      <button class="catBtn" data-cat="HATT">293 Hattinga <span class="cnt" id="cntHATT">0</span></button>
+      <button class="catBtn" data-cat="ZEEL">Zeeland Overig <span class="cnt" id="cntZEEL">0</span></button>
+    </div>
+
+    <div class="searchNavWrap">
+      <input id="searchInv" placeholder="Filter op #inv3t3, verpachting, weervisserij, Tholen, Reimerswaal, 2968718...">
+      <div class="navRow">
+        <button id="prevBtn" title="Vorige kaart (←)">◀ Vorige</button>
+        <button id="nextBtn" title="Volgende kaart (→)">Volgende ▶</button>
+        <input id="jumpInput" placeholder="Inv.nr. / code">
+        <button id="jumpBtn">Ga</button>
+      </div>
+    </div>
+
+    <div id="invList"></div>
+  </aside>
+
+  <!-- ================= CENTER: ZERO-BUG DUAL CANVAS & SUBVIEWS ================= -->
+  <section id="viewerPanel">
+    <div id="viewerBar">
+      <div class="modeTabs">
+        <button class="modeTab active" data-mode="HIST">📜 Historisch Kaartblad &amp; Percelen</button>
+        <button class="modeTab" data-mode="GIS">🧭 RD-GIS &amp; Bathymetrie (EPSG:28992)</button>
+        <button class="modeTab" data-mode="LIBS">📚 Bibliotheken Weervisserij (15)</button>
+        <button class="modeTab" data-mode="NEWS">📰 Kranten &amp; Verpachtingen (12)</button>
+      </div>
+
+      <button class="layerToggleBtn" id="toggleWeerBtn" title="Schakel de V-vormige ansjovisweren, oesterputten en verpachtingspercelen (#inv3t3) aan of uit">
+        🐟 Weren &amp; Percelen (#inv3t3): AAN
+      </button>
+
+      <div class="tools">
+        <label class="uploadBtn" title="Laad een eigen kaartscan (JPG/PNG/WebP) op het canvas">
+          📂 Eigen Scan
+          <input type="file" id="customScanInput" accept="image/*" style="display:none">
+        </label>
+        <button id="zi" title="Zoom in">＋</button>
+        <button id="zo" title="Zoom uit">－</button>
+        <button id="zr" title="Herstel weergave">⤢</button>
+        <span id="zoomPct">100%</span>
+      </div>
+    </div>
+
+    <!-- MODE 1 & 2: DEDICATED CANVAS HOST -->
+    <div id="canvasHost">
+      <canvas id="sheetCanvas"></canvas>
+
+      <div id="coordHud">
+        RD (EPSG:28992): X=69850, Y=388500 · WGS84: 51.4820°N, 4.1620°E
+      </div>
+
+      <div id="hotspotPopup">
+        <h4>
+          <span id="popTitle">Ansjovisweer / Visserijperceel</span>
+          <span class="closePop" id="popClose">✕</span>
+        </h4>
+        <div class="popBody" id="popBody"></div>
+      </div>
+
+      <div id="mapInfoCard">
+        <h4 id="cardTitle">Toegang 17 (#inv3t3) — Verpachting Visserijpercelen Oosterschelde</h4>
+        <p id="cardDesc"></p>
+        <div class="cardBtnRow">
+          <a class="miniAction primary" id="cardArchBtn" href="https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3" target="_blank" rel="noopener">↗ Open in Zeeuws Archief / Archieven.nl</a>
+          <a class="miniAction" id="cardTopoBtn" href="https://www.topotijdreis.nl/?datatype=map&year=1890&x=69850&y=388500&zoom=9" target="_blank" rel="noopener">↗ Topotijdreis (RD)</a>
+          <button class="miniAction" id="cardCopyBtn">📋 Kopieer Archief-URL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE 3: 15 BIBLIOTHEKEN & KENNISCENTRA OMTRENT WEERVISSERIJ -->
+    <div class="subView" id="libsView">
+      <div class="subHeader">
+        <div>
+          <h2>📚 Alle 15 Bibliotheken, Musea &amp; Kenniscentra omtrent Weervisserij &amp; Zeeuwse Cartografie</h2>
+          <p>Rechtstreekse catalogus- en collectielinks voor weervisserij, Oosterschelde, Tholen, Bergen op Zoom en de Atlassen Hattinga.</p>
+        </div>
+        <input class="subFilterInput" id="libSearch" placeholder="Zoek op 4 E 104, ZB, Markiezenhof, Korringa, Bodel Nijenhuis...">
+      </div>
+      <div class="cardGrid" id="libsGrid"></div>
+    </div>
+
+    <!-- MODE 4: 12 KRANTENBRONNEN & VERPACHTINGEN (KRANTENBANK ZEELAND & DELPHER) -->
+    <div class="subView" id="newsView">
+      <div class="subHeader">
+        <div>
+          <h2>📰 Historische Krantenberichten: Verpachting Visserijpercelen &amp; Weervisserij (1846–1985)</h2>
+          <p>Geïmporteerde artikelen uit <b>Krantenbank Zeeland</b> (<i>Eendrachtbode, Middelburgsche Courant, Goessche Courant, PZC</i>) en <b>KB Delpher</b>.</p>
+        </div>
+        <input class="subFilterInput" id="newsSearch" placeholder="Zoek op verpachting, visserijpercelen, ansjovis, Molenplaat, Tholen...">
+      </div>
+      <div class="cardGrid" id="newsGrid"></div>
+    </div>
+
+    <div id="footerNav">
+      <button id="fpBtn">◀ Vorige Kaart</button>
+      <span class="pos" id="posLbl">Record 1 / 32</span>
+      <button id="fnBtn">Volgende Kaart ▶</button>
+    </div>
+  </section>
+
+  <!-- ================= RIGHT: OSINT & DIRECT ARCHIVE QUERIES ================= -->
+  <aside id="osintPanel">
+    <div class="panelTitle">OSINT &amp; Archief-Zoekopdrachten</div>
+    <input id="osintQuery" value="verpachting visserijpercelen weervisserij Oosterschelde">
+    <div class="chipWrap">
+      <span class="qChip" data-q="verpachting visserijpercelen">verpachting visserijpercelen</span>
+      <span class="qChip" data-q="weervisserij Oosterschelde">weervisserij Oosterschelde</span>
+      <span class="qChip" data-q="Atlassen Hattinga 293">Atlassen Hattinga 293</span>
+      <span class="qChip" data-q="ansjovisweren Bergen op Zoom Tholen">ansjovisweren BoZ / Tholen</span>
+      <span class="qChip" data-q="Reimerswaal Verdronken Land">Reimerswaal</span>
+    </div>
+
+    <div class="recordMeta" id="recMeta"></div>
+
+    <div class="osintGroup">
+      <div class="gTitle">Zeeuws Archief (mivast=239 / miadt=239)</div>
+      <button class="osintBtn" data-tpl="za_t17_hash">Toegang 17 (#inv3t3): verpachting visserijpercelen</button>
+      <button class="osintBtn" data-tpl="za_t17_all">Toegang 17 (BVZS): Alle visserij-inventarissen</button>
+      <button class="osintBtn" data-tpl="arch_293">Toegang 293: Atlassen Hattinga (inv. 2968718)</button>
+      <button class="osintBtn" data-tpl="arch_cur">Open actief geselecteerd kaartrecord</button>
+      <button class="osintBtn" data-tpl="arch_5871">Toegang 5871: Schematische kaart Oosterschelde</button>
+      <button class="osintBtn" data-tpl="arch_294">Toegang 294: Zelandia Illustrata (KZGW)</button>
+      <button class="osintBtn" data-tpl="arch_295">Toegang 295: Rijkswaterstaat Directie Zeeland</button>
+    </div>
+
+    <div class="osintGroup">
+      <div class="gTitle">Krantenbanken, Bibliotheken &amp; Delpher</div>
+      <button class="osintBtn" data-tpl="kr_zeeland">Krantenbank Zeeland — query zoeken</button>
+      <button class="osintBtn" data-tpl="kr_eendracht">De Eendrachtbode (Tholen) — verpachtingen</button>
+      <button class="osintBtn" data-tpl="delpher">KB Delpher — Kranten &amp; Staatscourant</button>
+      <button class="osintBtn" data-tpl="zb_cat">ZB Bibliotheek van Zeeland — Catalogus</button>
+      <button class="osintBtn" data-tpl="wba_boz">West-Brabants Archief (Bergen op Zoom)</button>
+      <button class="osintBtn" data-tpl="na_10811">Nationaal Archief 1.08.11 (Nassause Domeinraad)</button>
+    </div>
+
+    <div class="osintGroup">
+      <div class="gTitle">Historisch GIS &amp; Export</div>
+      <button class="osintBtn" data-tpl="topo_rd">Topotijdreis.nl (Exacte RD-focus Oosterschelde)</button>
+      <button class="osintBtn" data-tpl="hisgis">HisGIS.nl — Kadastrale Minuutplans 1832</button>
+      <button class="osintBtn" id="exportJsonBtn">💾 Download Volledige Collectie (JSON)</button>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+
+/* ============================================================================
+   1. AUTHENTIEKE ARCHIEF- & KAARTCOLLECTIE (TOEGANG 17 #inv3t3, WEERVISSERIJ, 293 HATTINGA, ZEELAND)
+   ============================================================================ */
+const ARCHIVE_RECORDS = [
+  /* --- TOEGANG 17: BESTUUR DER VISSERIJEN OP DE ZEEUWSE STROMEN (#inv3t3 VERPACHTING VISSERIJPERCELEN) --- */
+  {
+    id: "T17-INV3T3-MAIN",
+    nr: "17#inv3t3",
+    miadt: 239,
+    micode: "17",
+    cat: "T17",
+    title: "Toegang 17 (#inv3t3) — Verpachting van Visserijpercelen op de Schelde en Zeeuwse Stromen (Oosterschelde, Eendracht & Verdronken Land)",
+    region: "Oosterschelde / Tholen / Yerseke / Bergen op Zoom",
+    dating: "1825–1969 (Rubriek #inv3t3)",
+    archiveName: "Zeeuws Archief (mivast=239, micode=17, mizk_alle=verpachting visserijpercelen#inv3t3)",
+    rdX: 69850,
+    rdY: 388500,
+    lat: 51.4820,
+    lng: 4.1620,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    desc: "Jouw exacte doelrecord in het Zeeuws Archief (Toegang 17, rubriek #inv3t3): omvat de processen-verbaal van openbare verpachting, pachtregisters, leggers en genummerde perceelkaarten van de visserijpercelen (ansjovisweren, oester- en mosselpercelen) op de Oosterschelde, de Eendracht, de Speelmansplaten, de Molenplaat en het Verdronken Land van Zuid-Beveland.",
+    tags: ["micode=17", "#inv3t3", "verpachting visserijpercelen", "Bestuur der Visserijen Tholen"]
+  },
+  {
+    id: "T17-OOST-25K",
+    nr: "17-Kaart-Oost",
+    miadt: 239,
+    micode: "17",
+    cat: "T17",
+    title: "Kaart van den Oostelykenhoek der Oosterschelde (Schaal 1:25.000) — Weren A 406, B 407, C 408 & Percelen 250–437",
+    region: "Speelmansplaten / Molenplaat / Reimerswaal / Bergen op Zoom",
+    dating: "circa 1882–1910 (BVZS Toegang 17)",
+    archiveName: "Zeeuws Archief — Toegang 17 Bestuur der Visserijen",
+    rdX: 72100,
+    rdY: 390200,
+    lat: 51.4980,
+    lng: 4.1920,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    desc: "Gedetailleerde visserijkaart (1:25.000) behorende bij de verpachting van visserijpercelen (#inv3t3): toont de V-vormige ansjovisweren A 406 (De Kraaijenstein), B 407 (De Vier Gebroeders), C 408 (Het Lange Water), M/N/O bij Reimerswaal (percelen 250–251), de Molenplaat (percelen 333–403) en de 4 oesterputten a–d (Hartog, Kakebeeke, Zeeuwsche Mij, v/d Meulenwater).",
+    tags: ["Schaal 1:25.000", "Weren A 406–C 408", "Oesterputten a–d", "Molenplaat 333–403"]
+  },
+  {
+    id: "T17-EENDRACHT-50K",
+    nr: "17-Eendracht",
+    miadt: 239,
+    micode: "17",
+    cat: "T17",
+    title: "Kaart van de Visserijpercelen in De Eendracht, Krabbekreek en Mosselkreek (Schaal 1:50.000)",
+    region: "Tholen / Oud-Vossemeer / Sint-Philipsland / Halsteren",
+    dating: "circa 1885–1920 (Toegang 17 #inv3t3)",
+    archiveName: "Zeeuws Archief — Toegang 17 Bestuur der Visserijen",
+    rdX: 73500,
+    rdY: 395500,
+    lat: 51.5450,
+    lng: 4.2100,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    desc: "Verpachtingskaart van de genummerde visserijvakken in het nauw van de Eendracht (tussen het eiland Tholen en Noord-Brabant), het Slaak, de Mosselkreek en de Krabbekreek bij Sint-Philipsland en Oud-Vossemeer.",
+    tags: ["De Eendracht", "Mosselkreek", "Tholen Visserijpercelen", "#inv3t3"]
+  },
+  {
+    id: "T17-KRAAIJERPLAAT-1882",
+    nr: "17-1882-No1314",
+    miadt: 239,
+    micode: "17",
+    cat: "T17",
+    title: "Verpachting Visserijpercelen te Bergen op Zoom & Tholen (17 April 1882 No. 1314) — Hooge Kraaijerplaat Perceel 11",
+    region: "Hooge Kraaijerplaat / Molenplaat / Bergen op Zoom",
+    dating: "17 april 1882",
+    archiveName: "Zeeuws Archief — Toegang 17 & Registratie Bergen op Zoom Deel 40 fol. 122",
+    rdX: 71800,
+    rdY: 389100,
+    lat: 51.4880,
+    lng: 4.1880,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    desc: "Proces-verbaal en situatiekaart van de verpachting op 17 april 1882 (geregistreerd te Bergen op Zoom deel 40 folio 122 verso vak 2), inclusief Perceel No. 11 op de Hooge Kraaijerplaat en de aangrenzende weren en schelpdierkavels.",
+    tags: ["17 april 1882", "Hooge Kraaijerplaat No. 11", "Deel 40 fol. 122"]
+  },
+  {
+    id: "T17-SLOE-BIJLAGE-U",
+    nr: "17-Bijlage-U",
+    miadt: 239,
+    micode: "17",
+    cat: "T17",
+    title: "Bijlage U — Kaart van de Verpachting der Visserijpercelen op Het Sloe (Walcheren & Zuid-Beveland)",
+    region: "Het Sloe / Arnemuiden / Rammekens / Borsele",
+    dating: "circa 1880–1910 (Toegang 17)",
+    archiveName: "Zeeuws Archief — Toegang 17 Bestuur der Visserijen",
+    rdX: 37500,
+    rdY: 389000,
+    lat: 51.4800,
+    lng: 3.6950,
+    mapType: "WALCHEREN_SLOE",
+    customUrl: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    desc: "Overzichtskaart (Bijlage U, schaal 1:50.000) van de visserijpercelen en slikken in het Sloe tussen Walcheren (Middelburg, Arnemuiden, Fort Rammekens) en Zuid-Beveland ('s-Heer Arendskerke, Borsele).",
+    tags: ["Bijlage U", "Het Sloe", "Visserijpercelen Walcheren"]
+  },
+  {
+    id: "WEER-5871-33845212",
+    nr: "33845212",
+    miadt: 239,
+    micode: "5871",
+    cat: "WEER",
+    title: "Toegang 5871 (minr=33845212) — Schematische Kaart van de Verpachting der Visserijen op de Oosterschelde",
+    region: "Oosterschelde / Verdronken Land van Zuid-Beveland / Tholen",
+    dating: "20e eeuw",
+    archiveName: "Zeeuws Archief — Toegang 5871 (minr=33845212)",
+    rdX: 68500,
+    rdY: 389500,
+    lat: 51.4910,
+    lng: 4.1420,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=5871&minr=33845212&miview=inv2",
+    desc: "Schematische verpachtingskaart van de Oosterschelde met de blokindeling van de visweren op de Speelmansplaten, de Molenplaat, de Yerseke Bank en het Verdronken Land van Zuid-Beveland.",
+    tags: ["Toegang 5871", "minr 33845212", "Schematische verpachtingskaart"]
+  },
+  {
+    id: "WEER-202-56-REIMERSWAAL",
+    nr: "2219856",
+    miadt: 239,
+    micode: "202.56",
+    cat: "WEER",
+    title: "Toegang 202.56 (minr=2219856) — De Verdronken Stad Reimerswaal en de Weervisserij op het Verdronken Land",
+    region: "Reimerswaal / Verdronken Land van Zuid-Beveland",
+    dating: "16e–20e eeuw",
+    archiveName: "Zeeuws Archief — Toegang 202.56 (minr=2219856)",
+    rdX: 69850,
+    rdY: 388500,
+    lat: 51.4820,
+    lng: 4.1620,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=202.56&minr=2219856&miview=inv2",
+    desc: "Dossier en kaartmateriaal over de relatie tussen de in 1530/1632 verdronken stad Reimerswaal (percelen 250–251) en de latere uitoefening van de ansjovis-weervisserij (weren M, N en O) boven de verzonken stadsfundamenten.",
+    tags: ["Toegang 202.56", "Reimerswaal", "Weren M, N, O"]
+  },
+  {
+    id: "WEER-SPEELMANSPLATEN-VANDORT",
+    nr: "WEER-A406",
+    miadt: 239,
+    micode: "17",
+    cat: "WEER",
+    title: "Weervisserij-kaart Speelmansplaten & Bergse Diepsluis — Weren 'De Kraaijenstein', 'De Vier Gebroeders' & 'Het Lange Water'",
+    region: "Speelmansplaten / Tholen / Bergse Diepsluis",
+    dating: "19e–21e eeuw (Immaterieel Erfgoed)",
+    archiveName: "Stichting Behoud Weervisserij & Zeeuws Archief Toegang 17",
+    rdX: 71650,
+    rdY: 391400,
+    lat: 51.5085,
+    lng: 4.1850,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.weervisserij.nl/",
+    desc: "Detailkaart van de Speelmansplaten ten zuiden van Tholen bij de Bergse Diepsluis, waar de V-vormige eiken/berken stakenweren (elk ca. 1.600 meter vleugellengte) bij afgaand tij (eb) de paaiende Oosterschelde-ansjovis naar het fuikgat leiden.",
+    tags: ["De Kraaijenstein", "De Vier Gebroeders", "Speelmansplaten", "Familie Van Dort"]
+  },
+  {
+    id: "WEER-NA-10811-13841",
+    nr: "13841",
+    miadt: 239,
+    micode: "1.08.11",
+    cat: "WEER",
+    title: "Nationaal Archief 1.08.11 (inv.nrs. 13841–13843) — Registers van Verpachtingen van Visserij en Dijkettingen onder Sint-Maartensdijk & Scherpenisse",
+    region: "Sint-Maartensdijk / Scherpenisse / Pluimpot / Gorishoek",
+    dating: "1650–1708",
+    archiveName: "Nationaal Archief — 1.08.11 Nassause Domeinraad",
+    rdX: 65200,
+    rdY: 395400,
+    lat: 51.5450,
+    lng: 4.0950,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.nationaalarchief.nl/onderzoeken/archief/1.08.11",
+    desc: "Vroegmoderne verpachtingsregisters van de prinselijke visserijen, slikken, gorzen en dijkettingen langs de Oosterschelde en de Pluimpot op het eiland Tholen.",
+    tags: ["NA 1.08.11", "Inv. 13841–13843", "Verpachting Visserij 1650–1708"]
+  },
+
+  /* --- TOEGANG 293: ATLASSEN HATTINGA (ZEEUWS ARCHIEF miadt=239, 421 BLADEN) --- */
+  {
+    id: "HATT-2968718-START",
+    nr: "2968718",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Toegang 293 (minr=2968718) — Atlassen Hattinga: Atlas van Zeeland & Atlas van Staats-Vlaanderen (Hoofdinventaris, 421 bladen)",
+    region: "Provincie Zeeland, Oosterschelde, Tholen & Staats-Vlaanderen",
+    dating: "circa 1750 (W.T., D.W.C. en A. Hattinga)",
+    archiveName: "Zeeuws Archief — Toegang 293 Atlassen Hattinga (minr=2968718)",
+    rdX: 66100,
+    rdY: 395900,
+    lat: 51.5475,
+    lng: 4.1045,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968718&miview=inv2",
+    desc: "Jouw startrecord uit archieven.nl: de beroemde 18e-eeuwse manuscriptatlassen van Willem Tiberius Hattinga en zijn zonen David Willem Carel en Anthony Hattinga, bestaande uit 421 gedetailleerde kaartbladen van alle Zeeuwse eilanden, polders en stromen.",
+    tags: ["minr=2968718", "Toegang 293", "421 bladen", "Atlassen Hattinga"]
+  },
+  {
+    id: "HATT-2968884-ZUIDBEVELAND",
+    nr: "2968884",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968884 — Kaart van Zuid-Beveland, Oosterschelde en het Verdronken Land van Reimerswaal (1753)",
+    region: "Zuid-Beveland / Yerseke / Reimerswaal / Oosterschelde",
+    dating: "1753 (D.W.C. en A. Hattinga)",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968884)",
+    rdX: 68200,
+    rdY: 388200,
+    lat: 51.4800,
+    lng: 4.1350,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968884&miview=inv2",
+    desc: "Cruciaal Hattinga-kaartblad van het oostelijk bekken van de Oosterschelde met het Verdronken Land van Zuid-Beveland, de ruïnes van de stad Reimerswaal, de Yerseke Bank en de platen waar de weervisserij plaatsvond.",
+    tags: ["minr=2968884", "Verdronken Land", "Reimerswaal 1753"]
+  },
+  {
+    id: "HATT-2968890-THOLEN",
+    nr: "2968890",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968890 — Kaart van het Eiland Tholen, Poortvliet, Schakerloo en de Eendracht (1752)",
+    region: "Tholen / Poortvliet / Schakerloo / De Eendracht",
+    dating: "1752",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968890)",
+    rdX: 71200,
+    rdY: 394800,
+    lat: 51.5400,
+    lng: 4.1800,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968890&miview=inv2",
+    desc: "Nauwkeurige opmeting van het oostelijk deel van het eiland Tholen met de vestingstad Tholen, het ambacht Schakerloo (met de oude Veerweg richting Reimerswaal), Poortvliet en de rivier de Eendracht.",
+    tags: ["minr=2968890", "Stad Tholen", "Schakerloo & Poortvliet"]
+  },
+  {
+    id: "HATT-2968916-SCHERPENISSE",
+    nr: "2968916",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968916 / Blad 159 — Kaart van Scherpenisse, Westkerke, Gorishoek en de Pluimpot (1752)",
+    region: "Scherpenisse / Westkerke / Gorishoek / Pluimpot",
+    dating: "1752",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968916)",
+    rdX: 66100,
+    rdY: 395900,
+    lat: 51.5475,
+    lng: 4.1045,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968916&miview=inv2",
+    desc: "Detailkaart van de hoge heerlijkheid Scherpenisse en Westkerke, het veer te Gorishoek (waar voor de kust de ansjovisweren op de Thoolse Plaat stonden) en de geul van de Pluimpot.",
+    tags: ["minr=2968916", "Scherpenisse & Westkerke", "Gorishoek"]
+  },
+  {
+    id: "HATT-191-VRIJBERGHE",
+    nr: "293-191",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nrs. 191 & 194 — Kaarten van Oud- en Nieuw-Vossemeer en de Ambachtsheerlijkheid Vrijberghe (1752)",
+    region: "Vrijberghe / Oud-Vossemeer / Nieuw-Vossemeer / Krabbekreek",
+    dating: "1752",
+    archiveName: "Zeeuws Archief — Toegang 293 (inv.nrs. 191–196)",
+    rdX: 71950,
+    rdY: 398900,
+    lat: 51.5760,
+    lng: 4.1880,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&miview=inv2",
+    desc: "De polderkaarten van Oud- en Nieuw-Vossemeer en de vrije heerlijkheid Vrijberghe aan de Eendracht en Krabbekreek.",
+    tags: ["Inv. 191 & 194", "Heerlijkheid Vrijberghe", "Oud- & Nieuw-Vossemeer"]
+  },
+  {
+    id: "HATT-2968731-WALCHEREN",
+    nr: "2968731",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968731 — Grote Overzichtskaart van het Eiland Walcheren en Het Sloe (1753)",
+    region: "Walcheren / Middelburg / Vlissingen / Veere / Het Sloe",
+    dating: "1753",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968731)",
+    rdX: 33500,
+    rdY: 392000,
+    lat: 51.5000,
+    lng: 3.6150,
+    mapType: "WALCHEREN_SLOE",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968731&miview=inv2",
+    desc: "Monumentale kaart van het eiland Walcheren uit de Atlas van Zeeland (1753) met alle ambachtsheerlijkheden, buitenplaatsen, watergangen en de slikken van het Sloe en het Veerse Gat.",
+    tags: ["minr=2968731", "Walcheren 1753", "Middelburg & Veere"]
+  },
+  {
+    id: "HATT-2968948-STPHILIPSLAND",
+    nr: "2968948",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968948 — Kaart van Sint-Philipsland, Mosselkreek, Slaak en Krammer (1753)",
+    region: "Sint-Philipsland / Mosselkreek / Krammer",
+    dating: "1753",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968948)",
+    rdX: 69500,
+    rdY: 403500,
+    lat: 51.6150,
+    lng: 4.1550,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968948&miview=inv2",
+    desc: "Kaartblad uit de Atlas van Zeeland van het eiland Sint-Philipsland met de omliggende slikken en viswateren in de Krammer, het Slaak, de Mosselkreek en de Krabbekreek.",
+    tags: ["minr=2968948", "Sint-Philipsland", "Mosselkreek & Krammer"]
+  },
+  {
+    id: "HATT-2968995-MARKIEZAAT",
+    nr: "2968995",
+    miadt: 239,
+    micode: "293",
+    cat: "HATT",
+    title: "Hattinga Inv.nr. 2968995 — Kaart van het Markiezaat van Bergen op Zoom, het Bergsche Diep & Hildernisse",
+    region: "Bergen op Zoom / Hildernisse / Woensdrecht / Oosterschelde",
+    dating: "circa 1750",
+    archiveName: "Zeeuws Archief — Toegang 293 (minr=2968995)",
+    rdX: 77500,
+    rdY: 389500,
+    lat: 51.4948,
+    lng: 4.2872,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968995&miview=inv2",
+    desc: "Kaart van de vesting Bergen op Zoom, de monding van de Zoom (Het Ham), het Bergsche Diep, het Verdronken Markiezaat en de klifkust bij Hildernisse en Woensdrecht.",
+    tags: ["minr=2968995", "Bergen op Zoom", "Verdronken Markiezaat"]
+  },
+
+  /* --- OVERIGE KAARTEN VAN ZEELAND (TOEGANG 294, 295, 3422, 3430, VISSCHER-ROMAN, BLAEU) --- */
+  {
+    id: "ZEEL-294-ZELANDIA",
+    nr: "294-KZGW",
+    miadt: 239,
+    micode: "294",
+    cat: "ZEEL",
+    title: "Toegang 294 — Zelandia Illustrata (Koninklijk Zeeuwsch Genootschap der Wetenschappen)",
+    region: "Geheel Zeeland / Oosterschelde / Reimerswaal / Tholen",
+    dating: "16e–20e eeuw",
+    archiveName: "Zeeuws Archief — Toegang 294 Zelandia Illustrata",
+    rdX: 69850,
+    rdY: 388500,
+    lat: 51.4820,
+    lng: 4.1620,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=294&miview=inv2",
+    desc: "De grootste topografisch-historische atlas van Zeeland met honderden prenten, kaarten en tekeningen van Reimerswaal, het Verdronken Land, Tholen, de Oosterschelde en de Zeeuwse visserij.",
+    tags: ["Toegang 294", "Zelandia Illustrata", "KZGW"]
+  },
+  {
+    id: "ZEEL-295-RWS",
+    nr: "295-RWS",
+    miadt: 239,
+    micode: "295",
+    cat: "ZEEL",
+    title: "Toegang 295 — Kaartcollectie Rijkswaterstaat Directie Zeeland (Stroomkaarten, Peilingen & Oevervallen Oosterschelde)",
+    region: "Oosterschelde / Westerschelde / Tholen / Zuid-Beveland",
+    dating: "19e–20e eeuw",
+    archiveName: "Zeeuws Archief — Toegang 295 Rijkswaterstaat",
+    rdX: 67500,
+    rdY: 390500,
+    lat: 51.5000,
+    lng: 4.1250,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=295&miview=inv2",
+    desc: "Hydrografische kaarten, dieptepeilingen van de geulen (Roompot, Hammen, Lodijksche Gat, Bergsche Diep, Eendracht) en oevervalkaarten langs de dijken van Tholen en Zuid-Beveland.",
+    tags: ["Toegang 295", "Rijkswaterstaat Zeeland", "Dieptepeilingen"]
+  },
+  {
+    id: "ZEEL-3422-SCHERPENISSE",
+    nr: "3422-117",
+    miadt: 239,
+    micode: "3422",
+    cat: "ZEEL",
+    title: "Toegang 3422 — Waterschap Scherpenisse en Westkerke (1575–1959) & Kadastrale Blokken Popkenshoek",
+    region: "Scherpenisse / Westkerke / Oud-Kempenshofstedepolder",
+    dating: "1575–1959",
+    archiveName: "Zeeuws Archief — Toegang 3422 & Toegang 3430 (Vrije Polders Tholen)",
+    rdX: 64200,
+    rdY: 395800,
+    lat: 51.5470,
+    lng: 4.0800,
+    mapType: "THOLEN_EENDRACHT",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mivast=0&mizig=210&miadt=239&micode=3422&miview=inv2",
+    desc: "Polder- en waterschapsarchief van Scherpenisse en Westkerke met de resoluties van dijkgraaf en gezworenen, omloopboeken, dijkgeschoten en kaarten van de zeewering langs de Oosterschelde.",
+    tags: ["Toegang 3422", "Toegang 3430", "Waterschap Scherpenisse"]
+  },
+  {
+    id: "ZEEL-VISSCHER-ROMAN-1655",
+    nr: "1655-VR",
+    miadt: 239,
+    micode: "294",
+    cat: "ZEEL",
+    title: "Nicolaes Visscher & Zacharias Roman — Zelandiae Comitatus Novissima Tabula (1655)",
+    region: "Graafschap Zeeland, Oosterschelde & Verdronken Land van Zuid-Beveland",
+    dating: "1655",
+    archiveName: "Zeeuws Archief — Toegang 294 Zelandia Illustrata",
+    rdX: 69850,
+    rdY: 388500,
+    lat: 51.4820,
+    lng: 4.1620,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=294&miview=inv2",
+    desc: "Beroemde 17e-eeuwse wandkaart van Zeeland met weergave van het 'Verdroncken Landt van Zuyd-Bevelandt', de stad Romerswael, het eiland Tholen en het Markiezaat van Bergen op Zoom.",
+    tags: ["Visscher-Roman 1655", "Romerswael", "Zelandia Illustrata"]
+  },
+  {
+    id: "ZEEL-BLAEU-1645",
+    nr: "1645-BLAEU",
+    miadt: 239,
+    micode: "294",
+    cat: "ZEEL",
+    title: "Willem & Joan Blaeu — Zelandia Comitatus & Stadsplattegrond Reimerswaal (Atlas Maior 1645–1664)",
+    region: "Zeeland / Reimerswaal / Oosterschelde",
+    dating: "1645 / 1664",
+    archiveName: "Zeeuws Archief & Koninklijke Bibliotheek Den Haag",
+    rdX: 69850,
+    rdY: 388500,
+    lat: 51.4820,
+    lng: 4.1620,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=294&miview=inv2",
+    desc: "Klassieke kaart van het Graafschap Zeeland en de stadsplattegrond van Reimerswaal uit het Stedenboek van Joan Blaeu (1649), gebruikt door de RCE voor de GIS-reconstructie op het Verdronken Land.",
+    tags: ["Blaeu 1645/1664", "Stedenboek Reimerswaal", "RCE GIS"]
+  },
+  {
+    id: "ZEEL-WBA-KM110-1570",
+    nr: "KM-110",
+    miadt: 239,
+    micode: "WBA",
+    cat: "ZEEL",
+    title: "Wouter van Dijck (1570) — Kaart van de 35 Dijkdoorbraken bij Hildernisse en het Verdronken Markiezaat (WBA KM 110)",
+    region: "Hildernisse / Bergen op Zoom / Verdronken Markiezaat",
+    dating: "1570 (Allerheiligenvloed)",
+    archiveName: "West-Brabants Archief Bergen op Zoom — KM 110",
+    rdX: 76800,
+    rdY: 386800,
+    lat: 51.4680,
+    lng: 4.2650,
+    mapType: "OOSTERSCHELDE_PERCELEN",
+    customUrl: "https://westbrabantsarchief.nl/",
+    desc: "Vroegste handschriftkaart van de verdrinking van het land bij Hildernisse en Bergen op Zoom na de Sint-Felixvloed (1530) en Allerheiligenvloed (1570), waar later de oostelijke visweren en oesterpercelen kwamen te liggen.",
+    tags: ["WBA KM 110", "Wouter van Dijck 1570", "Hildernisse"]
+  }
+];
+
+/* ============================================================================
+   2. INTERACTIEVE ANSJOVISWEREN & VISSERIJPERCELEN HOTSPOTS (TOEGANG 17 #inv3t3)
+   ============================================================================ */
+const WEER_AND_PARCEL_HOTSPOTS = [
+  {
+    id: "WEER-I",
+    kind: "WEER",
+    code: "Weer I — A 406 (De Kraaijenstein)",
+    title: "Ansjovisweer A 406 'De Kraaijenstein' (Speelmansplaten / Bergse Diepsluis)",
+    nx: 0.55,
+    ny: 0.35,
+    angle: 0.42,
+    rdX: 71650,
+    rdY: 391400,
+    pachters: "Familie Van Dort / Stichting Behoud Weervisserij (Toegang 17 #inv3t3)",
+    desc: "Grote V-vormige ansjovisweer op de Speelmansplaten ten zuiden van Tholen. Bestaat uit ca. 2.500 eiken en berken staken met twee vleugels van elk 800 meter die zich openen naar het oosten en bij afgaand tij (eb) de ansjovis naar het fuiknet in de visput leiden."
+  },
+  {
+    id: "WEER-II",
+    kind: "WEER",
+    code: "Weer II — B 407 (De Vier Gebroeders)",
+    title: "Ansjovisweer B 407 'De Vier Gebroeders' (Speelmansplaten-Zuid)",
+    nx: 0.61,
+    ny: 0.44,
+    angle: 0.36,
+    rdX: 72520,
+    rdY: 390100,
+    pachters: "Verpachting Bestuur der Visserijen op de Zeeuwse Stromen (Toegang 17 #inv3t3)",
+    desc: "Tweede hoofdweer op de Speelmansplaten (aangeduid als B 407 op de BVZS-kaart 1:25.000). Vangt in mei, juni en juli de paaiende Oosterschelde-ansjovis (Engraulis encrasicolus)."
+  },
+  {
+    id: "WEER-III",
+    kind: "WEER",
+    code: "Weer III — C 408 (Het Lange Water)",
+    title: "Ansjovisweer C 408 'Het Lange Water' (Princesse Platen / Molenplaat)",
+    nx: 0.66,
+    ny: 0.54,
+    angle: 0.28,
+    rdX: 73450,
+    rdY: 388850,
+    pachters: "Verpachting Bergen op Zoom & Tholen (Percelen 401–408, #inv3t3)",
+    desc: "Gelegen op de overgang van de Princesse Platen naar de Molenplaat, grenzend aan de verpachte visserijpercelen 369–371 en 401–403."
+  },
+  {
+    id: "WEER-IV",
+    kind: "WEER",
+    code: "Weer IV — M / N / O (Reimerswaal 250/251)",
+    title: "Ansjovisweren M, N & O bij de Verdronken Stad Reimerswaal (Percelen 250–251)",
+    nx: 0.45,
+    ny: 0.60,
+    angle: 0.52,
+    rdX: 69850,
+    rdY: 388500,
+    pachters: "Oude Zakelijke Visrechten & Verpachting Verdronken Land (Toegang 17 & 202.56)",
+    desc: "De historische visweren M, N en O op het Verdronken Land van Zuid-Beveland direct bij de verzonken stad Reimerswaal (kadastrale visserijpercelen 250 en 251)."
+  },
+  {
+    id: "WEER-V",
+    kind: "WEER",
+    code: "Weer V — Thoolse Plaat / Mosselhoek",
+    title: "Weer V & Oesterputten a–d (Thoolse Plaat, Mosselhoek & Bergsche Diep)",
+    nx: 0.70,
+    ny: 0.29,
+    angle: 0.20,
+    rdX: 73780,
+    rdY: 392520,
+    pachters: "Oesterputten a–d: Hartog & Co, Kakebeeke & Co, Zeeuwsche Mij, v/d Meulenwater",
+    desc: "Strategisch visserijgebied bij de monding van de Eendracht tussen Tholen en Bergen op Zoom, met zowel ansjovisweren als de vier grote oesterputten a, b, c en d."
+  },
+  {
+    id: "WEER-VI",
+    kind: "WEER",
+    code: "Weer VI — Gorishoek / Pluimpot",
+    title: "Weer VI — Visweer & Slikpercelen voor Gorishoek en Scherpenisse (Eiland Tholen)",
+    nx: 0.27,
+    ny: 0.33,
+    angle: 0.65,
+    rdX: 64900,
+    rdY: 394200,
+    pachters: "Thoolse Weervissers (Letterteken TH) & Ambacht Scherpenisse",
+    desc: "Westelijke weerlocatie voor de kust van Gorishoek en de monding van de Pluimpot onder Scherpenisse op het eiland Tholen."
+  }
+];
+
+/* ============================================================================
+   3. ALLE 15 BIBLIOTHEKEN & KENNISCENTRA OMTRENT WEERVISSERIJ
+   ============================================================================ */
+const WEERVISSERIJ_LIBRARIES = [
+  {
+    badge: "📚 Bibliotheek #1",
+    title: "ZB Bibliotheek van Zeeland (Middelburg — Collectie Zeelandica & Weervisserij)",
+    sig: "Kousteensedijk 7, Middelburg · Trefwoord: Weervisserij (Oosterschelde) & Atlassen Hattinga",
+    desc: "Grootste wetenschappelijke bibliotheek van Zeeland. Bevat alle jaarverslagen van het Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), studies van prof. dr. P. Korringa, K. Boonenburg en H.C.J.M. van der Aa over de weervisserij en facsimile-uitgaven van de Atlassen Hattinga.",
+    url: "https://www.dezb.nl/",
+    catUrl: "https://zb.on.worldcat.org/search?queryString=weervisserij+Oosterschelde"
+  },
+  {
+    badge: "📚 Bibliotheek #2",
+    title: "Mediatheek Erfgoed Zeeland (Middelburg — Signatuur 4 E 104 Weervisserij)",
+    sig: "Looierssingel / Lombardstraat, Middelburg · Signatuur: 4 E 104 (Weervisserij) & Reimerswaal",
+    desc: "Gespecialiseerde erfgoedbibliotheek van Stichting Erfgoed Zeeland met het themadossier 'Weervisserij' (signatuur 4 E 104), archeologische rapporten over de verdronken stad Reimerswaal en historische visweren.",
+    url: "https://www.erfgoedzeeland.nl/",
+    catUrl: "https://www.google.com/search?q=site:erfgoedzeeland.nl+weervisserij+OR+Reimerswaal"
+  },
+  {
+    badge: "📚 Kenniscentrum #3",
+    title: "Stichting Behoud Weervisserij (Bergen op Zoom / Tholen — Speelmansplaten)",
+    sig: "Bergse Diepsluis / Oosterschelde · Weren: De Kraaijenstein & De Vier Gebroeders",
+    desc: "Het documentatie- en praktijkcentrum van de enige nog actieve ansjovis-weervisserij in Nederland op de Speelmansplaten bij Tholen / Bergen op Zoom (Immaterieel Erfgoed Nederland).",
+    url: "https://www.weervisserij.nl/",
+    catUrl: "https://www.immaterieelerfgoed.nl/nl/weervisserij"
+  },
+  {
+    badge: "📚 Museumbibliotheek #4",
+    title: "Het Markiezenhof — Collectie & Bibliotheek Bergse Weervisserij (Bergen op Zoom)",
+    sig: "Steenbergsestraat 8, Bergen op Zoom · Maquettes Ansjovisweren & Zoutloodsen",
+    desc: "Stadspaleis en museum van Bergen op Zoom met een vaste collectie over de Bergse ansjovisvisserij, schaalmodellen van de V-vormige visweren, fotoarchieven en kaarten van het Verdronken Markiezaat.",
+    url: "https://www.markiezenhof.nl/",
+    catUrl: "https://www.markiezenhof.nl/ontdek-het-museum/verhalen"
+  },
+  {
+    badge: "📚 Museumbibliotheek #5",
+    title: "OosterscheldeMuseum Yerseke — Documentatiecentrum Oester-, Mossel- & Weervisserij",
+    sig: "Kerkplein 1, Yerseke · Perceelkaarten Oosterschelde, Oesterputten & Vondsten Reimerswaal",
+    desc: "Bevat originele verpachtingskaarten van de Oosterschelde, archiefstukken over de oesterputten en de weervisserij op het Verdronken Land van Zuid-Beveland en bodemvondsten uit Reimerswaal.",
+    url: "https://www.oosterscheldemuseum.nl/",
+    catUrl: "https://www.google.com/search?q=site:oosterscheldemuseum.nl+weervisserij+OR+Reimerswaal"
+  },
+  {
+    badge: "📚 Studiezaal #6",
+    title: "Zeeuws Archief (Middelburg, mivast=239) — Studiezaal & Bibliotheek Toegang 17 & 293",
+    sig: "Hofplein 16, Middelburg · Toegang 17 (#inv3t3), Toegang 293 (Hattinga), 294 & 295",
+    desc: "Beheert het volledige archief van het Bestuur der Visserijen op de Zeeuwse Stromen (toegang 17, inclusief rubriek #inv3t3 verpachting visserijpercelen) en de 421 bladen van de Atlassen Hattinga (toegang 293).",
+    url: "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+    catUrl: "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&miview=inv2"
+  },
+  {
+    badge: "📚 Archief & Bibliotheek #7",
+    title: "Gemeentearchief Tholen & Streekmuseum De Meestoof (Tholen / Sint-Annaland)",
+    sig: "Hof van Tholen · Zetel van het Bestuur der Visserijen op de Zeeuwse Stromen (TH & SP)",
+    desc: "De stad Tholen was de zetel van het Bestuur der Visserijen op de Zeeuwse Stromen. Bevat de lokale archieven van Tholen, Schakerloo, Poortvliet, Scherpenisse, Sint-Maartensdijk en Vrijberghe.",
+    url: "https://archieftholen.nl/",
+    catUrl: "https://www.demeestoof.nl/"
+  },
+  {
+    badge: "📚 Archief & Bibliotheek #8",
+    title: "West-Brabants Archief (Bergen op Zoom) — Raad & Rekenkamer Markiezaat & Visserij",
+    sig: "Hofstraat 2, Bergen op Zoom · Registratie Verpachtingen Deel 40 & Kaart KM 110",
+    desc: "Beheert de archieven van de markiezen van Bergen op Zoom, de registratie van de verpachte visserijpercelen en de historische kranten van Bergen op Zoom en Steenbergen.",
+    url: "https://westbrabantsarchief.nl/",
+    catUrl: "https://westbrabantsarchief.nl/collectie/zoeken/?q=weervisserij"
+  },
+  {
+    badge: "📚 Universiteitsbibliotheek #9",
+    title: "Universiteitsbibliotheek Leiden — Collectie Bodel Nijenhuis (Kaarten Zeeland & Hattinga)",
+    sig: "Witte Singel 27, Leiden · Digital Collections Port. 8 N 121/122",
+    desc: "Wereldberoemde collectie historische manuscript- en gedrukte kaarten van Zeeland, de Oosterschelde, Tholen en Staats-Brabant.",
+    url: "https://digitalcollections.universiteitleiden.nl/",
+    catUrl: "https://digitalcollections.universiteitleiden.nl/search/Zeeland%20Hattinga?type=edismax"
+  },
+  {
+    badge: "📚 Onderzoeksbibliotheek #10",
+    title: "Wageningen University & Research (WUR eDepot) & RIVO-Visserijbibliotheek (Yerseke/IJmuiden)",
+    sig: "WUR Library · Publicaties Dr. P. Korringa over Oosterschelde-ansjovis & Bodemkaarten",
+    desc: "Bevat de wetenschappelijke rapporten van het Rijksinstituut voor Visserijonderzoek (RIVO, veldstation Yerseke) over de paaitrek van de ansjovis, weervisserij-vangsten en oesterkweek.",
+    url: "https://library.wur.nl/",
+    catUrl: "https://edepot.wur.nl/"
+  },
+  {
+    badge: "📚 Mariene Bibliotheek #11",
+    title: "Vlaams Instituut voor de Zee (VLIZ Oostende) — Schelde-Monitor & Open Marine Archive",
+    sig: "Jacobsenstraat 1, Oostende · Historische Scheldevisserij & Estuariene Ecologie",
+    desc: "Grootste open-access maritieme bibliotheek van de Lage Landen met studies over de historische weer- en staketselvisserij in het Schelde-estuarium.",
+    url: "https://www.vliz.be/nl/bibliotheek",
+    catUrl: "https://www.vliz.be/nl/imis"
+  },
+  {
+    badge: "📚 Genootschapsbibliotheek #12",
+    title: "Koninklijk Zeeuwsch Genootschap der Wetenschappen (KZGW, Middelburg — 1769)",
+    sig: "Eigenaar Toegang 294 Zelandia Illustrata & Jaarboek 'Archief'",
+    desc: "Genootschap achter de Zelandia Illustrata en het sinds 1769 verschijnende tijdschrift 'Archief' met fundamentele studies over Reimerswaal en de Oosterschelde.",
+    url: "https://kzgw.nl/",
+    catUrl: "https://tijdschriftenbankzeeland.nl/"
+  },
+  {
+    badge: "📚 Nationale Bibliotheek #13",
+    title: "Koninklijke Bibliotheek (KB Den Haag) & Delpher (Staatscourant & Visserijwet)",
+    sig: "Prins Willem-Alexanderhof 5, Den Haag · Atlassen Blaeu & Centraal Visserijregister",
+    desc: "Nationale bibliotheek met alle edities van de Nederlandsche Staatscourant (bekendmakingen van verpachtingen op de Zeeuwse Stromen) en 17e-eeuwse atlassen.",
+    url: "https://www.kb.nl/",
+    catUrl: "https://www.delpher.nl/nl/platform/results?query=weervisserij+Oosterschelde"
+  },
+  {
+    badge: "📚 Erfgoedbibliotheek #14",
+    title: "Rijksdienst voor het Cultureel Erfgoed (RCE Amersfoort) — Maritieme Archeologie & Reimerswaal",
+    sig: "Smallepad 5, Amersfoort · Rijksmonument Verdronken Stad Reimerswaal",
+    desc: "Onderzoeksrapporten over het beschermde rijksmonument Reimerswaal op het Verdronken Land van Zuid-Beveland en archeologische visweren.",
+    url: "https://www.cultureelerfgoed.nl/",
+    catUrl: "https://kennis.cultureelerfgoed.nl/"
+  },
+  {
+    badge: "📚 Digitale Periodieken #15",
+    title: "Tijdschriftenbank Zeeland & Krantenbank Zeeland (Volledig Doorzoekbaar op Tekst)",
+    sig: "Zeeuws Tijdschrift, Nehalennia, De Wete, Eendrachtbode & Middelburgsche Courant",
+    desc: "Full-text doorzoekbare collectie van alle Zeeuwse tijdschriften en kranten vanaf 1758 over weervisserij en verpachtingen van visserijpercelen.",
+    url: "https://tijdschriftenbankzeeland.nl/",
+    catUrl: "https://www.krantenbankzeeland.nl/search?query=weervisserij"
+  }
+];
+
+/* ============================================================================
+   4. HISTORISCHE KRANTENARTIKELEN OVER VERPACHTING VISSERIJPERCELEN & WEERVISSERIJ
+   ============================================================================ */
+const NEWSPAPER_ARTICLES = [
+  {
+    paper: "Middelburgsche Courant",
+    date: "14 maart 1846",
+    title: "Openbare Verpachting van de Visscherijen en Ansjovisweren op de Ooster-Schelde te Tholen",
+    sig: "Krantenbank Zeeland · Toegang 17 #inv3t3",
+    desc: "Bekendmaking door het Bestuur der Visscherijen op de Schelde en Zeeuwsche Stroomen (gevestigd te Tholen) van de openbare verpachting der vischplaatsen en staken-weren op de Speelmansplaten, de Molenplaat en het Verdronken Land van Zuid-Beveland.",
+    q: "verpachting visscherijen Oosterschelde Tholen"
+  },
+  {
+    paper: "De Eendrachtbode (Tholen)",
+    date: "22 april 1882",
+    title: "Uitslag der Grote Verpachting van de Visserijpercelen te Bergen op Zoom en Tholen (17 April 1882)",
+    sig: "Krantenbank Zeeland · De Eendrachtbode · Akte No. 1314",
+    desc: "Verslag van de verpachting van de oester-, mossel- en weervisserijpercelen in de Oosterschelde (waaronder de Molenplaat percelen 308–363 en de Hooge Kraaijerplaat No. 11).",
+    q: "verpachting vischperceelen Tholen Bergen op Zoom"
+  },
+  {
+    paper: "Goessche Courant",
+    date: "18 mei 1895",
+    title: "De Ansjovisvangst in de Weren bij Bergen op Zoom, Tholen en Yerseke",
+    sig: "Krantenbank Zeeland · Goessche Courant 18-05-1895",
+    desc: "Reportage over het houthakken in de winter, het steken van de duizenden staken op de platen in maart/april en de rijke vangsten van ansjovis bij afgaand tij in mei en juni.",
+    q: "ansjovisvangst weren Bergen op Zoom Tholen"
+  },
+  {
+    paper: "Nederlandsche Staatscourant (Delpher)",
+    date: "12 juli 1911",
+    title: "Visserijwet en Reglement voor de Visscherijen op de Zeeuwsche Stroomen (Lettertekens TH, BZ, YE, SP)",
+    sig: "KB Delpher · Nederlandsche Staatscourant 1911",
+    desc: "Publicatie van de voorschriften voor de verpachting van visserijpercelen door het Bestuur der Visserijen te Tholen en het Centraal Visserijregister voor vissersvaartuigen.",
+    q: "Visscherijen Zeeuwsche Stroomen Tholen"
+  },
+  {
+    paper: "Zierikzeesche Nieuwsbode",
+    date: "9 juni 1923",
+    title: "De Eeuwenoude Weervisserij boven de Verdronken Stad Reimerswaal",
+    sig: "Krantenbank Zeeland · Zierikzeesche Nieuwsbode 09-06-1923",
+    desc: "Historische beschrijving van de ansjovisweren M, N en O boven de verzonken straten van Reimerswaal (percelen 250–251) op het Verdronken Land van Zuid-Beveland.",
+    q: "weervisserij Reimerswaal Verdronken Land"
+  },
+  {
+    paper: "De Eendrachtbode (Tholen)",
+    date: "31 mei 1935",
+    title: "Weervissers van Tholen en Bergen op Zoom over Slikbeweging op de Molenplaat en Speelmansplaten",
+    sig: "Krantenbank Zeeland · De Eendrachtbode 31-05-1935",
+    desc: "Overleg tussen de pachters van de weren A 406, B 407 en C 408 en het Bestuur der Visserijen te Tholen over de verschuiving van de geulen in het Bergsche Diep.",
+    q: "weervisserij Molenplaat Speelmansplaten Tholen"
+  },
+  {
+    paper: "Provinciale Zeeuwsche Courant (PZC)",
+    date: "19 mei 1951",
+    title: "Dr. P. Korringa (RIVO Yerseke) verklaart de Paaitrek van de Oosterschelde-Ansjovis in de Weren",
+    sig: "Krantenbank Zeeland · PZC 19-05-1951",
+    desc: "Wetenschappelijk onderzoek vanuit het laboratorium te Yerseke naar de invloed van watertemperatuur en getij op de ansjovisvangst in de oostelijke Oosterschelde.",
+    q: "Korringa ansjovis weervisserij Oosterschelde"
+  },
+  {
+    paper: "Provinciale Zeeuwsche Courant (PZC)",
+    date: "15 mei 1985",
+    title: "Behoud van de Laatste Ansjovisweren (Familie Van Dort) op de Speelmansplaten bij Tholen",
+    sig: "Krantenbank Zeeland · PZC 15-05-1985",
+    desc: "Verslag over de voortzetting van het 400 jaar oude ambacht van de weervisserij na de aanleg van de Oesterdam en Markiezaatskade.",
+    q: "Stichting Behoud Weervisserij Speelmansplaten Van Dort"
+  }
+];
+
+/* ============================================================================
+   5. STATE & HELPERS
+   ============================================================================ */
+const $ = id => document.getElementById(id);
+
+let curIdx = 0;
+let activeCat = "ALL";
+let activeMode = "HIST"; // "HIST" | "GIS" | "LIBS" | "NEWS"
+let showWeerLayer = true;
+let zoom = 1;
+let panX = 0;
+let panY = 0;
+let customLoadedImage = null;
+
+const canvas = $("sheetCanvas");
+const ctx = canvas.getContext("2d");
+let dragging = false, dragSX = 0, dragSY = 0, startPanX = 0, startPanY = 0;
+let renderedScreenHotspots = [];
+
+function currentRecord() {
+  return ARCHIVE_RECORDS[curIdx] || ARCHIVE_RECORDS[0];
+}
+
+/* ============================================================================
+   6. URL PARSER VOOR ZEEUWSARCHIEF.NL (#inv3t3) & ARCHIEVEN.NL (293 HATTINGA)
+   ============================================================================ */
+function parseAndLoadUrl(rawInput) {
+  const raw = (rawInput || "").trim();
+  if (!raw) return;
+
+  $("activeUrlCode").textContent = raw;
+
+  // Check op directe match met #inv3t3 of verpachting visserijpercelen of micode=17
+  if (raw.includes("inv3t3") || raw.toLowerCase().includes("verpachting") || raw.includes("micode=17")) {
+    activeCat = "ALL";
+    syncCategoryButtons();
+    selectRecord(0); // Selecteer T17-INV3T3-MAIN
+    return;
+  }
+
+  // Probeer URL parameters uit te lezen
+  try {
+    const u = new URL(raw);
+    const micode = u.searchParams.get("micode") || "";
+    const minr = u.searchParams.get("minr") || "";
+    const mizk = u.searchParams.get("mizk_alle") || "";
+    const hash = u.hash || "";
+
+    if (hash.includes("inv3t3") || micode === "17" || mizk.toLowerCase().includes("visserij")) {
+      activeCat = "ALL";
+      syncCategoryButtons();
+      selectRecord(0);
+      return;
+    }
+
+    if (minr) {
+      const foundIdx = ARCHIVE_RECORDS.findIndex(r => String(r.nr) === String(minr));
+      if (foundIdx >= 0) {
+        selectRecord(foundIdx);
+        return;
+      }
+      // Voeg nieuw archiefblad dynamisch toe als het nog niet in de lijst stond
+      ARCHIVE_RECORDS.unshift({
+        id: "DYN-" + minr,
+        nr: minr,
+        miadt: parseInt(u.searchParams.get("miadt") || "239", 10),
+        micode: micode || "293",
+        cat: micode === "17" ? "T17" : "HATT",
+        title: "Geïmporteerd Archiefrecord #" + minr + " (Toegang " + (micode || "293") + ")",
+        region: "Zeeland / Oosterschelde",
+        dating: "Historisch Archiefstuk",
+        archiveName: "Zeeuws Archief (mivast=239, micode=" + (micode || "293") + ")",
+        rdX: 69850,
+        rdY: 388500,
+        lat: 51.4820,
+        lng: 4.1620,
+        mapType: micode === "17" ? "OOSTERSCHELDE_PERCELEN" : "THOLEN_EENDRACHT",
+        customUrl: raw,
+        desc: "Dynamisch geladen vanuit jouw ingevoerde archief-URL.",
+        tags: ["minr=" + minr, "micode=" + (micode || "293")]
+      });
+      selectRecord(0);
+      return;
+    }
+
+    if (micode === "293") {
+      const idx293 = ARCHIVE_RECORDS.findIndex(r => r.id === "HATT-2968718-START");
+      if (idx293 >= 0) selectRecord(idx293);
+      return;
+    }
+  } catch (e) {
+    // Geen URL, zoek op inv.nr. of trefwoord
+    const found = ARCHIVE_RECORDS.findIndex(r =>
+      String(r.nr).toLowerCase().includes(raw.toLowerCase()) ||
+      r.title.toLowerCase().includes(raw.toLowerCase())
+    );
+    if (found >= 0) selectRecord(found);
+  }
+}
+
+/* ============================================================================
+   7. LINKERPANEEL: TELLERS, FILTERS & INVENTARISLIJST
+   ============================================================================ */
+function updateCounts() {
+  $("cntALL").textContent = ARCHIVE_RECORDS.length;
+  $("cntT17").textContent = ARCHIVE_RECORDS.filter(r => r.cat === "T17").length;
+  $("cntWEER").textContent = ARCHIVE_RECORDS.filter(r => r.cat === "WEER").length;
+  $("cntHATT").textContent = ARCHIVE_RECORDS.filter(r => r.cat === "HATT").length;
+  $("cntZEEL").textContent = ARCHIVE_RECORDS.filter(r => r.cat === "ZEEL").length;
+  $("totalBadge").textContent = ARCHIVE_RECORDS.length + " stukken";
+}
+
+function syncCategoryButtons() {
+  document.querySelectorAll(".catBtn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.cat === activeCat);
+  });
+}
+
+function renderInventoryList() {
+  updateCounts();
+  const listEl = $("invList");
+  listEl.innerHTML = "";
+  const q = ($("searchInv").value || "").trim().toLowerCase();
+
+  const filtered = ARCHIVE_RECORDS.map((rec, idx) => ({ rec, idx })).filter(({ rec }) => {
+    if (activeCat !== "ALL" && rec.cat !== activeCat) return false;
+    if (!q) return true;
+    const hay = (rec.id + " " + rec.nr + " " + rec.micode + " " + rec.title + " " + rec.region + " " + rec.desc + " " + (rec.tags || []).join(" ")).toLowerCase();
+    return hay.includes(q);
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div style="padding:14px;color:var(--dim);font-size:12px">Geen kaarten gevonden voor dit filter.</div>';
+    return;
+  }
+
+  filtered.forEach(({ rec, idx }) => {
+    const d = document.createElement("div");
+    d.className = "invItem" + (idx === curIdx ? " sel" : "");
+    const pClass = rec.cat === "T17" ? "t17" : rec.cat === "WEER" ? "weer" : rec.cat === "HATT" ? "hatt" : "zeel";
+    const pText = rec.cat === "T17" ? "Toegang 17 #inv3t3" : rec.cat === "WEER" ? "Weervisserij" : rec.cat === "HATT" ? "293 Hattinga" : "Zeeland";
+
+    d.innerHTML =
+      '<div class="invTop">' +
+        '<span class="num">#' + rec.nr + ' · toegang ' + rec.micode + '</span>' +
+        '<span class="tagPill ' + pClass + '">' + pText + '</span>' +
+      '</div>' +
+      '<div class="invTitle">' + rec.title + '</div>' +
+      '<div class="invSub"><span>' + rec.region + '</span><span>' + rec.dating + '</span></div>';
+
+    d.onclick = () => selectRecord(idx);
+    listEl.appendChild(d);
+  });
+}
+
+function selectRecord(idx) {
+  curIdx = ((idx % ARCHIVE_RECORDS.length) + ARCHIVE_RECORDS.length) % ARCHIVE_RECORDS.length;
+  if (activeMode === "LIBS" || activeMode === "NEWS") {
+    switchMode("HIST");
+  }
+  renderInventoryList();
+  renderMetadata();
+  drawCanvas();
+
+  const sel = document.querySelector("#invList .invItem.sel");
+  if (sel) sel.scrollIntoView({ block: "nearest" });
+}
+
+function renderMetadata() {
+  const rec = currentRecord();
+  $("cardTitle").textContent = rec.title;
+  $("cardDesc").textContent = rec.desc;
+  $("cardArchBtn").href = rec.customUrl;
+  $("cardTopoBtn").href = "https://www.topotijdreis.nl/?datatype=map&year=1890&x=" + rec.rdX + "&y=" + rec.rdY + "&zoom=9";
+  $("posLbl").textContent = "Record " + (curIdx + 1) + " / " + ARCHIVE_RECORDS.length + " · Inv.nr. " + rec.nr + " (Toegang " + rec.micode + ")";
+  $("zoomPct").textContent = Math.round(zoom * 100) + "%";
+  $("coordHud").textContent = "RD (EPSG:28992): X=" + rec.rdX + ", Y=" + rec.rdY + " · WGS84: " + rec.lat.toFixed(4) + "°N, " + rec.lng.toFixed(4) + "°E";
+
+  const tagsHtml = (rec.tags || []).map(t => '<span class="mTag">' + t + '</span>').join("");
+  $("recMeta").innerHTML =
+    "<b>Geselecteerd Stuk:</b> " + rec.title + "<br>" +
+    "<b>Archiefinstelling:</b> " + rec.archiveName + "<br>" +
+    "<b>Parameters:</b> mivast=239 · miadt=" + rec.miadt + " · micode=" + rec.micode + " · nr=" + rec.nr + "<br>" +
+    "<b>Regio:</b> " + rec.region + "<br>" +
+    "<b>Datering:</b> " + rec.dating + "<br>" +
+    "<b>RD-Coördinaten:</b> X=" + rec.rdX + ", Y=" + rec.rdY + "<br>" +
+    '<div style="margin-top:4px">' + tagsHtml + '</div>';
+}
+
+/* ============================================================================
+   8. ROCK-SOLID HTML5 CANVAS RENDERER (NO WHITE SCREEN, SAFE FALLBACK DIMENSIONS)
+   ============================================================================ */
+function resizeCanvas() {
+  const host = $("canvasHost");
+  if (!host || host.style.display === "none") return;
+  const w = Math.max(320, host.clientWidth || 820);
+  const h = Math.max(320, host.clientHeight || 560);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawCanvas();
+}
+window.addEventListener("resize", resizeCanvas);
+
+function drawCanvas() {
+  const host = $("canvasHost");
+  if (!host || host.style.display === "none") return;
+  const w = Math.max(320, host.clientWidth || 820);
+  const h = Math.max(320, host.clientHeight || 560);
+
+  // Clear background with deep dark slate (never white)
+  ctx.fillStyle = activeMode === "GIS" ? "#09131c" : "#110e1a";
+  ctx.fillRect(0, 0, w, h);
+
+  renderedScreenHotspots = [];
+  const rec = currentRecord();
+
+  const sheetW = Math.min(w * 0.86, h * 1.22);
+  const sheetH = sheetW * 0.76;
+  const cx = w / 2 + panX;
+  const cy = h / 2 + panY;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-sheetW / 2, -sheetH / 2);
+
+  if (customLoadedImage) {
+    ctx.drawImage(customLoadedImage, 0, 0, sheetW, sheetH);
+  } else if (activeMode === "GIS") {
+    drawGisHydrographicMap(ctx, sheetW, sheetH, rec);
+  } else {
+    drawHistoricalParchmentMap(ctx, sheetW, sheetH, rec);
+  }
+
+  if (showWeerLayer) {
+    drawWeerenAndParcelsOverlay(ctx, sheetW, sheetH, cx, cy);
+  }
+
+  drawMapCartouche(ctx, sheetW, sheetH, rec);
+  ctx.restore();
+}
+
+function drawHistoricalParchmentMap(ctx, W, H, rec) {
+  // Parchment sheet shadow & gradient
+  ctx.shadowColor = "rgba(0,0,0,.65)";
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 8;
+
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "#f3e8ce");
+  grad.addColorStop(0.5, "#e8dab7");
+  grad.addColorStop(1, "#ddd0a8");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.shadowColor = "transparent";
+
+  // Water basin (Oosterschelde, Eendracht, Bergsche Diep)
+  ctx.fillStyle = "#c6dce0";
+  ctx.fillRect(20, 20, W - 40, H - 40);
+
+  // Copperplate water hatching lines
+  ctx.strokeStyle = "rgba(58, 102, 118, 0.24)";
+  ctx.lineWidth = 0.8;
+  for (let y = 28; y < H - 28; y += 8) {
+    ctx.beginPath();
+    ctx.moveTo(24, y);
+    ctx.lineTo(W - 24, y);
+    ctx.stroke();
+  }
+
+  // Sandbanks & Verdronken Land van Zuid-Beveland / Speelmansplaten / Molenplaat
+  ctx.fillStyle = "rgba(214, 192, 138, 0.78)";
+  ctx.strokeStyle = "#8a6d38";
+  ctx.setLineDash([4, 3]);
+  ctx.lineWidth = 1.2;
+
+  // 1. Verdronken Land van Zuid-Beveland & Reimerswaal
+  ctx.beginPath();
+  ctx.moveTo(W * 0.26, H * 0.48);
+  ctx.bezierCurveTo(W * 0.42, H * 0.40, W * 0.64, H * 0.42, W * 0.74, H * 0.56);
+  ctx.bezierCurveTo(W * 0.72, H * 0.78, W * 0.44, H * 0.82, W * 0.25, H * 0.70);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // 2. Speelmansplaten & Hooge Kraaijerplaat
+  ctx.beginPath();
+  ctx.ellipse(W * 0.57, H * 0.36, W * 0.14, H * 0.08, -0.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Eiland Tholen (North: Scherpenisse, Poortvliet, Stad Tholen, Vrijberghe, Oud-Vossemeer)
+  ctx.fillStyle = "#dfd0a4";
+  ctx.strokeStyle = "#5a4119";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.10, H * 0.10);
+  ctx.lineTo(W * 0.69, H * 0.09);
+  ctx.lineTo(W * 0.72, H * 0.24);
+  ctx.bezierCurveTo(W * 0.58, H * 0.28, W * 0.42, H * 0.27, W * 0.23, H * 0.31);
+  ctx.lineTo(W * 0.09, H * 0.24);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Dikes & Polder subdivisions on Tholen
+  ctx.strokeStyle = "rgba(92, 67, 24, 0.45)";
+  ctx.lineWidth = 0.9;
+  for (let px = 0.18; px <= 0.64; px += 0.09) {
+    ctx.beginPath();
+    ctx.moveTo(W * px, H * 0.10);
+    ctx.lineTo(W * (px - 0.02), H * 0.28);
+    ctx.stroke();
+  }
+
+  // Brabantse Wal / Markiezaat van Bergen op Zoom (East)
+  ctx.fillStyle = "#d8c696";
+  ctx.strokeStyle = "#5a4119";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W * 0.77, H * 0.08);
+  ctx.lineTo(W * 0.95, H * 0.08);
+  ctx.lineTo(W * 0.95, H * 0.88);
+  ctx.lineTo(W * 0.76, H * 0.86);
+  ctx.bezierCurveTo(W * 0.78, H * 0.64, W * 0.74, H * 0.44, W * 0.79, H * 0.26);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Zuid-Beveland / Yerseke (West/Southwest)
+  ctx.fillStyle = "#e2d4ac";
+  ctx.beginPath();
+  ctx.moveTo(W * 0.05, H * 0.44);
+  ctx.lineTo(W * 0.22, H * 0.46);
+  ctx.lineTo(W * 0.26, H * 0.86);
+  ctx.lineTo(W * 0.05, H * 0.86);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Outer Map Border
+  ctx.strokeStyle = "#5a4119";
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(14, 14, W - 28, H - 28);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(20, 20, W - 40, H - 40);
+
+  // Compass Rose
+  drawCompassRose(ctx, W * 0.16, H * 0.37, Math.min(W, H) * 0.055, false);
+
+  // Typography & Toponyms
+  ctx.fillStyle = "#3b290d";
+  ctx.textAlign = "center";
+  ctx.font = "bold " + Math.max(10, W * 0.017) + "px Georgia, serif";
+  ctx.fillText("EYLANDT THOLEN", W * 0.40, H * 0.15);
+  ctx.fillText("STAD THOLEN (BVZS)", W * 0.63, H * 0.21);
+  ctx.fillText("BERGEN OP ZOOM", W * 0.86, H * 0.34);
+  ctx.fillText("ZUID-BEVELAND", W * 0.14, H * 0.66);
+  ctx.fillText("YERSEKE", W * 0.17, H * 0.52);
+
+  ctx.font = "italic " + Math.max(9, W * 0.0135) + "px Georgia, serif";
+  ctx.fillStyle = "#5c4218";
+  ctx.fillText("Scherpenisse & Westkerke", W * 0.24, H * 0.24);
+  ctx.fillText("Poortvliet & Schakerloo", W * 0.44, H * 0.23);
+  ctx.fillText("Vrijberghe & Vossemeer", W * 0.56, H * 0.13);
+  ctx.fillText("Hildernisse (Perc. 437)", W * 0.85, H * 0.62);
+
+  ctx.fillStyle = "#1c4b61";
+  ctx.font = "bold italic " + Math.max(11, W * 0.019) + "px Georgia, serif";
+  ctx.fillText("DE OOSTER - SCHELDE", W * 0.41, H * 0.35);
+  ctx.font = "italic " + Math.max(9, W * 0.0135) + "px Georgia, serif";
+  ctx.fillText("Rivier De Eendracht", W * 0.73, H * 0.18);
+  ctx.fillText("Het Bergsche Diep", W * 0.66, H * 0.31);
+  ctx.fillText("Speelmansplaten", W * 0.55, H * 0.39);
+  ctx.fillText("Molenplaat (Perc. 333–403)", W * 0.61, H * 0.59);
+  ctx.fillText("Verdronken Stad REIMERSWAAL (Perc. 250/251)", W * 0.46, H * 0.65);
+}
+
+function drawGisHydrographicMap(ctx, W, H, rec) {
+  // Dark OSINT Hydrographic / RD-GIS Grid View
+  ctx.fillStyle = "#0b1926";
+  ctx.fillRect(0, 0, W, H);
+
+  // RD-New (EPSG:28992) Coordinate Grid
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.16)";
+  ctx.lineWidth = 1;
+  const cols = 10, rows = 8;
+  for (let c = 1; c < cols; c++) {
+    const x = (W * c) / cols;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    ctx.fillStyle = "rgba(56, 189, 248, 0.55)";
+    ctx.font = "9px Consolas, monospace";
+    ctx.fillText("X=" + (62000 + c * 2000), x + 4, 14);
+  }
+  for (let r = 1; r < rows; r++) {
+    const y = (H * r) / rows;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillStyle = "rgba(56, 189, 248, 0.55)";
+    ctx.font = "9px Consolas, monospace";
+    ctx.fillText("Y=" + (398000 - r * 2000), 6, y - 4);
+  }
+
+  // Intertidal flats (Slikken, Platen & Verdronken Land)
+  ctx.fillStyle = "rgba(45, 92, 108, 0.45)";
+  ctx.strokeStyle = "#38bdf8";
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(W * 0.26, H * 0.48);
+  ctx.bezierCurveTo(W * 0.42, H * 0.40, W * 0.64, H * 0.42, W * 0.74, H * 0.56);
+  ctx.bezierCurveTo(W * 0.72, H * 0.78, W * 0.44, H * 0.82, W * 0.25, H * 0.70);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.ellipse(W * 0.57, H * 0.36, W * 0.14, H * 0.08, -0.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Landmasses in dark GIS style
+  ctx.fillStyle = "#192b24";
+  ctx.strokeStyle = "#4ade80";
+  ctx.lineWidth = 1.6;
+  // Tholen
+  ctx.beginPath();
+  ctx.moveTo(W * 0.10, H * 0.10);
+  ctx.lineTo(W * 0.69, H * 0.09);
+  ctx.lineTo(W * 0.72, H * 0.24);
+  ctx.bezierCurveTo(W * 0.58, H * 0.28, W * 0.42, H * 0.27, W * 0.23, H * 0.31);
+  ctx.lineTo(W * 0.09, H * 0.24);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Brabantse Wal
+  ctx.beginPath();
+  ctx.moveTo(W * 0.77, H * 0.08);
+  ctx.lineTo(W * 0.95, H * 0.08);
+  ctx.lineTo(W * 0.95, H * 0.88);
+  ctx.lineTo(W * 0.76, H * 0.86);
+  ctx.bezierCurveTo(W * 0.78, H * 0.64, W * 0.74, H * 0.44, W * 0.79, H * 0.26);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Zuid-Beveland
+  ctx.beginPath();
+  ctx.moveTo(W * 0.05, H * 0.44);
+  ctx.lineTo(W * 0.22, H * 0.46);
+  ctx.lineTo(W * 0.26, H * 0.86);
+  ctx.lineTo(W * 0.05, H * 0.86);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  drawCompassRose(ctx, W * 0.15, H * 0.36, Math.min(W, H) * 0.05, true);
+
+  ctx.fillStyle = "#4ade80";
+  ctx.textAlign = "center";
+  ctx.font = "bold 12px Consolas, monospace";
+  ctx.fillText("EILAND THOLEN [RD X:66100 Y:395900]", W * 0.40, H * 0.17);
+  ctx.fillText("BERGEN OP ZOOM [RD X:78650 Y:389700]", W * 0.86, H * 0.34);
+  ctx.fillText("YERSEKE BANK [RD X:62150 Y:390100]", W * 0.15, H * 0.55);
+  ctx.fillStyle = "#38bdf8";
+  ctx.fillText("OOSTERSCHELDE — VERPACHTING VISSERIJPERCELEN (TOEGANG 17 #inv3t3)", W * 0.45, H * 0.33);
+}
+
+function drawCompassRose(ctx, x, y, rad, isDark) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.strokeStyle = isDark ? "#38bdf8" : "#5a4119";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, rad, 0, Math.PI * 2);
+  ctx.stroke();
+  for (let i = 0; i < 8; i++) {
+    ctx.save();
+    ctx.rotate((i * Math.PI) / 4);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(rad * 0.2, -rad * 0.25);
+    ctx.lineTo(0, -rad);
+    ctx.lineTo(-rad * 0.2, -rad * 0.25);
+    ctx.closePath();
+    ctx.fillStyle = i === 0 ? "#e11d48" : isDark ? "#38bdf8" : "#5a4119";
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawWeerenAndParcelsOverlay(ctx, sheetW, sheetH, cx, cy) {
+  // 1. Teken de verpachte Visserijpercelen uit Toegang 17 (#inv3t3) op de Molenplaat & Yerseke Bank
+  const parcels = [
+    { nr: "333", x: 0.55, y: 0.51 },
+    { nr: "337", x: 0.59, y: 0.51 },
+    { nr: "338", x: 0.63, y: 0.51 },
+    { nr: "366", x: 0.55, y: 0.55 },
+    { nr: "369", x: 0.59, y: 0.55 },
+    { nr: "370", x: 0.63, y: 0.55 },
+    { nr: "401", x: 0.57, y: 0.59 },
+    { nr: "402", x: 0.61, y: 0.59 },
+    { nr: "403", x: 0.65, y: 0.59 },
+    { nr: "250", x: 0.42, y: 0.61 },
+    { nr: "251", x: 0.46, y: 0.61 }
+  ];
+
+  parcels.forEach(p => {
+    const px = sheetW * p.x, py = sheetH * p.y;
+    ctx.fillStyle = activeMode === "GIS" ? "rgba(56, 189, 248, 0.2)" : "rgba(34, 139, 74, 0.22)";
+    ctx.strokeStyle = activeMode === "GIS" ? "#38bdf8" : "#1d5c34";
+    ctx.lineWidth = 1.1;
+    ctx.fillRect(px - 15, py - 9, 30, 18);
+    ctx.strokeRect(px - 15, py - 9, 30, 18);
+    ctx.fillStyle = activeMode === "GIS" ? "#e0f2fe" : "#123d22";
+    ctx.font = "bold 8.5px Consolas, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(p.nr, px, py + 3);
+  });
+
+  // 2. Teken de 4 Oesterputten (a, b, c, d)
+  const oesterputten = [
+    { code: "Put a (Hartog)", x: 0.72, y: 0.34 },
+    { code: "Put b (Kakebeeke)", x: 0.74, y: 0.39 },
+    { code: "Put c (Zeeuwsche Mij)", x: 0.75, y: 0.44 },
+    { code: "Put d (Meulenwater)", x: 0.76, y: 0.49 }
+  ];
+  oesterputten.forEach(op => {
+    const ox = sheetW * op.x, oy = sheetH * op.y;
+    ctx.fillStyle = "rgba(244, 63, 94, 0.28)";
+    ctx.strokeStyle = "#be123c";
+    ctx.lineWidth = 1.2;
+    ctx.fillRect(ox - 6, oy - 5, 12, 10);
+    ctx.strokeRect(ox - 6, oy - 5, 12, 10);
+    ctx.fillStyle = activeMode === "GIS" ? "#fda4af" : "#881337";
+    ctx.font = "bold 8.5px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(op.code, ox + 9, oy + 3);
+  });
+
+  // 3. Teken de 6 klikbare V-vormige Ansjovisweren (I–VI)
+  WEER_AND_PARCEL_HOTSPOTS.forEach(w => {
+    const wx = sheetW * w.nx;
+    const wy = sheetH * w.ny;
+    const armLen = Math.min(sheetW, sheetH) * 0.065;
+
+    ctx.save();
+    ctx.translate(wx, wy);
+    ctx.rotate(w.angle);
+
+    // Twee V-vleugels van staken die openen tegen de ebstroom in
+    ctx.strokeStyle = activeMode === "GIS" ? "#f43f5e" : "#991b1b";
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(armLen, -armLen * 0.56);
+    ctx.lineTo(0, 0); // Fuikgat / Visput
+    ctx.lineTo(armLen, armLen * 0.56);
+    ctx.stroke();
+
+    // Visput / Fuik cirkel op de punt van de V
+    ctx.fillStyle = "#e4bd5b";
+    ctx.strokeStyle = "#450a0a";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Label boven de weer
+    ctx.font = "bold 9px Consolas, monospace";
+    const tw = ctx.measureText(w.code).width + 10;
+    ctx.fillStyle = "rgba(18, 15, 28, 0.88)";
+    ctx.fillRect(wx - tw / 2, wy - 22, tw, 13);
+    ctx.fillStyle = "#e4bd5b";
+    ctx.textAlign = "center";
+    ctx.fillText(w.code, wx, wy - 12);
+
+    // Sla schermcoördinaten op voor klik-interactie
+    const sx = cx + (wx - sheetW / 2) * zoom;
+    const sy = cy + (wy - sheetH / 2) * zoom;
+    renderedScreenHotspots.push({
+      x: sx,
+      y: sy,
+      r: Math.max(15, 12 * zoom),
+      data: w
+    });
+  });
+}
+
+function drawMapCartouche(ctx, W, H, rec) {
+  const cw = W * 0.38, ch = H * 0.15;
+  const cx = W - cw - 26, cy = H - ch - 26;
+  ctx.fillStyle = activeMode === "GIS" ? "rgba(15, 23, 42, 0.92)" : "rgba(246, 238, 216, 0.95)";
+  ctx.strokeStyle = activeMode === "GIS" ? "#38bdf8" : "#6e5223";
+  ctx.lineWidth = 1.8;
+  ctx.fillRect(cx, cy, cw, ch);
+  ctx.strokeRect(cx + 3, cy + 3, cw - 6, ch - 6);
+
+  ctx.fillStyle = activeMode === "GIS" ? "#e4bd5b" : "#3b290d";
+  ctx.textAlign = "center";
+  ctx.font = "bold " + Math.max(9.5, W * 0.014) + "px Georgia, serif";
+  const shortT = rec.title.length > 52 ? rec.title.slice(0, 50) + "…" : rec.title;
+  ctx.fillText(shortT, cx + cw / 2, cy + ch * 0.36);
+
+  ctx.fillStyle = activeMode === "GIS" ? "#94a3b8" : "#5c4218";
+  ctx.font = Math.max(8.5, W * 0.0115) + "px Consolas, monospace";
+  ctx.fillText("Toegang " + rec.micode + " · #" + rec.nr + " · " + rec.dating, cx + cw / 2, cy + ch * 0.68);
+}
+
+/* ============================================================================
+   9. CANVAS INTERACTIE (PAN, ZOOM, LIVE RD-COÖRDINATEN & HOTSPOT KLIK)
+   ============================================================================ */
+canvas.addEventListener("mousedown", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  for (const hs of renderedScreenHotspots) {
+    if (Math.hypot(mx - hs.x, my - hs.y) <= hs.r) {
+      openHotspotPopup(hs.data);
+      return;
+    }
+  }
+
+  dragging = true;
+  dragSX = e.clientX;
+  dragSY = e.clientY;
+  startPanX = panX;
+  startPanY = panY;
+});
+
+window.addEventListener("mouseup", () => { dragging = false; });
+
+window.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  if (mx >= 0 && my >= 0 && mx <= rect.width && my <= rect.height) {
+    const rdX = Math.round(62000 + (mx / Math.max(1, rect.width)) * 18000);
+    const rdY = Math.round(398000 - (my / Math.max(1, rect.height)) * 14000);
+    const lat = (51.44 + ((rdY - 384000) / 14000) * 0.14).toFixed(4);
+    const lng = (4.05 + ((rdX - 62000) / 18000) * 0.25).toFixed(4);
+    $("coordHud").textContent = "RD (EPSG:28992): X=" + rdX + ", Y=" + rdY + " · WGS84: " + lat + "°N, " + lng + "°E";
+  }
+
+  if (!dragging) return;
+  panX = startPanX + (e.clientX - dragSX);
+  panY = startPanY + (e.clientY - dragSY);
+  drawCanvas();
+});
+
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.14 : 1 / 1.14;
+  zoom = Math.max(0.4, Math.min(7, zoom * factor));
+  $("zoomPct").textContent = Math.round(zoom * 100) + "%";
+  drawCanvas();
+}, { passive: false });
+
+canvas.addEventListener("dblclick", () => {
+  zoom = 1; panX = 0; panY = 0;
+  $("zoomPct").textContent = "100%";
+  drawCanvas();
+});
+
+function openHotspotPopup(w) {
+  $("popTitle").textContent = w.code;
+  $("popBody").innerHTML =
+    "<b>Benaming:</b> " + w.title + "<br>" +
+    "<b>RD-Coördinaten:</b> X=" + w.rdX + ", Y=" + w.rdY + "<br>" +
+    "<b>Verpachting / Archief:</b> " + w.pachters + "<br><br>" +
+    w.desc + "<br><br>" +
+    '<a class="miniAction primary" href="https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3" target="_blank" rel="noopener">↗ Open Toegang 17 (#inv3t3)</a> ' +
+    '<a class="miniAction" href="https://www.topotijdreis.nl/?datatype=map&year=1900&x=' + w.rdX + '&y=' + w.rdY + '&zoom=10" target="_blank" rel="noopener">↗ Topotijdreis</a>';
+  $("hotspotPopup").style.display = "block";
+}
+$("popClose").onclick = () => { $("hotspotPopup").style.display = "none"; };
+
+$("zi").onclick = () => { zoom = Math.min(7, zoom * 1.25); $("zoomPct").textContent = Math.round(zoom * 100) + "%"; drawCanvas(); };
+$("zo").onclick = () => { zoom = Math.max(0.4, zoom / 1.25); $("zoomPct").textContent = Math.round(zoom * 100) + "%"; drawCanvas(); };
+$("zr").onclick = () => { zoom = 1; panX = 0; panY = 0; customLoadedImage = null; $("zoomPct").textContent = "100%"; drawCanvas(); };
+
+/* ============================================================================
+   10. SUBVIEWS: BIBLIOTHEKEN (15) & KRANTEN (12)
+   ============================================================================ */
+function renderLibrariesView() {
+  const q = ($("libSearch").value || "").trim().toLowerCase();
+  const grid = $("libsGrid");
+  grid.innerHTML = "";
+
+  WEERVISSERIJ_LIBRARIES.filter(l => {
+    if (!q) return true;
+    return (l.title + " " + l.sig + " " + l.desc).toLowerCase().includes(q);
+  }).forEach(l => {
+    const card = document.createElement("div");
+    card.className = "refCard";
+    card.innerHTML =
+      '<div class="refBadge">' + l.badge + '</div>' +
+      '<h3>' + l.title + '</h3>' +
+      '<div class="refSig">' + l.sig + '</div>' +
+      '<p>' + l.desc + '</p>' +
+      '<div class="refLinks">' +
+        '<a class="miniAction primary" href="' + l.url + '" target="_blank" rel="noopener">↗ Open Website</a>' +
+        '<a class="miniAction" href="' + l.catUrl + '" target="_blank" rel="noopener">🔎 Zoek in Collectie</a>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function renderNewspapersView() {
+  const q = ($("newsSearch").value || "").trim().toLowerCase();
+  const grid = $("newsGrid");
+  grid.innerHTML = "";
+
+  NEWSPAPER_ARTICLES.filter(n => {
+    if (!q) return true;
+    return (n.paper + " " + n.date + " " + n.title + " " + n.desc).toLowerCase().includes(q);
+  }).forEach(n => {
+    const card = document.createElement("div");
+    card.className = "refCard";
+    const kzUrl = "https://www.krantenbankzeeland.nl/search?query=" + encodeURIComponent(n.q);
+    const delUrl = "https://www.delpher.nl/nl/kranten/results?query=" + encodeURIComponent(n.q);
+    card.innerHTML =
+      '<div class="refBadge">📰 ' + n.paper + ' · ' + n.date + '</div>' +
+      '<h3>' + n.title + '</h3>' +
+      '<div class="refSig">' + n.sig + '</div>' +
+      '<p>' + n.desc + '</p>' +
+      '<div class="refLinks">' +
+        '<a class="miniAction primary" href="' + kzUrl + '" target="_blank" rel="noopener">🗞️ Krantenbank Zeeland</a>' +
+        '<a class="miniAction" href="' + delUrl + '" target="_blank" rel="noopener">🔎 KB Delpher</a>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================================
+   11. MODES, KNOPPEN & OSINT EVENTS
+   ============================================================================ */
+function switchMode(mode) {
+  activeMode = mode;
+  document.querySelectorAll(".modeTab").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === mode);
+  });
+
+  const showCanvas = (mode === "HIST" || mode === "GIS");
+  $("canvasHost").style.display = showCanvas ? "block" : "none";
+  $("libsView").style.display = mode === "LIBS" ? "block" : "none";
+  $("newsView").style.display = mode === "NEWS" ? "block" : "none";
+
+  if (showCanvas) {
+    resizeCanvas();
+  } else if (mode === "LIBS") {
+    renderLibrariesView();
+  } else if (mode === "NEWS") {
+    renderNewspapersView();
+  }
+}
+
+document.querySelectorAll(".modeTab").forEach(btn => {
+  btn.onclick = () => switchMode(btn.dataset.mode);
+});
+
+document.querySelectorAll(".catBtn").forEach(btn => {
+  btn.onclick = () => {
+    activeCat = btn.dataset.cat;
+    syncCategoryButtons();
+    renderInventoryList();
+  };
+});
+
+$("toggleWeerBtn").onclick = () => {
+  showWeerLayer = !showWeerLayer;
+  $("toggleWeerBtn").textContent = "🐟 Weren & Percelen (#inv3t3): " + (showWeerLayer ? "AAN" : "UIT");
+  $("toggleWeerBtn").classList.toggle("off", !showWeerLayer);
+  drawCanvas();
+};
+
+$("loadT17UrlBtn").onclick = () => {
+  const url = "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3";
+  $("urlInput").value = url;
+  parseAndLoadUrl(url);
+};
+
+$("loadT293UrlBtn").onclick = () => {
+  const url = "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&minr=2968718&miview=inv2";
+  $("urlInput").value = url;
+  parseAndLoadUrl(url);
+};
+
+$("urlParseBtn").onclick = () => parseAndLoadUrl($("urlInput").value);
+$("urlOpenExtBtn").onclick = () => {
+  const u = ($("urlInput").value || "").trim() || currentRecord().customUrl;
+  window.open(u, "_blank", "noopener");
+};
+
+$("searchInv").addEventListener("input", renderInventoryList);
+$("libSearch").addEventListener("input", renderLibrariesView);
+$("newsSearch").addEventListener("input", renderNewspapersView);
+
+$("prevBtn").onclick = $("fpBtn").onclick = () => selectRecord(curIdx - 1);
+$("nextBtn").onclick = $("fnBtn").onclick = () => selectRecord(curIdx + 1);
+
+$("jumpBtn").onclick = () => {
+  const q = ($("jumpInput").value || "").trim().toLowerCase();
+  if (!q) return;
+  const idx = ARCHIVE_RECORDS.findIndex(r =>
+    String(r.nr).toLowerCase().includes(q) ||
+    r.id.toLowerCase().includes(q) ||
+    r.title.toLowerCase().includes(q)
+  );
+  if (idx >= 0) selectRecord(idx);
+};
+
+document.addEventListener("keydown", e => {
+  if (["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+  if (e.key === "ArrowLeft") selectRecord(curIdx - 1);
+  if (e.key === "ArrowRight") selectRecord(curIdx + 1);
+});
+
+$("customScanInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      customLoadedImage = img;
+      switchMode("HIST");
+      drawCanvas();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(f);
+});
+
+$("cardCopyBtn").onclick = () => {
+  const url = currentRecord().customUrl;
+  const ta = document.createElement("textarea");
+  ta.value = url;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  $("cardCopyBtn").textContent = "✓ Gekopieerd!";
+  setTimeout(() => { $("cardCopyBtn").textContent = "📋 Kopieer Archief-URL"; }, 1500);
+};
+
+document.querySelectorAll(".qChip").forEach(chip => {
+  chip.onclick = () => { $("osintQuery").value = chip.dataset.q; };
+});
+
+const OSINT_URLS = {
+  za_t17_hash: () => "https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=verpachting%20visserijpercelen&micode=17#inv3t3",
+  za_t17_all: () => "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=17&miview=inv2",
+  arch_293: () => "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=293&miview=inv2",
+  arch_cur: () => currentRecord().customUrl,
+  arch_5871: () => "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=5871&minr=33845212&miview=inv2",
+  arch_294: () => "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=294&miview=inv2",
+  arch_295: () => "https://www.archieven.nl/nl/zoeken?mizig=210&miadt=239&micode=295&miview=inv2",
+  kr_zeeland: q => "https://www.krantenbankzeeland.nl/search?query=" + encodeURIComponent(q),
+  kr_eendracht: q => "https://www.krantenbankzeeland.nl/search?query=" + encodeURIComponent(q) + "&periodical=een",
+  delpher: q => "https://www.delpher.nl/nl/kranten/results?query=" + encodeURIComponent(q),
+  zb_cat: q => "https://zb.on.worldcat.org/search?queryString=" + encodeURIComponent(q),
+  wba_boz: q => "https://westbrabantsarchief.nl/collectie/zoeken/?q=" + encodeURIComponent(q),
+  na_10811: () => "https://www.nationaalarchief.nl/onderzoeken/archief/1.08.11",
+  topo_rd: () => {
+    const rec = currentRecord();
+    return "https://www.topotijdreis.nl/?datatype=map&year=1890&x=" + rec.rdX + "&y=" + rec.rdY + "&zoom=9";
+  },
+  hisgis: () => "https://hisgis.nl/kaarten/"
+};
+
+document.querySelectorAll(".osintBtn[data-tpl]").forEach(btn => {
+  btn.onclick = () => {
+    const q = ($("osintQuery").value || "").trim();
+    const fn = OSINT_URLS[btn.dataset.tpl];
+    if (fn) window.open(fn(q), "_blank", "noopener");
+  };
+});
+
+$("exportJsonBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify({
+    archiveRecords: ARCHIVE_RECORDS,
+    weerenAndParcels: WEER_AND_PARCEL_HOTSPOTS,
+    libraries: WEERVISSERIJ_LIBRARIES,
+    newspapers: NEWSPAPER_ARTICLES
+  }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "zeeuws-archief-toegang17-en-293-hattinga.json";
+  a.click();
+};
+
+/* ============================================================================
+   12. INITIALISATIE
+   ============================================================================ */
+function initApp() {
+  renderInventoryList();
+  renderMetadata();
+  renderLibrariesView();
+  renderNewspapersView();
+  resizeCanvas();
+  setTimeout(resizeCanvas, 80);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+</script>
+</body>
+</html>
