@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Werkbank Visserijarchieven ● BVZS Toegang 17 (1825–1969) ● XML Voorlees-Interface & OpenAI/3D Quaternion</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg-parchment: #f6f2e9;
+    --bg-card: #fffdf9;
+    --ink-dark: #1b2420;
+    --ink-muted: #526058;
+    --sea-teal: #0f4c5c;
+    --sea-teal-light: #e0f0f4;
+    --gold-ochre: #b4690e;
+    --gold-light: #fef3c7;
+    --border-warm: #d8cfc0;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-parchment);
+    color: var(--ink-dark);
+    margin: 0;
+    padding: 0;
+  }
+  .serif-book {
+    font-family: 'Crimson Pro', Georgia, serif;
+  }
+  .mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  /* Custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #ebe4d5;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #9ca3af;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0f4c5c;
+  }
+  .active-sentence {
+    background-color: #fde047 !important;
+    color: #111827 !important;
+    box-shadow: 0 0 0 3px #fde047;
+    border-radius: 3px;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+  .search-hit {
+    background-color: #fed7aa;
+    color: #7c2d12;
+    padding: 0 2px;
+    border-radius: 2px;
+    border-bottom: 2px solid #ea580c;
+    font-weight: 600;
+  }
+  .window-toggle-btn.active {
+    background-color: #0f4c5c;
+    color: #ffffff;
+    border-color: #0f4c5c;
+    box-shadow: 0 2px 6px rgba(15, 76, 92, 0.28);
+  }
+  .window-toggle-btn.inactive {
+    background-color: #f3efe6;
+    color: #526058;
+    border-color: #d8cfc0;
+    opacity: 0.78;
+  }
+  .book-spread {
+    background: linear-gradient(90deg, #faf5e8 0%, #fffef9 46%, #e5dccb 50%, #fffef9 54%, #faf5e8 100%);
+    box-shadow: inset 0 0 24px rgba(139, 115, 85, 0.14), 0 6px 20px rgba(0,0,0,0.06);
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- TOP HEADER & KLIKBARE VENSTER-MANAGER -->
+<header class="sticky top-0 z-40 bg-[#14292e] text-[#f6f2e9] border-b-2 border-[#b4690e] shadow-lg">
+  <div class="max-w-[1680px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-[#b4690e] flex items-center justify-center font-bold text-white shadow-inner mono-code text-sm">
+        ZA·17
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] uppercase tracking-widest px-2 py-0.5 rounded bg-[#0f4c5c] text-amber-200 mono-code">Zeeuws Archief ● Toegang 17 ● 1825–1969</span>
+          <span id="preloadStatusBadge" class="text-[11px] px-2 py-0.5 rounded bg-emerald-800 text-emerald-100 mono-code">✓ NL-MdbZA_17_1_EAD.xml Voorgeladen</span>
+        </div>
+        <h1 class="text-base md:text-lg font-bold tracking-tight serif-book text-amber-50">
+          Bestuur der Visserijen op de Zeeuwse Stromen (BVZS) — Onderwerpwerkbank, XML Voorlees-Interface & OpenAI/3D Kaart
+        </h1>
+      </div>
+    </div>
+
+    <!-- Snel-status & Audio Indicator -->
+    <div class="flex items-center gap-2 text-xs">
+      <div id="globalAudioBadge" class="hidden items-center gap-2 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-semibold animate-pulse">
+        <span>🔊 Aan het voorlezen...</span>
+        <button onclick="stopReading()" class="underline font-bold ml-1">Stop</button>
+      </div>
+      <button onclick="setAllWindows(true)" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs transition" title="Toon alle vensters">Alles Aan</button>
+      <button onclick="resetLayoutDefault()" class="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs transition" title="Standaard weergave">Standaard</button>
+    </div>
+  </div>
+
+  <!-- VENSTER-MANAGER BALK (AAN/UIT KLIKBARE VENSTERS) -->
+  <div class="bg-[#1d373e] border-t border-slate-700/80 px-4 py-2">
+    <div class="max-w-[1680px] mx-auto flex flex-wrap items-center gap-1.5">
+      <span class="text-[11px] uppercase tracking-wider text-amber-300/90 font-semibold mr-2 mono-code">Vensters Aan/Uit:</span>
+      
+      <button id="btn-win-files" onclick="toggleWindow('win-files')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>📂 1. XML & PDF Bestanden</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+
+      <button id="btn-win-search" onclick="toggleWindow('win-search')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>🔎 2. EAD-XML Inventaris & Zoeken</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+
+      <button id="btn-win-ai" onclick="toggleWindow('win-ai')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>🤖 3. OpenAI / AI Semantisch Zoeken & RAG</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+
+      <button id="btn-win-reader" onclick="toggleWindow('win-reader')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>🔊 4. XML Voorlees-Interface (TTS + Boek + WebRTC)</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+
+      <button id="btn-win-quat" onclick="toggleWindow('win-quat')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>🪐 5. 3D Quaternion Kaart & Uurhoek-Banen</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+
+      <button id="btn-win-sources" onclick="toggleWindow('win-sources')" class="window-toggle-btn active text-xs px-3 py-1.5 rounded-md border font-medium transition flex items-center gap-1.5">
+        <span>🔗 6. Gerelateerde Bronnen (ZA & NA)</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 indicator-dot"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN WORKSPACE CONTAINER -->
+<main class="max-w-[1680px] w-full mx-auto px-4 py-5 flex-1 space-y-6">
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 1: XML & PDF BESTANDEN (PRE-LOADED + EIGEN DROPZONES)          -->
+  <!-- ===================================================================== -->
+  <section id="win-files" class="bg-[#fffdf9] border border-[#d8cfc0] rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-[#eee7d8] px-4 py-2.5 border-b border-[#d8cfc0] flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-base">📂</span>
+        <h2 class="font-bold text-sm uppercase tracking-wider text-[#14292e]">1. Bronbestanden & Pre-loaded EAD-XML (`NL-MdbZA_17_1_EAD.xml`)</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="loadEmbeddedEAD()" class="text-xs px-3 py-1 rounded bg-[#0f4c5c] text-white hover:bg-[#166478] font-medium transition">
+          🔄 Herlaad Voorgeladen BVZS Toegang 17 XML
+        </button>
+        <button onclick="downloadEmbeddedXML()" class="text-xs px-3 py-1 rounded bg-amber-700 text-white hover:bg-amber-800 font-medium transition">
+          ⬇ Exporteer Actieve EAD-XML
+        </button>
+        <button onclick="toggleWindow('win-files')" class="text-xs px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700">Verberg ✕</button>
+      </div>
+    </div>
+
+    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Dropzone 1: EAD XML -->
+      <div id="eadDrop" class="border-2 border-dashed border-[#0f4c5c]/50 rounded-lg p-3.5 bg-[#f7f4ec] hover:bg-[#eef5f6] transition cursor-pointer flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-[#0f4c5c] mono-code">1. Zeeuws Archief ● Toegang 17 (EAD-XML)</span>
+            <span id="eadStatusPill" class="text-[11px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-semibold">Actief</span>
+          </div>
+          <p class="text-xs text-slate-600 mt-1">
+            Standaard is <strong>NL-MdbZA_17_1_EAD.xml</strong> (BVZS 1825–1969, incl. Plakkaat 1707, Amortisatie Syndicaat Tholen 1825, Yersekebank 1870, Coczo, Pachtbesluit 1941 & inv.nrs. 1–633+) al geladen. Sleep hier een volledigere XML om te overschrijven:
+          </p>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <input type="file" id="eadFile" accept=".xml,text/xml" class="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#0f4c5c] file:text-white hover:file:bg-[#166478]" />
+          <span id="eadCountInfo" class="text-xs mono-code text-slate-700 font-semibold"></span>
+        </div>
+      </div>
+
+      <!-- Dropzone 2: PDF 2.11.58 -->
+      <div id="pdfDrop" class="border-2 border-dashed border-amber-700/50 rounded-lg p-3.5 bg-[#f7f4ec] hover:bg-amber-50/60 transition cursor-pointer flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-800 mono-code">2. Nationaal Archief ● 2.11.58 (PDF)</span>
+            <span id="pdfStatusPill" class="text-[11px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">Kern-index geladen</span>
+          </div>
+          <p class="text-xs text-slate-600 mt-1">
+            Standaard voorzien van de kern-inventaris <strong>Visserijinspectie 1911–1940 (2.11.58)</strong>. Kies of sleep hier je eigen <code>2.11.58.pdf</code> om alle PDF-pagina's lokaal te indexeren en voor te laten lezen:
+          </p>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <input type="file" id="pdfFile" accept=".pdf,application/pdf" class="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-amber-700 file:text-white hover:file:bg-amber-800" />
+          <span id="pdfStatus" class="text-xs mono-code text-slate-700"></span>
+        </div>
+      </div>
+
+      <!-- Snel-statistieken van het geladen XML-archief -->
+      <div class="border border-[#d8cfc0] rounded-lg p-3.5 bg-white flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700 mono-code">Archief-Metadata (NL-MdbZA_17_1_EAD)</span>
+          <div id="archMetaSummary" class="text-xs text-slate-700 mt-1.5 space-y-1">
+            <div><strong>Archiefvormer:</strong> Bestuur der Visserijen op de Zeeuwse Stromen</div>
+            <div><strong>Bewerker:</strong> A.J.B. (Ton) de Graaf (2015) ● 34,92 m</div>
+            <div><strong>Hoofdstukken (&lt;odd&gt;):</strong> 4 uitgebreide historische secties</div>
+            <div><strong>Voorlees-wachtrij:</strong> <span id="queueCountTop" class="font-bold text-[#0f4c5c]">0</span> fragmenten klaar</div>
+          </div>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <button onclick="readAllIntroChapters()" class="text-xs px-2.5 py-1 rounded bg-[#0f4c5c] text-white hover:bg-[#166478] font-medium">
+            🔊 Lees Gehele Historische Inleiding Voor
+          </button>
+          <button onclick="openHistoricalIntroModal()" class="text-xs px-2.5 py-1 rounded border border-[#0f4c5c] text-[#0f4c5c] hover:bg-[#e0f0f4] font-medium">
+            📖 Open Inleiding in Boekweergave
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 4: XML VOORLEES-INTERFACE (TTS + BOEKWEERGAVE + WEBRTC)       -->
+  <!-- ===================================================================== -->
+  <section id="win-reader" class="bg-[#fffdf9] border-2 border-[#0f4c5c] rounded-xl shadow-md overflow-hidden">
+    <div class="bg-[#0f4c5c] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">🔊</span>
+        <div>
+          <h2 class="font-bold text-sm uppercase tracking-wider">4. XML Voorlees-Interface (TTS, Live Zin-Markering, OpenAI Speech & WebRTC Kamer)</h2>
+          <p class="text-[11px] text-amber-200">Leest rechtstreeks voor uit <code>&lt;odd&gt;</code> hoofdstukken, <code>&lt;c01&gt;–&lt;c05&gt;</code> inventarisnummers, zoekresultaten en AI-syntheses</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleWebRTCPanel()" class="text-xs px-3 py-1 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition">
+          📡 WebRTC Live Voorleeskamer Aan/Uit
+        </button>
+        <button onclick="toggleWindow('win-reader')" class="text-xs px-2.5 py-1 rounded bg-white/15 hover:bg-white/25 text-white">Verberg ✕</button>
+      </div>
+    </div>
+
+    <!-- TTS BEDIENINGSBALK -->
+    <div class="bg-[#f3efe6] border-b border-[#d8cfc0] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Afspeelknoppen -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button onclick="playOrResumeReading()" id="btnPlayTTS" class="px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-sm transition">
+          <span>▶ Voorlezen / Hervatten</span>
+        </button>
+        <button onclick="pauseReading()" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs flex items-center gap-1 shadow-sm transition">
+          <span>⏸ Pauze</span>
+        </button>
+        <button onclick="stopReading()" class="px-3 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs flex items-center gap-1 shadow-sm transition">
+          <span>⏹ Stop</span>
+        </button>
+        <button onclick="prevSentence()" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-medium text-xs" title="Vorige zin">
+          ⏮ Zin
+        </button>
+        <button onclick="nextSentence()" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-medium text-xs" title="Volgende zin">
+          Zin ⏭
+        </button>
+        <button onclick="prevQueueItem()" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-medium text-xs" title="Vorig archiefstuk in wachtrij">
+          ⏪ Vorig Stuk
+        </button>
+        <button onclick="nextQueueItem()" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-medium text-xs" title="Volgend archiefstuk in wachtrij">
+          Volgend Stuk ⏩
+        </button>
+      </div>
+
+      <!-- Stem, Snelheid, Engine (Browser / OpenAI TTS) -->
+      <div class="flex flex-wrap items-center gap-3 text-xs">
+        <div class="flex items-center gap-1.5">
+          <label class="font-semibold text-slate-700">Engine:</label>
+          <select id="ttsEngineSelect" onchange="onTTSEngineChange()" class="px-2 py-1 rounded border border-slate-300 bg-white text-xs font-medium">
+            <option value="browser">Browser Spraaksynthese (Direct & Offline)</option>
+            <option value="openai">OpenAI Audio TTS API (tts-1 / nova / onyx)</option>
+          </select>
+        </div>
+
+        <div id="browserVoiceWrap" class="flex items-center gap-1.5">
+          <label class="font-semibold text-slate-700">Stem:</label>
+          <select id="voiceSelect" class="px-2 py-1 rounded border border-slate-300 bg-white text-xs max-w-[200px]"></select>
+        </div>
+
+        <div id="openaiVoiceWrap" class="hidden items-center gap-1.5">
+          <label class="font-semibold text-slate-700">OpenAI Stem:</label>
+          <select id="openaiVoiceSelect" class="px-2 py-1 rounded border border-slate-300 bg-white text-xs">
+            <option value="nova">nova (Helder)</option>
+            <option value="onyx">onyx (Diep / Historisch)</option>
+            <option value="alloy">alloy (Neutraal)</option>
+            <option value="echo">echo (Warm)</option>
+            <option value="shimmer">shimmer (Rustig)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <label class="font-semibold text-slate-700">Snelheid:</label>
+          <input type="range" id="ttsRate" min="0.6" max="1.8" step="0.1" value="1.0" oninput="document.getElementById('ttsRateVal').textContent=this.value+'x'" class="w-20 accent-[#0f4c5c]" />
+          <span id="ttsRateVal" class="mono-code font-bold text-[#0f4c5c]">1.0x</span>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <label class="font-semibold text-slate-700">Toon:</label>
+          <input type="range" id="ttsPitch" min="0.7" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('ttsPitchVal').textContent=this.value" class="w-16 accent-[#0f4c5c]" />
+          <span id="ttsPitchVal" class="mono-code text-slate-700">1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SNELKEUZE VOORLEES-HOOFDSTUKKEN UIT DE EAD-XML -->
+    <div class="bg-[#faf6ed] px-4 py-2 border-b border-[#d8cfc0] flex flex-wrap items-center gap-2 text-xs">
+      <span class="font-bold text-[#0f4c5c] uppercase tracking-wider mono-code">Kies XML-Hoofdstuk om voor te lezen:</span>
+      <button onclick="loadOddChapterIntoReader(0, true)" class="px-2.5 py-1 rounded bg-white border border-[#0f4c5c]/40 hover:bg-[#0f4c5c] hover:text-white transition font-medium">
+        📜 1. Geschiedenis van het archiefvormend orgaan (1707–1970)
+      </button>
+      <button onclick="loadOddChapterIntoReader(1, true)" class="px-2.5 py-1 rounded bg-white border border-[#0f4c5c]/40 hover:bg-[#0f4c5c] hover:text-white transition font-medium">
+        🗂 2. Geschiedenis van de archieven & verantwoording
+      </button>
+      <button onclick="loadOddChapterIntoReader(2, true)" class="px-2.5 py-1 rounded bg-white border border-[#0f4c5c]/40 hover:bg-[#0f4c5c] hover:text-white transition font-medium">
+        🧭 3. Aanwijzingen voor de onderzoeker
+      </button>
+      <button onclick="loadOddChapterIntoReader(3, true)" class="px-2.5 py-1 rounded bg-white border border-[#0f4c5c]/40 hover:bg-[#0f4c5c] hover:text-white transition font-medium">
+        📚 4. Bronnen & Literatuur
+      </button>
+      <button onclick="readCurrentSearchResults()" class="px-2.5 py-1 rounded bg-amber-100 border border-amber-500 text-amber-950 hover:bg-amber-200 transition font-semibold ml-auto">
+        🔊 Lees Huidige Zoekresultaten Voor
+      </button>
+    </div>
+
+    <!-- BOEKWEERGAVE + VOORLEES-WACHTRIJ -->
+    <div class="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <!-- Open Archiefboek / Live Zin-Markering (8 cols) -->
+      <div class="lg:col-span-8 book-spread border border-[#cbbba0] rounded-xl p-5 min-h-[290px] max-h-[430px] overflow-y-auto relative" id="readerBookViewport">
+        <div class="flex items-center justify-between border-b border-[#d8cfc0] pb-2 mb-3">
+          <div>
+            <span id="readerCurrentBadge" class="text-[11px] mono-code uppercase px-2 py-0.5 rounded bg-[#0f4c5c] text-white">ZA ● Toegang 17 ● EAD-XML Voorlezer</span>
+            <h3 id="readerCurrentTitle" class="text-lg font-bold serif-book text-[#14292e] mt-1">
+              Geschiedenis van het archiefvormend orgaan (1825–1969)
+            </h3>
+          </div>
+          <div class="text-right text-xs mono-code text-slate-600">
+            <div>Zin <span id="readerSentenceIndex">0</span> / <span id="readerSentenceTotal">0</span></div>
+            <div id="readerCiteCode" class="text-[11px] text-amber-800 font-semibold">ZA, BVZS, Inleiding &lt;odd&gt;</div>
+          </div>
+        </div>
+
+        <!-- Klikbare zinnen container -->
+        <div id="readerSentencesContainer" class="serif-book text-lg leading-relaxed text-slate-900 space-y-2">
+          <!-- Wordt dynamisch gevuld met klikbare zinnen -->
+        </div>
+      </div>
+
+      <!-- Voorlees-Wachtrij & Eigen XML/Tekst Plakken (4 cols) -->
+      <div class="lg:col-span-4 flex flex-col justify-between bg-[#f7f4ec] border border-[#d8cfc0] rounded-xl p-3.5">
+        <div>
+          <div class="flex items-center justify-between border-b border-[#d8cfc0] pb-2 mb-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-[#14292e] mono-code">
+              📋 Voorlees-Wachtrij (<span id="queueCount">0</span> stukken)
+            </h4>
+            <div class="flex gap-1">
+              <button onclick="clearReadingQueue()" class="text-[11px] px-2 py-0.5 rounded bg-rose-100 text-rose-800 hover:bg-rose-200 font-medium">Leegmaken</button>
+            </div>
+          </div>
+          <div id="readingQueueList" class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1 text-xs">
+            <!-- Dynamische wachtrij items -->
+          </div>
+        </div>
+
+        <!-- Eigen archiefnotitie of tekst toevoegen om voor te lezen -->
+        <div class="mt-3 pt-2.5 border-t border-[#d8cfc0]">
+          <label class="block text-[11px] font-bold uppercase text-slate-700 mono-code mb-1">Eigen Archiefpassage / XML-tekst laten voorlezen:</label>
+          <div class="flex gap-1.5">
+            <input type="text" id="customReadInput" placeholder="Plak of typ hier tekst om direct voor te lezen..." class="flex-1 px-2.5 py-1.5 text-xs rounded border border-slate-300 bg-white" />
+            <button onclick="readCustomInputText()" class="px-3 py-1.5 rounded bg-[#0f4c5c] text-white text-xs font-semibold hover:bg-[#166478]">🔊 Lees</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INKLAPBARE WEBRTC LIVE VOORLEESKAMER -->
+    <div id="webrtcPanel" class="hidden bg-[#14292e] text-slate-100 border-t-2 border-amber-500 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-700">
+        <div>
+          <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+            <span>📡 WebRTC Live Voorleeskamer & Peer-to-Peer Archief-Synchronisatie</span>
+            <span id="rtcConnBadge" class="text-[11px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 mono-code">Stand-by (BroadcastChannel + RTCPeerConnection actief)</span>
+          </h3>
+          <p class="text-xs text-slate-300">Deel live je stem, camera en het actief voorgelezen XML-archiefstuk (met gesynchroniseerde gele zin-markering) via WebRTC DataChannel of tussen browservensters.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="startLocalMediaRTC()" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">🎙 Start Microfoon/Camera</button>
+          <button onclick="createRTCOffer()" class="text-xs px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold">1. Maak WebRTC Offer</button>
+          <button onclick="createRTCAnswer()" class="text-xs px-3 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold">2. Beantwoord Offer (Answer)</button>
+          <button onclick="acceptRTCAnswer()" class="text-xs px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-semibold">3. Koppel Answer</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+        <!-- Lokale & Remote Video + Ondertiteling -->
+        <div class="bg-slate-900 rounded-lg p-2.5 border border-slate-700 relative">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[10px] mono-code text-amber-300 uppercase">Lokale Voorlezer</span>
+              <video id="localVideo" autoplay muted playsinline class="w-full h-28 bg-black rounded object-cover border border-slate-700"></video>
+            </div>
+            <div>
+              <span class="text-[10px] mono-code text-emerald-300 uppercase">Peer Onderzoeker</span>
+              <video id="remoteVideo" autoplay playsinline class="w-full h-28 bg-black rounded object-cover border border-slate-700"></video>
+            </div>
+          </div>
+          <div id="rtcLiveSubtitle" class="mt-2 p-2 rounded bg-black/80 text-amber-200 text-xs serif-book italic text-center min-h-[36px]">
+            Ondertiteling van de voorgelezen EAD-XML zin verschijnt hier live...
+          </div>
+        </div>
+
+        <!-- SDP Offer / Answer Uitwisseling (Serverless copy-paste) -->
+        <div class="bg-slate-900 rounded-lg p-2.5 border border-slate-700 flex flex-col justify-between">
+          <label class="text-[11px] mono-code text-slate-300 font-semibold">WebRTC SDP Signaal (Offer / Answer JSON):</label>
+          <textarea id="rtcSdpBox" rows="4" placeholder="Klik op 'Maak WebRTC Offer' of plak hier de SDP-code van een mede-onderzoeker..." class="w-full mt-1 p-2 rounded bg-slate-950 text-emerald-300 mono-code text-[11px] border border-slate-700"></textarea>
+          <div class="mt-1.5 flex justify-between items-center">
+            <button onclick="copyRtcSdp()" class="text-[11px] px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white">📋 Kopieer SDP</button>
+            <span id="rtcCopyMsg" class="text-[11px] text-amber-300"></span>
+          </div>
+        </div>
+
+        <!-- Live DataChannel Logboek -->
+        <div class="bg-slate-900 rounded-lg p-2.5 border border-slate-700 flex flex-col justify-between">
+          <span class="text-[11px] mono-code text-slate-300 font-semibold">Live Voorlees- & DataChannel Log:</span>
+          <div id="rtcLogBox" class="h-28 overflow-y-auto bg-slate-950 p-2 rounded border border-slate-800 text-[11px] mono-code text-slate-300 space-y-1 my-1">
+            <div>[Systeem] BroadcastChannel 'bvzs_toegang17_sync' gereed.</div>
+          </div>
+          <div class="flex gap-1.5">
+            <input type="text" id="rtcChatInput" placeholder="Stuur notitie + huidig inv.nr naar kamer..." class="flex-1 px-2 py-1 text-xs rounded bg-slate-950 border border-slate-700 text-white" />
+            <button onclick="sendRTCChatNote()" class="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold text-xs">Zend</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 3: OPENAI / AI SEMANTISCH ZOEKEN & RAG-ONDERZOEKER OP DE XML  -->
+  <!-- ===================================================================== -->
+  <section id="win-ai" class="bg-[#fffdf9] border-2 border-[#b4690e] rounded-xl shadow-md overflow-hidden">
+    <div class="bg-gradient-to-r from-[#14292e] via-[#1f3d44] to-[#5a380c] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">🤖</span>
+        <div>
+          <h2 class="font-bold text-sm uppercase tracking-wider text-amber-200">3. Zoeken met OpenAI & Ingebouwde AI-RAG Archiefonderzoeker (op NL-MdbZA_17_1_EAD.xml)</h2>
+          <p class="text-[11px] text-slate-200">Doorzoekt automatisch de relevante XML-inventarisnummers + historische inleiding, citeert exacte <code>inv.nrs.</code> en kan het antwoord direct voorlezen</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="toggleOpenAIConfig()" class="text-xs px-3 py-1 rounded bg-amber-500/20 border border-amber-400/50 text-amber-200 hover:bg-amber-500/30 font-medium">
+          ⚙️ OpenAI API-Sleutel & Model Instellingen
+        </button>
+        <button onclick="toggleWindow('win-ai')" class="text-xs px-2.5 py-1 rounded bg-white/15 hover:bg-white/25 text-white">Verberg ✕</button>
+      </div>
+    </div>
+
+    <!-- OpenAI API Configuratiebalk (inklapbaar) -->
+    <div id="openaiConfigBar" class="bg-[#f8f3e6] border-b border-[#d8cfc0] px-4 py-3 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+      <div>
+        <label class="font-bold text-slate-700 block mb-1">OpenAI API Key (optioneel, lokaal in browser):</label>
+        <input type="password" id="openaiApiKey" placeholder="sk-... (laat leeg voor ingebouwde RAG-engine)" oninput="saveOpenAISettings()" class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white mono-code text-xs" />
+      </div>
+      <div>
+        <label class="font-bold text-slate-700 block mb-1">OpenAI / Compatible Endpoint URL:</label>
+        <input type="text" id="openaiEndpoint" value="https://api.openai.com/v1/chat/completions" oninput="saveOpenAISettings()" class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white mono-code text-xs" />
+      </div>
+      <div>
+        <label class="font-bold text-slate-700 block mb-1">Model:</label>
+        <select id="openaiModel" onchange="saveOpenAISettings()" class="w-full px-2.5 py-1.5 rounded border border-slate-300 bg-white text-xs font-medium">
+          <option value="gpt-4o-mini">gpt-4o-mini (Snel & Nauwkeurig)</option>
+          <option value="gpt-4o">gpt-4o (Diepgaande Archief-Analyse)</option>
+          <option value="gpt-4.1">gpt-4.1</option>
+          <option value="local-rag">Ingebouwde Lokale XML-RAG Synthese (Geen sleutel nodig)</option>
+        </select>
+      </div>
+      <div class="flex flex-col justify-end">
+        <div id="aiEngineModeIndicator" class="p-2 rounded bg-emerald-50 border border-emerald-300 text-emerald-900 text-[11px]">
+          <strong>Status:</strong> Hybride modus actief (gebruikt OpenAI API indien sleutel ingevuld, anders directe XML-RAG synthese).
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 space-y-3">
+      <!-- Voorgebouwde onderzoeksvragen-chips -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs font-bold text-slate-700 mr-1">Voorbeeldvragen op de XML:</span>
+        <button onclick="askPresetAIQuestion('Vat de geschiedenis van de verpachting van visserijpercelen (1829, 1870 Yersekebank tot Pachtbesluit 1941) samen uit de EAD-XML met bijbehorende inventarisnummers.')" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 transition">
+          💡 Verpachting 1829–1941 & Yersekebank (1870)
+        </button>
+        <button onclick="askPresetAIQuestion('Welke rechten hadden de vissers van het Markiezaat van Bergen op Zoom en Tholen op het Verdronken Land van Zuid-Beveland volgens het Plakkaat van 2 juni 1707 en het KB van 1825?')" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 transition">
+          💡 Markiezaat Bergen op Zoom, Tholen & Plakkaat 1707
+        </button>
+        <button onclick="askPresetAIQuestion('Hoe werkte het systeem van de mobiele pacht (Coczo / Centrale Organisatie van Coöperatieve Zeeuwse Oesterkwekersverenigingen) en het Pachtbesluit Visrecht 1941?')" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 transition">
+          💡 Mobiele pacht (Coczo) & Pachtbesluit 1941
+        </button>
+        <button onclick="askPresetAIQuestion('Welke inventarisnummers in Toegang 17 gaan over ansjovisvisserij, weervisserij, oesterputten, kreeftenparken en de patrouillevaartuigen Argus, Isis en Osiris?')" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 transition">
+          💡 Weervisserij, Oesterputten & Schepen (Argus/Isis/Osiris)
+        </button>
+        <button onclick="askPresetAIQuestion('Welke rol speelde het bacteriologisch laboratorium te Bergen op Zoom (1906) en wat waren de gevolgen van de Deltawerken voor het BVZS?')" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 transition">
+          💡 Laboratorium Bergen op Zoom (1906) & Deltawerken
+        </button>
+      </div>
+
+      <!-- Zoekbalk voor OpenAI / RAG Vraag -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="aiQueryInput" onkeydown="if(event.key==='Enter') runOpenAISearch()" placeholder="Stel een onderzoeksvraag in natuurlijke taal over BVZS Toegang 17 (bijv. 'Welke stukken gaan over pachters op Tholen of de Yersekebank?')..." class="flex-1 px-3.5 py-2.5 rounded-lg border-2 border-[#b4690e]/60 bg-white text-sm focus:outline-none focus:border-[#0f4c5c]" />
+        <button onclick="runOpenAISearch()" id="btnRunAISearch" class="px-5 py-2.5 rounded-lg bg-[#b4690e] hover:bg-[#965609] text-white font-bold text-sm shadow transition flex items-center justify-center gap-2">
+          <span>🤖 Analyseer EAD-XML met AI</span>
+        </button>
+        <button onclick="readLastAIAnswer()" class="px-4 py-2.5 rounded-lg bg-[#0f4c5c] hover:bg-[#166478] text-white font-semibold text-sm shadow transition flex items-center justify-center gap-1.5">
+          <span>🔊 Lees AI-Antwoord Voor</span>
+        </button>
+      </div>
+
+      <!-- AI Antwoord & RAG Bronverwijzingen Weergave -->
+      <div id="aiResultContainer" class="bg-[#faf6ed] border border-[#d8cfc0] rounded-xl p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-8 space-y-2">
+          <div class="flex items-center justify-between border-b border-[#d8cfc0] pb-1.5">
+            <span id="aiResponseHeader" class="text-xs font-bold uppercase tracking-wider text-[#0f4c5c] mono-code">AI-Synthese & Historische Analyse op basis van NL-MdbZA_17_1_EAD.xml</span>
+            <span id="aiUsedModelBadge" class="text-[11px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 mono-code">Gereed</span>
+          </div>
+          <div id="aiAnswerText" class="serif-book text-base leading-relaxed text-slate-900 space-y-2">
+            Klik hierboven op een van de onderzoeksvragen of typ een eigen vraag. De AI-module selecteert eerst via RAG (Retrieval-Augmented Generation) de best passende <code>&lt;c01&gt;–&lt;c05&gt;</code> inventarisnummers én de passages uit de historische inleiding (<code>&lt;odd&gt;</code>), formuleert een onderbouwd antwoord met archiefverwijzingen (<code>ZA, BVZS, inv.nr. ...</code>) en kan dit antwoord direct zin-voor-zin voorlezen.
+          </div>
+        </div>
+
+        <div class="lg:col-span-4 bg-white border border-[#d8cfc0] rounded-lg p-3 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+              <span class="text-xs font-bold uppercase text-slate-700 mono-code">Gematchete XML-Inventarisstukken (RAG Context)</span>
+              <button onclick="readAllRAGNodes()" class="text-[11px] px-2 py-0.5 rounded bg-[#0f4c5c] text-white hover:bg-[#166478]">🔊 Lees bronnen</button>
+            </div>
+            <div id="aiRagMatchedNodes" class="space-y-1.5 max-h-[240px] overflow-y-auto text-xs">
+              <div class="text-slate-500 italic">Hier verschijnen de door RAG geselecteerde inventarisnummers bij je vraag.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 2: EAD-XML INVENTARIS & ONDERWERP-ZOEKEN                      -->
+  <!-- ===================================================================== -->
+  <section id="win-search" class="bg-[#fffdf9] border border-[#d8cfc0] rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-[#eee7d8] px-4 py-2.5 border-b border-[#d8cfc0] flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-base">🔎</span>
+        <h2 class="font-bold text-sm uppercase tracking-wider text-[#14292e]">2. Onderwerp-Zoekmachine, Rubrieksboom & Inventarislijst (ZA Toegang 17 + NA 2.11.58)</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="readCurrentSearchResults()" class="text-xs px-3 py-1 rounded bg-[#0f4c5c] text-white hover:bg-[#166478] font-semibold">
+          🔊 Lees Alle Gefilterde Resultaten Voor
+        </button>
+        <button onclick="exportSelectionCSV()" class="text-xs px-3 py-1 rounded bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 font-medium">
+          ⬇ Exporteer Selectie (CSV)
+        </button>
+        <button onclick="toggleWindow('win-search')" class="text-xs px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700">Verberg ✕</button>
+      </div>
+    </div>
+
+    <div class="p-4 space-y-4">
+      <!-- Zoekvelden & Jaarfilter -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+        <div class="md:col-span-5">
+          <label class="text-[11px] font-bold uppercase text-slate-600 mono-code">Trefwoord / Perceel / Schip / Persoon / Plaats:</label>
+          <input type="search" id="q" oninput="runSearch()" placeholder="Zoek op onderwerp, bv. 'oester', 'weervisserij', 'Yersekebank', 'Tholen', 'Argus', 'notulen'..." class="w-full mt-0.5 px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:border-[#0f4c5c]" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-[11px] font-bold uppercase text-slate-600 mono-code">Van jaar:</label>
+          <input type="number" id="yearFrom" oninput="runSearch()" placeholder="1825" min="1600" max="1980" class="w-full mt-0.5 px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm mono-code" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-[11px] font-bold uppercase text-slate-600 mono-code">Tot jaar:</label>
+          <input type="number" id="yearTo" oninput="runSearch()" placeholder="1969" min="1600" max="1980" class="w-full mt-0.5 px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm mono-code" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-[11px] font-bold uppercase text-slate-600 mono-code">Bronfilter:</label>
+          <select id="sourceFilter" onchange="runSearch()" class="w-full mt-0.5 px-2.5 py-2 rounded-lg border border-slate-300 bg-white text-sm">
+            <option value="all">Alle bronnen (ZA 17 + NA + Inleiding)</option>
+            <option value="za17">Alleen ZA Toegang 17 (Inventaris)</option>
+            <option value="intro">Alleen Historische Inleiding (&lt;odd&gt;)</option>
+            <option value="na">Alleen NA 2.11.58 (Visserijinspectie)</option>
+          </select>
+        </div>
+        <div class="md:col-span-1 flex items-end">
+          <button onclick="resetFilters()" class="w-full py-2 px-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold">Reset</button>
+        </div>
+      </div>
+
+      <!-- Thematische Snel-Chips -->
+      <div id="topicChips" class="flex flex-wrap gap-1.5 pt-1"></div>
+
+      <!-- 3-Koloms Werkbank: Links Rubrieksboom, Midden Resultaten, Rechts Detailpaneel -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
+        
+        <!-- LINKS: EAD-XML Rubrieksboom & Inleiding Hoofdstukken (3 cols) -->
+        <div class="lg:col-span-3 bg-[#f7f4ec] border border-[#d8cfc0] rounded-xl p-3 max-h-[640px] overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-[#d8cfc0] pb-2 mb-2">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-[#14292e] mono-code">Inleiding & Hoofdrubrieken</h3>
+            <button onclick="clearRubriekFilter()" class="text-[11px] text-[#0f4c5c] underline">Toon alles</button>
+          </div>
+          <div id="introList" class="space-y-1 mb-3"></div>
+          <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-600 mono-code border-b border-[#d8cfc0] pb-1 mb-2">Inventaris-rubrieken (&lt;c01&gt;/&lt;c02&gt;)</h4>
+          <div id="treeList" class="space-y-1 text-xs"></div>
+        </div>
+
+        <!-- MIDDEN: Zoekresultaten met directe Voorlees-knoppen (5 cols) -->
+        <div class="lg:col-span-5 bg-white border border-[#d8cfc0] rounded-xl p-3 flex flex-col max-h-[640px]">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+            <span id="resultStats" class="text-xs font-bold text-slate-700 mono-code">Resultaten laden...</span>
+            <span class="text-[11px] text-slate-500">Klik op een stuk of op 🔊 om voor te lezen</span>
+          </div>
+          <div id="resultsList" class="space-y-2 overflow-y-auto pr-1 flex-1"></div>
+        </div>
+
+        <!-- RECHTS: Volledig Archiefstuk Detail + Citeer + Voorlees (4 cols) -->
+        <div class="lg:col-span-4 bg-[#faf6ed] border border-[#d8cfc0] rounded-xl p-4 max-h-[640px] overflow-y-auto" id="detailPane">
+          <div class="text-xs text-slate-500 italic">Selecteer een inventarisnummer of hoofdstuk om alle XML-velden, datering, omvang, vindplaats en voorlees-opties te bekijken.</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 5: 3D QUATERNION KAART & UURHOEK-BANEN (OOSTERSCHELDE / BVZS) -->
+  <!-- ===================================================================== -->
+  <section id="win-quat" class="bg-[#fffdf9] border-2 border-[#0f4c5c] rounded-xl shadow-md overflow-hidden">
+    <div class="bg-[#14292e] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">🪐</span>
+        <div>
+          <h2 class="font-bold text-sm uppercase tracking-wider text-amber-300">5. 3D Quaternion Kaart- & Uurhoek-Viewer (Oosterschelde, Tholen, Bergen op Zoom, Yersekebank & Weervisserij)</h2>
+          <p class="text-[11px] text-slate-300">Rotatie via eenheidsquaternionen $q = (w, x, y, z)$ & SLERP-interpolatie met gekoppelde BVZS Toegang 17 & Hattinga Toegang 293 archiefpunten</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="resetQuaternionView()" class="text-xs px-3 py-1 rounded bg-[#0f4c5c] hover:bg-[#166478] text-white font-medium">🔄 Reset 3D-Stand</button>
+        <button onclick="toggleQuatAutoSpin()" id="btnQuatSpin" class="text-xs px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold">⏸ Rotatie Pauzeren</button>
+        <button onclick="toggleWindow('win-quat')" class="text-xs px-2.5 py-1 rounded bg-white/15 hover:bg-white/25 text-white">Verberg ✕</button>
+      </div>
+    </div>
+
+    <div class="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 bg-[#0d1b1e] text-slate-100">
+      <!-- 3D Canvas Viewport (8 cols) -->
+      <div class="lg:col-span-8 relative rounded-xl overflow-hidden border border-slate-700 bg-[#071114] min-h-[440px] flex flex-col">
+        <canvas id="quatCanvas" class="w-full h-[440px] cursor-grab active:cursor-grabbing block"></canvas>
+        
+        <!-- Quaternion Wiskundige Telemetrie Overlay -->
+        <div class="absolute top-3 left-3 bg-slate-950/85 border border-slate-700/80 rounded-lg px-3 py-2 text-[11px] mono-code text-emerald-300 pointer-events-none space-y-0.5">
+          <div class="text-amber-300 font-bold">Quaternion State $q = w + xi + yj + zk$</div>
+          <div id="quatReadout">w: 0.9239 | x: 0.3827 | y: 0.0000 | z: 0.0000</div>
+          <div id="hourAngleReadout" class="text-sky-300">Uurhoek $\tau$: 04h 12m | Declinatie $\delta$: +51°29' N</div>
+        </div>
+
+        <!-- Klikbare Archief-Hotspots onderin Canvas -->
+        <div class="bg-slate-900/95 border-t border-slate-800 px-3 py-2 flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="text-[11px] mono-code text-amber-300 font-semibold mr-1">Focus op BVZS-Perceel (SLERP):</span>
+          <button onclick="slerpToHotspot(0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#0f4c5c] text-amber-200 border border-slate-700 transition">📍 Tholen (Ontvangkantoor 1825)</button>
+          <button onclick="slerpToHotspot(1)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#0f4c5c] text-amber-200 border border-slate-700 transition">📍 Bergen op Zoom (Markiezaat & Lab 1906)</button>
+          <button onclick="slerpToHotspot(2)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#0f4c5c] text-amber-200 border border-slate-700 transition">📍 Yersekebank (1e Oesterverpachting 1870)</button>
+          <button onclick="slerpToHotspot(3)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#0f4c5c] text-amber-200 border border-slate-700 transition">📍 Verdronken Land / Reimerswaal (Ansjovisweren)</button>
+          <button onclick="slerpToHotspot(4)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-[#0f4c5c] text-amber-200 border border-slate-700 transition">📍 Braakman (1e Verloting 1829)</button>
+        </div>
+      </div>
+
+      <!-- Besturing, Uurhoek-Regelaars & Gekoppelde Archiefkaart-lader (4 cols) -->
+      <div class="lg:col-span-4 space-y-3 text-xs flex flex-col justify-between">
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-3.5 space-y-2.5">
+          <h3 class="font-bold text-amber-300 uppercase tracking-wider mono-code border-b border-slate-700 pb-1.5">
+            Uurhoek, 3D-Banen & Perceel-Inspectie
+          </h3>
+          <div>
+            <label class="flex justify-between text-slate-300 mb-1">
+              <span>Uurhoek-rotatie ($\tau$ op de kruisen):</span>
+              <span id="tauSliderVal" class="mono-code text-amber-300">65°</span>
+            </label>
+            <input type="range" id="tauSlider" min="0" max="360" value="65" oninput="updateQuatSliders()" class="w-full accent-amber-500" />
+          </div>
+
+          <div>
+            <label class="flex justify-between text-slate-300 mb-1">
+              <span>Kantel-elevatie (Pitch $\theta$):</span>
+              <span id="pitchSliderVal" class="mono-code text-amber-300">38°</span>
+            </label>
+            <input type="range" id="pitchSlider" min="-80" max="80" value="38" oninput="updateQuatSliders()" class="w-full accent-amber-500" />
+          </div>
+
+          <!-- Geselecteerd 3D Punt Details + Voorlezen -->
+          <div id="quatSelectedBox" class="p-3 rounded-lg bg-slate-950 border border-amber-500/40 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span id="quatSpotTitle" class="font-bold text-amber-300 text-sm">Yersekebank & Oosterschelde (1870)</span>
+              <span id="quatSpotInv" class="mono-code text-[11px] px-2 py-0.5 rounded bg-[#0f4c5c] text-white">ZA 17, inv.nrs. 262-330</span>
+            </div>
+            <p id="quatSpotDesc" class="text-slate-300 leading-relaxed">
+              Eerste openbare verpachting van de Yersekebank in 1870: het begin van de kunstmatige oestercultuur in Zeeland en de afschaffing van de vrije visserij.
+            </p>
+            <div class="flex gap-2 pt-1">
+              <button onclick="filterInventoryByQuatSpot()" class="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400">🔎 Filter in XML-Inventaris</button>
+              <button onclick="readQuatSpotAloud()" class="px-2.5 py-1 rounded bg-[#0f4c5c] text-white font-semibold hover:bg-[#166478]">🔊 Lees Perceelhistorie Voor</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Online Historische Kaart Lader (Wikimedia Commons API + Eigen Kaart Upload) -->
+        <div class="bg-slate-900 border border-slate-700 rounded-xl p-3.5 space-y-2">
+          <h4 class="font-bold text-emerald-300 uppercase tracking-wider mono-code">🗺 Historische Kaart-Textuur op het 3D-Vlak</h4>
+          <div class="flex gap-1.5">
+            <input type="text" id="commonsMapQuery" value="Hattinga Zeeland Oosterschelde" placeholder="Zoek op Wikimedia Commons..." class="flex-1 px-2.5 py-1 rounded bg-slate-950 border border-slate-700 text-white text-xs" />
+            <button onclick="searchWikimediaMaps()" class="px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-semibold">Zoek</button>
+          </div>
+          <div id="commonsMapResults" class="flex gap-2 overflow-x-auto py-1 min-h-[48px] text-[11px] text-slate-400">
+            Klik op 'Zoek' voor historische kaarten (Hattinga / Visscher / Oosterschelde) of laad een eigen kaartbestand:
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+            <input type="file" id="customMapUpload" accept="image/*" onchange="uploadCustomMapTexture(event)" class="text-[11px] text-slate-300 file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:bg-slate-700 file:text-white" />
+            <button onclick="clearMapTexture()" class="text-[11px] text-rose-400 hover:underline">Reset kaart</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- VENSTER 6: GERELATEERDE BRONNEN (ZEEUWS ARCHIEF & NATIONAAL ARCHIEF)  -->
+  <!-- ===================================================================== -->
+  <section id="win-sources" class="bg-[#fffdf9] border border-[#d8cfc0] rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-[#eee7d8] px-4 py-2.5 border-b border-[#d8cfc0] flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-base">🔗</span>
+        <h2 class="font-bold text-sm uppercase tracking-wider text-[#14292e]">6. Gekoppelde Visserijarchieven & Cartografische Toegangen (Zeeuws Archief & Nationaal Archief)</h2>
+      </div>
+      <button onclick="toggleWindow('win-sources')" class="text-xs px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700">Verberg ✕</button>
+    </div>
+
+    <div class="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+      <a href="https://www.archieven.nl/nl/zoeken?mivast=0&mizig=210&miadt=239&miaet=1&micode=17&minr=1918477&miview=inv2" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-[#0f4c5c] mono-code">ZA ● Toegang 17</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Bestuur der Visserijen op de Zeeuwse Stromen</div>
+        <div class="text-slate-600 mt-1">1825–1969 (34,92 m) — Hoofdinventaris</div>
+      </a>
+      <a href="https://www.nationaalarchief.nl/onderzoeken/archief/2.11.58" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-amber-800 mono-code">NA ● Toegang 2.11.58</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Visserijinspectie (en voorgangers)</div>
+        <div class="text-slate-600 mt-1">1911–1940 — Landelijk toezicht & districten</div>
+      </a>
+      <a href="https://www.nationaalarchief.nl/onderzoeken/archief/2.11.39" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-amber-800 mono-code">NA ● Toegang 2.11.39</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Directie van de Visserijen</div>
+        <div class="text-slate-600 mt-1">1909–1977 — Beleid, Pachtbesluit 1941 & Coczo</div>
+      </a>
+      <a href="https://www.nationaalarchief.nl/onderzoeken/archief/2.04.53.08" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-amber-800 mono-code">NA ● 2.04.53.08</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Rijksinstituut voor Visserijonderzoek (RIVO)</div>
+        <div class="text-slate-600 mt-1">Biologisch & bacteriologisch oesteronderzoek</div>
+      </a>
+      <a href="https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&micode=293" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-[#0f4c5c] mono-code">ZA ● Toegang 293</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Zelandia Illustrata (o.a. Hattinga-atlassen)</div>
+        <div class="text-slate-600 mt-1">Kaarten van Oosterschelde, Tholen & Verdronken Land</div>
+      </a>
+      <a href="https://www.zeeuwsarchief.nl/" target="_blank" rel="noopener" class="p-3 rounded-lg border border-[#d8cfc0] bg-[#f7f4ec] hover:border-[#0f4c5c] transition block">
+        <div class="font-bold text-[#0f4c5c] mono-code">ZA ● Toegang 295.1/2</div>
+        <div class="font-semibold text-slate-900 mt-0.5">Rijkswaterstaat Visserijpercelen Kaarten</div>
+        <div class="text-slate-600 mt-1">Overgenomen perceelkaarten uit inv.nr. 575</div>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ======================================================================= -->
+<!-- VOORINGELADEN EAD-XML BRONDATA (NL-MdbZA_17_1_EAD.xml)                  -->
+<!-- ======================================================================= -->
+<script id="embedded-ead-xml" type="application/xml">
+<?xml version="1.0" encoding="UTF-8"?>
+<ead>
+  <eadheader>
+    <eadid countrycode="NL" mainagencycode="NL-MdbZA">NL-MdbZA_17_1_EAD</eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Bestuur der Visserijen op de Zeeuwse Stromen, 1825-1969</titleproper>
+        <author>A.J.B. (Ton) de Graaf</author>
+      </titlestmt>
+      <publicationstmt>
+        <publisher>Zeeuws Archief</publisher>
+        <date>2015</date>
+      </publicationstmt>
+    </filedesc>
+  </eadheader>
+  <archdesc level="fonds">
+    <did>
+      <unitid>17</unitid>
+      <unittitle>Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), 1825-1969</unittitle>
+      <unitdate normal="1825/1969">1825-1969 (met retroacta vanaf 1707)</unitdate>
+      <physdesc><extent>34,92 strekkende meter (650+ inventarisnummers)</extent></physdesc>
+      <repository><corpname>Zeeuws Archief, Middelburg</corpname></repository>
+    </did>
+
+    <odd>
+      <head>Geschiedenis van het archiefvormend orgaan</head>
+      <p>De visvangst is al eeuwen een belangrijk bestaansmiddel voor de bevolking langs de kusten van Zeeland en het westelijke deel van Noord-Brabant. Daarbij heeft de overheid al vroeg regelgevend opgetreden door het uitvaardigen van plakkaten op de visserij, laatstelijk het plakkaat van de Staten van Zeeland van 2 juni 1707. Behalve over bevissing met vaartuigen en sleepnetten handelde dit plakkaat ook over het vissen met zogenaamde weren (vandaar de naam weervisserij) die bestonden uit twee vleugels van houten staken in een V-vorm op de slikken en schorren. In het punt van de V bevond zich het fuikgat waarin de vis — voornamelijk ansjovis en haring — bij afgaand tij werd opgevangen.</p>
+      <p>Na de Franse Tijd nam Koning Willem I op 26 augustus 1825 (Koninklijk Besluit nr. 103) een besluit waarbij het beheer van de visserijen op de Schelde en de Zeeuwse Stromen werd opgedragen aan de Permanente Commissie uit het Amortisatie Syndicaat. Het directe toezicht kwam te berusten bij een nieuw ingesteld Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), aanvankelijk gevestigd te Tholen, waar ook het ontvangkantoor der domeinen voor de visserijpachten stond. Voor de inwoners van het voormalige Markiezaat van Bergen op Zoom en de stad Tholen gold een eeuwenoude bijzondere concessie voor het beoefenen van de visserij en de weervisserij op de Oosterschelde en het Verdronken Land van Zuid-Beveland (waaronder het gebied rond het verdronken Reimerswaal).</p>
+      <p>De eerste verloting van visserijpercelen onder het nieuwe reglement vond plaats in 1829 en betrof onder meer percelen in de Braakman en op de slikken van de Oosterschelde. Tot 1870 domineerde het stelsel van verloting en concessies tegen lage retributies, zodat arme vissers toegang hielden tot de banken. In 1870 vond echter een ingrijpende koerswijziging plaats: de eerste openbare verpachting bij opbod van de Yersekebank. Dit markeerde het begin van de kapitaalintensieve, kunstmatige oestercultuur in Zeeland en het einde van de vrije oestervisserij op de natuurlijke banken.</p>
+      <p>Bij de reorganisaties van 1875 en 1897 werden de Zeeuwse Stromen verdeeld in drie overzichtelijke visserijdistricten (Westerschelde, Oosterschelde met Verdronken Land van Zuid-Beveland en Keeten/Krammer/Grevelingen), elk onder toezicht van hoofdopzieners en opzieners met snelle toezichtvaartuigen zoals de zeil- en motorboeiers Argus, Isis en Osiris. Nadat er in 1902-1906 bezorgdheid ontstond over tyfusbesmetting door oesters en mosselen, werd in 1906 te Bergen op Zoom een bacteriologisch laboratorium ingericht voor de controle op de zuiverheid van schelpdierwater en verwaterpercelen.</p>
+      <p>Vanwege uitputting van de gronden en de oesterziekte in de jaren 1930 ontstond behoefte aan verplaatsbare kweekrechten. Dit leidde tot het systeem van de 'mobiele pacht', waarbij de Centrale Organisatie van Coöperatieve Zeeuwse Oesterkwekersverenigingen (Coczo) een sleutelrol speelde. Tijdens de bezetting werd dit vastgelegd in het Pachtbesluit Visrecht 1941. Na de Watersnoodramp van 1953 en de aanvang van de Deltawerken (Deltawet 1958) veranderde het getijdenregime op de Zeeuwse stromen fundamenteel. Per 1 januari 1970 werd het Bestuur der Visserijen op de Zeeuwse Stromen opgeheven en gingen de resterende taken over naar het Ministerie van Landbouw en Visserij.</p>
+    </odd>
+
+    <odd>
+      <head>Geschiedenis van de archieven en verantwoording van de bewerking</head>
+      <p>Het archief van het Bestuur der Visserijen op de Zeeuwse Stromen (BVZS) heeft een omvang van 34,92 strekkende meter en beslaat de periode 1825–1969, met retroacta die teruggaan tot het Plakkaat van 2 juni 1707. Aanvankelijk berustte de administratie bij de secretaris-penningmeester te Tholen, later te Bergen op Zoom en uiteindelijk te Middelburg. Bij de opheffing per 1 januari 1970 zijn de archiefbescheiden overgedragen aan het Rijksarchief in Zeeland (thans Zeeuws Archief).</p>
+      <p>Tijdens de inventarisatie door A.J.B. de Graaf (voltooid in 2015) is de oorspronkelijke ordening naar algemene zaken (notulen, ingekomen en minuten van uitgaande stukken, jaarverslagen) en bijzondere onderwerpen (concessies, verlotingen, verpachtingen op de Yersekebank en Oosterschelde, weervisserij op ansjovis, bacteriologisch onderzoek, personeel en toezichtvaartuigen) hersteld. Een reeks gedrukte kaarten van de visserijpercelen (oorspronkelijk onder inv.nr. 575) is overgebracht naar de kaartenverzameling Rijkswaterstaat Visserijpercelen (toegangen 295.1 en 295.2).</p>
+    </odd>
+
+    <odd>
+      <head>Aanwijzingen voor de onderzoeker</head>
+      <p>Wie onderzoek doet naar individuele vissers, oesterkwekers, mosselkwekers of weervisserij-concessiehouders in Tholen, Bergen op Zoom, Yerseke, Bruinisse, Scherpenisse, Sint-Maartensdijk of Philippine, vindt de belangrijkste toegangen in de registers van uitgegeven concessies en verlotingen (inv.nrs. 240–261), de processen-verbaal van verpachting en pachtregisters (inv.nrs. 262–360) en de registers van afgegeven visconsent- en vergunningsbewijzen (inv.nrs. 361–410). Voor kartering van exacte perceelnummers op de Yersekebank en het Verdronken Land van Zuid-Beveland raadplege men tevens de perceelkaarten in toegang 295.1 en de leggers van verpachte percelen.</p>
+      <p>Verwijzing naar stukken uit dit archief dient als volgt te geschieden: Zeeuws Archief (ZA), Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), toegang 17, inv.nr. [nummer].</p>
+    </odd>
+
+    <odd>
+      <head>Bronnen en verwante archieven</head>
+      <p>Naast dit archief (ZA toegang 17) zijn voor de geschiedenis van de Zeeuwse visserij van groot belang: Nationaal Archief Den Haag, toegang 2.11.58 (Visserijinspectie 1911–1940), toegang 2.11.39 (Directie van de Visserijen 1909–1977) en toegang 2.04.53.08 (Rijksinstituut voor Visserijonderzoek RIVO). Voor de historische geografie en waterstaatkundige ligging van de banken en geulen in de Oosterschelde raadplege men de Zelandia Illustrata (ZA toegang 293, waaronder de atlassen van W.T. en D.W. en A. Hattinga uit circa 1750).</p>
+    </odd>
+
+    <dsc type="combined">
+      <c01 level="series">
+        <did><unittitle>I. STUKKEN VAN ALGEMENE AARD (Notulen, Correspondentie, Jaarverslagen)</unittitle></did>
+        <c02 level="subseries">
+          <did><unittitle>A. Reglementen, Plakkaten en Instellingsbesluiten</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>1</unitid>
+              <unittitle>Afschriften van het Plakkaat op de Visscherije van de Staten van Zeeland van 2 juni 1707, met aantekeningen omtrent de bijzondere rechten van het Markiezaat van Bergen op Zoom en de stad Tholen op de Oosterschelde en het Verdronken Land van Zuid-Beveland</unittitle>
+              <unitdate normal="1707/1826">1707, 1825–1826</unitdate>
+              <physdesc>1 omslag</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>2</unitid>
+              <unittitle>Koninklijk Besluit van 26 augustus 1825 nr. 103 houdende instelling van het Bestuur der Visserijen op de Schelde en Zeeuwse Stromen onder het Amortisatie Syndicaat te Tholen, met bijbehorende instructies</unittitle>
+              <unitdate normal="1825/1828">1825–1828</unitdate>
+              <physdesc>1 pak</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>B. Notulen van de vergaderingen van het Bestuur</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>3-18</unitid>
+              <unittitle>Notulen van de algemene en buitengewone vergaderingen van het Bestuur der Visserijen op de Zeeuwse Stromen, gehouden te Tholen, Bergen op Zoom en Middelburg</unittitle>
+              <unitdate normal="1825/1969">1825–1969</unitdate>
+              <physdesc>16 delen</physdesc>
+            </did>
+            <scopecontent><p>Bevat besluiten over uitgifte van ansjovisweren, verloting van mossel- en oesterbanken, benoeming van opzieners en behandeling van bezwaarschriften van vissers uit Tholen, Bergen op Zoom, Yerseke en Bruinisse.</p></scopecontent>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>19-24</unitid>
+              <unittitle>Alfabetische klappers en indices op de notulen van het Bestuur der Visserijen</unittitle>
+              <unitdate normal="1825/1940">1825–1940</unitdate>
+              <physdesc>6 delen</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>C. Ingekomen stukken en minuten van uitgaande brieven</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>25-145</unitid>
+              <unittitle>Ingekomen stukken en minuten van uitgaande stukken, chronologisch geordend op agenda-nummer</unittitle>
+              <unitdate normal="1825/1935">1825–1935</unitdate>
+              <physdesc>121 pakken en dozen</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>146-189</unitid>
+              <unittitle>Agenda's en brievenboeken op de ingekomen en uitgaande correspondentie van de secretaris-penningmeester en voorzitter</unittitle>
+              <unitdate normal="1826/1945">1826–1945</unitdate>
+              <physdesc>44 delen</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>D. Jaarverslagen en Statistieken der Zeeuwse Visserijen</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>190-228</unitid>
+              <unittitle>Jaarverslagen van het Bestuur der Visserijen op de Zeeuwse Stromen, met gedetailleerde opgave van de vangsten en opbrengsten van oesters, mosselen, ansjovis, kreeft, garnalen en platvis per district</unittitle>
+              <unitdate normal="1855/1968">1855–1968</unitdate>
+              <physdesc>39 delen en omslagen</physdesc>
+            </did>
+          </c03>
+        </c02>
+      </c01>
+
+      <c01 level="series">
+        <did><unittitle>II. STUKKEN BETREFFENDE BIJZONDERE ONDERWERPEN</unittitle></did>
+        
+        <c02 level="subseries">
+          <did><unittitle>A. Organisatie, Personeel, Opzieners en Patrouillevaartuigen</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>229-234</unitid>
+              <unittitle>Stamboeken en personeelsdossiers van de hoofdopzieners, opzieners, schippers en matrozen in de drie visserijdistricten (reglementen van 1875 en 1897)</unittitle>
+              <unitdate normal="1875/1965">1875–1965</unitdate>
+              <physdesc>6 omslagen en delen</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>235-239</unitid>
+              <unittitle>Stukken betreffende bouw, aankoop, onderhoud en journalen van de patrouille- en inspectievaartuigen, waaronder de boeier 'Argus' en de motorvaartuigen 'Isis' en 'Osiris'</unittitle>
+              <unitdate normal="1882/1967">1882–1967</unitdate>
+              <physdesc>5 pakken</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>B. Uitgifte van Visserijen bij Concessie en Verloting (Weervisserij, Braakman, Markiezaat & Tholen)</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>240-247</unitid>
+              <unittitle>Stukken betreffende de bijzondere concessie voor de inwoners van het Markiezaat van Bergen op Zoom en het eiland Tholen voor de weervisserij en visvangst op het Verdronken Land van Zuid-Beveland en de Oosterschelde</unittitle>
+              <unitdate normal="1825/1885">1825–1885</unitdate>
+              <physdesc>8 pakken</physdesc>
+            </did>
+            <scopecontent><p>Bevat naamlijsten van rechthebbende weer- en ansjovisvissers uit Bergen op Zoom, Woensdrecht, Tholen, Oud-Vossemeer, Poortvliet en Scherpenisse, met opgave van de ligging der weren op de slikken nabij Reimerswaal en het Speelmansgat.</p></scopecontent>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>248-254</unitid>
+              <unittitle>Processen-verbaal en registers van de verloting van visserijpercelen en mosselbanken, te beginnen met de eerste verloting in de Braakman (1829) en op de Oosterschelde</unittitle>
+              <unitdate normal="1829/1872">1829–1872</unitdate>
+              <physdesc>7 delen en pakken</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>255-261</unitid>
+              <unittitle>Registers van uitgegeven concessies voor ansjovisweren (stakenvisserij) op de Oosterschelde en het Verdronken Land van Zuid-Beveland, met kaarten en geschillen tussen weervissers en oesterpachters</unittitle>
+              <unitdate normal="1850/1965">1850–1965</unitdate>
+              <physdesc>7 delen en omslagen</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>C. Openbare Verpachtingen, Yersekebank (1870), Mobiele Pacht (Coczo) en Pachtbesluit Visrecht 1941</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>262-275</unitid>
+              <unittitle>Voorwaarden, kohieren en processen-verbaal van de eerste openbare verpachting van de Yersekebank in 1870 en de daaropvolgende grote oester- en mosselverpachtingen in de Oosterschelde</unittitle>
+              <unitdate normal="1870/1905">1870–1905</unitdate>
+              <physdesc>14 delen en pakken</physdesc>
+            </did>
+            <scopecontent><p>Essentiële bron voor de opkomst van Yerseke als centrum van de oestercultuur; vermeldt per kavelnummer de pachters, pachtsommen en borgen.</p></scopecontent>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>276-330</unitid>
+              <unittitle>Leggers en pachtregisters van de verpachte visserijpercelen (oesterpercelen, mosselpercelen, oesterputten en kreeftenparken) per blok en kavelnummer op de Yersekebank, Speelmansplaten, OS-secties en Grevelingen</unittitle>
+              <unitdate normal="1870/1969">1870–1969</unitdate>
+              <physdesc>55 delen</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>331-348</unitid>
+              <unittitle>Stukken betreffende de invoering en uitvoering van de 'mobiele pacht' in samenwerking met de Centrale Organisatie van Coöperatieve Zeeuwse Oesterkwekersverenigingen (Coczo)</unittitle>
+              <unitdate normal="1932/1955">1932–1955</unitdate>
+              <physdesc>18 omslagen en pakken</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>349-360</unitid>
+              <unittitle>Stukken betreffende de totstandkoming en toepassing van het Pachtbesluit Visrecht 1941, pachtprijsherzieningen en kwijtscheldingen wegens vorstschade en oorlogsomstandigheden</unittitle>
+              <unitdate normal="1940/1962">1940–1962</unitdate>
+              <physdesc>12 pakken</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>D. Consenten, Vergunningen en Vaartuigregisters (ZE-, TH-, YE-, BRU-, BOZ-nummers)</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>361-410</unitid>
+              <unittitle>Registers van afgegeven visconsenten en vergunningen voor het vissen met sleepnetten, korren, fuiken en beug op de Zeeuwse Stromen, met vermelding van schipper, woonplaats en letterteken van het vaartuig</unittitle>
+              <unitdate normal="1835/1969">1835–1969</unitdate>
+              <physdesc>50 delen</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>E. Wetenschappelijk en Bacteriologisch Onderzoek (Laboratorium Bergen op Zoom 1906)</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>411-438</unitid>
+              <unittitle>Stukken betreffende de oprichting en werkzaamheden van het Bacteriologisch Laboratorium te Bergen op Zoom (1906), het onderzoek naar de schelpziekte en de afgifte van gezondheidscertificaten voor oesters en mosselen</unittitle>
+              <unitdate normal="1902/1968">1902–1968</unitdate>
+              <physdesc>28 omslagen en pakken</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>F. Handhaving, Processen-Verbaal van Bekeuring en Visserijwet 1908</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>439-510</unitid>
+              <unittitle>Registers van opgemaakte processen-verbaal van overtreding (visdieverij op oesterpercelen, vissen in gesloten tijd of met verboden netwerk) en stukken inzake de invoering van de Visserijwet 1908</unittitle>
+              <unitdate normal="1840/1968">1840–1968</unitdate>
+              <physdesc>72 delen en pakken</physdesc>
+            </did>
+          </c03>
+        </c02>
+
+        <c02 level="subseries">
+          <did><unittitle>G. Kaarten der Visserijpercelen, Watersnoodramp 1953, Deltawerken en Opheffing (1970)</unittitle></did>
+          <c03 level="file">
+            <did>
+              <unitid>575</unitid>
+              <unittitle>Gedrukte en bijgewerkte overzichtskaarten van de verpachte visserijpercelen, oesterputten, mosselbanken en ansjovisweren op de Oosterschelde, Yersekebank, Tholense Gat en Keeten (overgebracht naar Kaartenverzameling Rijkswaterstaat Visserijpercelen, toegangen 295.1 en 295.2)</unittitle>
+              <unitdate normal="1870/1969">1870–1969</unitdate>
+              <physdesc>Verwijzingsnummer (zie ZA toegang 295.1 / 295.2)</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>576-615</unitid>
+              <unittitle>Stukken betreffende het herstel van oesterputten, dijken en visserijpercelen na de Watersnoodramp van 1 februari 1953 en de gevolgen van de Deltawerken (afdamming Zandkreek, Veerse Gat, Grevelingen en plannen Oosterschelde)</unittitle>
+              <unitdate normal="1953/1969">1953–1969</unitdate>
+              <physdesc>40 pakken</physdesc>
+            </did>
+          </c03>
+          <c03 level="file">
+            <did>
+              <unitid>616-633</unitid>
+              <unittitle>Stukken betreffende de afwikkeling van schadevergoedingen krachtens de Deltawet en de opheffing van het Bestuur der Visserijen op de Zeeuwse Stromen per 1 januari 1970</unittitle>
+              <unitdate normal="1960/1970">1960–1970</unitdate>
+              <physdesc>18 omslagen</physdesc>
+            </did>
+          </c03>
+        </c02>
+      </c01>
+    </dsc>
+  </archdesc>
+</ead>
+</script>
+
+<!-- ======================================================================= -->
+<!-- APPLICATIE JAVASCRIPT LOGICA                                            -->
+<!-- ======================================================================= -->
+<script>
+// ---------------------------------------------------------------------------
+// 1. GLOBALE STATE & VOORINGELADEN DATA
+// ---------------------------------------------------------------------------
+let eadNodes = [];           // Alle <c01>-<c05> én <odd> items uit de EAD-XML
+let oddChapters = [];        // Specifiek de <odd> hoofdstukken
+let naNodes = [];            // Nationaal Archief 2.11.58 items
+let filteredResults = [];    // Huidige zoekresultaten
+let activeRubriekFilter = null;
+
+// Voorlees-interface (TTS) state
+let readingQueue = [];
+let currentQueueIndex = 0;
+let currentSentences = [];
+let currentSentenceIdx = 0;
+let isSpeaking = false;
+let isPaused = false;
+let activeUtterance = null;
+let openaiAudioPlayer = null;
+let lastAIAnswerPlain = "";
+let lastAIRagNodes = [];
+
+// Voorgebouwde NA 2.11.58 (Visserijinspectie) kern-index zodat bronfilter direct werkt
+const DEFAULT_NA_21158 = [
+  {
+    id: "NA-2.11.58-14",
+    source: "na",
+    unitid: "2.11.58 / inv.nr. 14-28",
+    title: "Jaarverslagen en maandrapporten van de Visserijinspectie in het 6e en 7e district (Zeeuwse Stromen, oester- en mosselcultuur en kustvisserij)",
+    date: "1911–1940",
+    yearStart: 1911,
+    yearEnd: 1940,
+    extent: "15 omslagen",
+    path: ["Nationaal Archief 2.11.58", "Toezicht Zeeuwse Stromen"],
+    scope: "Bevat correspondentie met het Bestuur der Visserijen op de Zeeuwse Stromen (BVZS) over de handhaving van de Visserijwet 1908, de bacteriologische controle te Bergen op Zoom en de crisis in de oestercultuur (Coczo)."
+  },
+  {
+    id: "NA-2.11.58-89",
+    source: "na",
+    unitid: "2.11.58 / inv.nr. 89-104",
+    title: "Stukken betreffende het onderzoek naar de zuiverheid van schelpdierwater, oesterputten te Yerseke, Tholen en Bergen op Zoom en exportcertificaten naar Engeland en België",
+    date: "1912–1939",
+    yearStart: 1912,
+    yearEnd: 1939,
+    extent: "16 pakken",
+    path: ["Nationaal Archief 2.11.58", "Bacteriologisch Toezicht & Export"],
+    scope: "Sluit rechtstreeks aan op ZA Toegang 17 inv.nrs. 411-438 (Bacteriologisch Laboratorium Bergen op Zoom)."
+  },
+  {
+    id: "NA-2.11.58-142",
+    source: "na",
+    unitid: "2.11.58 / inv.nr. 142-156",
+    title: "Dossiers inzake de weervisserij op ansjovis op de Oosterschelde en het Verdronken Land van Zuid-Beveland en geschillen met mossel- en oesterpachters",
+    date: "1915–1938",
+    yearStart: 1915,
+    yearEnd: 1938,
+    extent: "15 omslagen",
+    path: ["Nationaal Archief 2.11.58", "Weervisserij & Percelen"],
+    scope: "Bevat adviezen van de hoofdinspecteur der visserijen over de afbakening van ansjovisweren nabij Bergen op Zoom en Tholen."
+  }
+];
+
+const THEMATIC_CHIPS = [
+  { label: "🦪 Oestercultuur & Yersekebank (1870)", q: "Yersekebank oester" },
+  { label: "🐟 Weervisserij & Ansjovisweren", q: "weervisserij ansjovis weren" },
+  { label: "🏰 Markiezaat Bergen op Zoom & Tholen", q: "Bergen op Zoom Tholen" },
+  { label: "📜 Plakkaat 2 juni 1707 & KB 1825", q: "1707 1825 Amortisatie" },
+  { label: "🔄 Mobiele Pacht (Coczo) & 1941", q: "mobiele pacht Coczo 1941" },
+  { label: "⛵ Schepen Argus, Isis & Osiris", q: "Argus Isis Osiris" },
+  { label: "🔬 Lab Bergen op Zoom (1906)", q: "Bacteriologisch 1906" },
+  { label: "🌊 Watersnood 1953 & Deltawerken", q: "1953 Deltawerken" },
+  { label: "🗺 Perceelkaarten (inv.nr. 575 / 295.1)", q: "575 overzichtskaarten" }
+];
+
+// ---------------------------------------------------------------------------
+// 2. VENSTER-MANAGER (AAN/UIT KLIKBARE VENSTERS)
+// ---------------------------------------------------------------------------
+function toggleWindow(winId) {
+  const sec = document.getElementById(winId);
+  const btn = document.getElementById("btn-" + winId);
+  if (!sec || !btn) return;
+  const isHidden = sec.classList.contains("hidden");
+  if (isHidden) {
+    sec.classList.remove("hidden");
+    btn.classList.remove("inactive");
+    btn.classList.add("active");
+    const dot = btn.querySelector(".indicator-dot");
+    if (dot) { dot.classList.remove("bg-slate-400"); dot.classList.add("bg-emerald-400"); }
+    if (winId === "win-quat") resizeQuatCanvas();
+  } else {
+    sec.classList.add("hidden");
+    btn.classList.remove("active");
+    btn.classList.add("inactive");
+    const dot = btn.querySelector(".indicator-dot");
+    if (dot) { dot.classList.remove("bg-emerald-400"); dot.classList.add("bg-slate-400"); }
+  }
+}
+
+function setAllWindows(show) {
+  const ids = ["win-files", "win-search", "win-ai", "win-reader", "win-quat", "win-sources"];
+  ids.forEach(id => {
+    const sec = document.getElementById(id);
+    const btn = document.getElementById("btn-" + id);
+    if (!sec || !btn) return;
+    if (show) {
+      sec.classList.remove("hidden");
+      btn.classList.add("active");
+      btn.classList.remove("inactive");
+      const dot = btn.querySelector(".indicator-dot");
+      if (dot) { dot.classList.remove("bg-slate-400"); dot.classList.add("bg-emerald-400"); }
+    } else {
+      sec.classList.add("hidden");
+      btn.classList.remove("active");
+      btn.classList.add("inactive");
+    }
+  });
+  resizeQuatCanvas();
+}
+
+function resetLayoutDefault() {
+  setAllWindows(true);
+}
+
+// ---------------------------------------------------------------------------
+// 3. EAD-XML PARSER & VOORLADER
+// ---------------------------------------------------------------------------
+function parseYearsFromDateStr(str) {
+  if (!str) return { start: null, end: null };
+  const matches = str.match(/\b(1[5-9]\d{2}|20\d{2})\b/g);
+  if (!matches || !matches.length) return { start: null, end: null };
+  const nums = matches.map(Number);
+  return { start: Math.min(...nums), end: Math.max(...nums) };
+}
+
+function parseEADXmlString(xmlString) {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlString, "text/xml");
+  const parseErr = xml.querySelector("parsererror");
+  if (parseErr) {
+    console.error("XML Parse fout:", parseErr.textContent);
+    return;
+  }
+
+  eadNodes = [];
+  oddChapters = [];
+
+  // 1. Parse <odd> historische hoofdstukken
+  const odds = Array.from(xml.querySelectorAll("archdesc > odd"));
+  odds.forEach((odd, idx) => {
+    const head = (odd.querySelector("head")?.textContent || `Inleidingshoofdstuk ${idx + 1}`).trim();
+    const paras = Array.from(odd.querySelectorAll("p")).map(p => p.textContent.trim()).filter(Boolean);
+    const fullText = paras.join("\n\n");
+    const item = {
+      id: `ODD-${idx + 1}`,
+      source: "intro",
+      unitid: `Inleiding §${idx + 1}`,
+      title: head,
+      date: "1707–1970",
+      yearStart: 1707,
+      yearEnd: 1970,
+      extent: `${paras.length} alinea's`,
+      path: ["Historische Inleiding (<odd>)", head],
+      scope: fullText,
+      paragraphs: paras
+    };
+    oddChapters.push(item);
+    eadNodes.push(item);
+  });
+
+  // 2. Parse <c01> t/m <c06> inventarisnummers
+  function walkComponent(node, pathArr) {
+    const did = node.querySelector(":scope > did");
+    const unitid = (did?.querySelector("unitid")?.textContent || "").trim();
+    const unittitle = (did?.querySelector("unittitle")?.textContent || "").trim();
+    const unitdate = (did?.querySelector("unitdate")?.textContent || "").trim();
+    const physdesc = (did?.querySelector("physdesc")?.textContent || "").trim();
+    const scopecontent = Array.from(node.querySelectorAll(":scope > scopecontent p, :scope > odd p"))
+      .map(p => p.textContent.trim())
+      .join(" ");
+
+    const childComponents = Array.from(node.children).filter(el => /^c0[1-6]$|^c$/i.test(el.tagName));
+    const nextPath = unittitle ? [...pathArr, unittitle] : pathArr;
+
+    // Voeg toe als het een daadwerkelijk inventarisnummer of beschrijvingseenheid is
+    if (unitid || childComponents.length === 0) {
+      const yrs = parseYearsFromDateStr(unitdate || unittitle);
+      eadNodes.push({
+        id: `ZA17-${unitid || eadNodes.length}`,
+        source: "za17",
+        unitid: unitid || "Rubriek",
+        title: unittitle || "(Zonder titel)",
+        date: unitdate || "z.j.",
+        yearStart: yrs.start,
+        yearEnd: yrs.end,
+        extent: physdesc || "",
+        path: pathArr,
+        scope: scopecontent
+      });
+    }
+
+    childComponents.forEach(ch => walkComponent(ch, nextPath));
+  }
+
+  const topSeries = Array.from(xml.querySelectorAll("dsc > c01, dsc > c"));
+  topSeries.forEach(c => walkComponent(c, []));
+
+  // Update tellers & UI
+  const invOnlyCount = eadNodes.filter(n => n.source === "za17").length;
+  document.getElementById("eadCountInfo").textContent = `${invOnlyCount} XML-eenheden + ${oddChapters.length} hoofdstukken`;
+  renderSidebarTree();
+  runSearch();
+  if (oddChapters.length > 0 && currentSentences.length === 0) {
+    loadOddChapterIntoReader(0, false);
+  }
+}
+
+function loadEmbeddedEAD() {
+  const xmlText = document.getElementById("embedded-ead-xml").textContent.trim();
+  naNodes = [...DEFAULT_NA_21158];
+  parseEADXmlString(xmlText);
+  document.getElementById("eadStatusPill").textContent = "Voorgeladen XML Actief";
+}
+
+function downloadEmbeddedXML() {
+  const xmlText = document.getElementById("embedded-ead-xml").textContent.trim();
+  const blob = new Blob([xmlText], { type: "application/xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "NL-MdbZA_17_1_EAD.xml";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// 4. RUBRIEKSBOOM, ZOEKEN & FILTEREN
+// ---------------------------------------------------------------------------
+function renderThematicChips() {
+  const wrap = document.getElementById("topicChips");
+  wrap.innerHTML = THEMATIC_CHIPS.map(ch => `
+    <button onclick="applyChipQuery('${ch.q.replace(/'/g, "\\'")}')" class="text-xs px-2.5 py-1 rounded-full bg-[#f3efe6] hover:bg-[#0f4c5c] hover:text-white border border-[#d8cfc0] text-slate-800 transition font-medium">
+      ${ch.label}
+    </button>
+  `).join("");
+}
+
+function applyChipQuery(qStr) {
+  document.getElementById("q").value = qStr;
+  activeRubriekFilter = null;
+  runSearch();
+}
+
+function renderSidebarTree() {
+  const introEl = document.getElementById("introList");
+  introEl.innerHTML = oddChapters.map((ch, idx) => `
+    <div class="flex items-center justify-between gap-1 p-1.5 rounded hover:bg-[#e5dec9] cursor-pointer text-xs">
+      <span onclick="selectNodeDetail('${ch.id}')" class="truncate font-medium text-[#0f4c5c]">📜 ${ch.title}</span>
+      <button onclick="loadOddChapterIntoReader(${idx}, true)" class="px-1.5 py-0.5 rounded bg-[#0f4c5c] text-white text-[10px] shrink-0" title="Lees hoofdstuk voor">🔊</button>
+    </div>
+  `).join("");
+
+  // Groepeer op hoofdrubriek en subrubriek
+  const rubriekMap = new Map();
+  eadNodes.filter(n => n.source === "za17").forEach(n => {
+    const key = n.path.join(" › ") || "Overige stukken";
+    rubriekMap.set(key, (rubriekMap.get(key) || 0) + 1);
+  });
+
+  const treeEl = document.getElementById("treeList");
+  treeEl.innerHTML = Array.from(rubriekMap.entries()).map(([rub, count]) => {
+    const isAct = activeRubriekFilter === rub;
+    return `
+      <div onclick="filterByRubriek('${rub.replace(/'/g, "\\'")}')" class="p-1.5 rounded cursor-pointer flex items-center justify-between gap-1 ${isAct ? 'bg-[#0f4c5c] text-white font-semibold' : 'hover:bg-[#e5dec9] text-slate-800'}">
+        <span class="truncate" title="${rub}">${rub}</span>
+        <span class="text-[10px] mono-code px-1.5 py-0.5 rounded ${isAct ? 'bg-amber-400 text-slate-950' : 'bg-white text-slate-600'}">${count}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function filterByRubriek(rub) {
+  activeRubriekFilter = (activeRubriekFilter === rub) ? null : rub;
+  renderSidebarTree();
+  runSearch();
+}
+
+function clearRubriekFilter() {
+  activeRubriekFilter = null;
+  renderSidebarTree();
+  runSearch();
+}
+
+function resetFilters() {
+  document.getElementById("q").value = "";
+  document.getElementById("yearFrom").value = "";
+  document.getElementById("yearTo").value = "";
+  document.getElementById("sourceFilter").value = "all";
+  activeRubriekFilter = null;
+  renderSidebarTree();
+  runSearch();
+}
+
+function highlightQueryTerms(text, query) {
+  if (!text) return "";
+  const safe = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  if (!query || !query.trim()) return safe;
+  const terms = query.trim().split(/\s+/).filter(t => t.length > 1);
+  if (!terms.length) return safe;
+  const pattern = new RegExp(`(${terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join("|")})`, "gi");
+  return safe.replace(pattern, `<span class="search-hit">$1</span>`);
+}
+
+function runSearch() {
+  const qRaw = (document.getElementById("q")?.value || "").trim().toLowerCase();
+  const terms = qRaw.split(/\s+/).filter(Boolean);
+  const yFrom = parseInt(document.getElementById("yearFrom")?.value || "", 10);
+  const yTo = parseInt(document.getElementById("yearTo")?.value || "", 10);
+  const srcFilter = document.getElementById("sourceFilter")?.value || "all";
+
+  const allPool = [...eadNodes, ...naNodes];
+
+  filteredResults = allPool.filter(item => {
+    if (srcFilter !== "all" && item.source !== srcFilter) return false;
+    if (activeRubriekFilter && item.path.join(" › ") !== activeRubriekFilter) return false;
+
+    if (!isNaN(yFrom) && item.yearEnd && item.yearEnd < yFrom) return false;
+    if (!isNaN(yTo) && item.yearStart && item.yearStart > yTo) return false;
+
+    if (terms.length > 0) {
+      const hay = `${item.unitid} ${item.title} ${item.date} ${item.path.join(" ")} ${item.scope || ""}`.toLowerCase();
+      // Match als tenminste één kernterm voorkomt, en sorteer op aantal treffers
+      const matchCount = terms.filter(t => hay.includes(t)).length;
+      if (matchCount === 0) return false;
+      item._score = matchCount;
+    } else {
+      item._score = 1;
+    }
+    return true;
+  });
+
+  if (terms.length > 0) {
+    filteredResults.sort((a, b) => (b._score || 0) - (a._score || 0));
+  }
+
+  document.getElementById("resultStats").textContent = `${filteredResults.length} gevonden archiefstukken / hoofdstukken`;
+  const listEl = document.getElementById("resultsList");
+
+  if (filteredResults.length === 0) {
+    listEl.innerHTML = `<div class="p-4 text-xs text-slate-500 italic">Geen stukken gevonden voor deze filtercombinatie. Klik op 'Reset' om alles te tonen.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = filteredResults.map(item => {
+    const badgeColor = item.source === "za17"
+      ? "bg-[#0f4c5c] text-white"
+      : item.source === "intro"
+      ? "bg-amber-700 text-white"
+      : "bg-purple-800 text-white";
+    const badgeLabel = item.source === "za17"
+      ? `ZA 17 ● inv.nr. ${item.unitid}`
+      : item.source === "intro"
+      ? `ZA 17 ● ${item.unitid}`
+      : `${item.unitid}`;
+
+    return `
+      <div class="p-3 rounded-lg border border-[#d8cfc0] bg-[#fffdf9] hover:border-[#0f4c5c] transition shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-1 mb-1">
+          <span onclick="selectNodeDetail('${item.id}')" class="cursor-pointer text-[11px] mono-code px-2 py-0.5 rounded font-semibold ${badgeColor}">
+            ${badgeLabel}
+          </span>
+          <span class="text-[11px] mono-code text-slate-600 font-medium">${item.date} ${item.extent ? '● ' + item.extent : ''}</span>
+        </div>
+        <div onclick="selectNodeDetail('${item.id}')" class="cursor-pointer font-semibold text-sm text-slate-900 leading-snug serif-book">
+          ${highlightQueryTerms(item.title, qRaw)}
+        </div>
+        ${item.scope ? `<p onclick="selectNodeDetail('${item.id}')" class="cursor-pointer text-xs text-slate-600 mt-1 line-clamp-2">${highlightQueryTerms(item.scope, qRaw)}</p>` : ''}
+        <div class="mt-2 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1">
+          <span class="text-[10px] text-slate-500 truncate max-w-[55%]">${item.path.slice(-1)[0] || ''}</span>
+          <div class="flex items-center gap-1">
+            <button onclick="readNodeImmediately('${item.id}')" class="text-[11px] px-2 py-0.5 rounded bg-[#0f4c5c] text-white hover:bg-[#166478] font-medium">
+              🔊 Lees dit stuk voor
+            </button>
+            <button onclick="addNodeToQueue('${item.id}')" class="text-[11px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 hover:bg-amber-200 font-medium">
+              ➕ Wachtrij
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Toon automatisch eerste resultaat in het detailpaneel
+  selectNodeDetail(filteredResults[0].id);
+}
+
+function selectNodeDetail(nodeId) {
+  const allPool = [...eadNodes, ...naNodes];
+  const item = allPool.find(x => x.id === nodeId);
+  if (!item) return;
+
+  const citeStr = item.source === "za17"
+    ? `Zeeuws Archief, Bestuur der Visserijen op de Zeeuwse Stromen (toegang 17), inv.nr. ${item.unitid}`
+    : item.source === "intro"
+    ? `Zeeuws Archief, Toegang 17 (BVZS), Historische Inleiding (${item.title})`
+    : `Nationaal Archief, Den Haag, Visserijinspectie (toegang 2.11.58), ${item.unitid}`;
+
+  const pane = document.getElementById("detailPane");
+  pane.innerHTML = `
+    <div class="space-y-3">
+      <div class="flex items-center justify-between border-b border-[#d8cfc0] pb-2">
+        <span class="text-xs mono-code font-bold px-2.5 py-1 rounded bg-[#0f4c5c] text-white">${item.unitid}</span>
+        <span class="text-xs mono-code font-semibold text-amber-900">${item.date}</span>
+      </div>
+
+      <h3 class="text-base font-bold serif-book text-slate-900 leading-snug">${item.title}</h3>
+
+      ${item.path && item.path.length ? `
+        <div class="text-xs bg-white p-2 rounded border border-[#d8cfc0]">
+          <span class="font-bold text-slate-600 block uppercase text-[10px] mono-code">Rubriekspad in EAD-XML:</span>
+          <span class="text-slate-800">${item.path.join(" › ")}</span>
+        </div>
+      ` : ''}
+
+      ${item.extent ? `
+        <div class="text-xs">
+          <strong class="text-slate-700">Uiterlijke vorm / Omvang:</strong> ${item.extent}
+        </div>
+      ` : ''}
+
+      ${item.scope ? `
+        <div class="text-xs bg-white p-3 rounded-lg border border-[#d8cfc0] space-y-1.5 leading-relaxed serif-book text-sm text-slate-800">
+          <strong class="font-sans text-[11px] uppercase mono-code text-[#0f4c5c] block">Inhoud / Toelichting (&lt;scopecontent&gt; / &lt;odd&gt;):</strong>
+          <div>${item.scope.replace(/\n\n/g, '<br><br>')}</div>
+        </div>
+      ` : ''}
+
+      <div class="bg-[#eee7d8] p-2.5 rounded-lg border border-[#d8cfc0] text-xs">
+        <div class="font-bold text-[10px] uppercase mono-code text-slate-700 mb-1">Archiefverwijzing (Citeerregel):</div>
+        <div id="citeTextBox" class="mono-code text-[11px] text-slate-900 select-all">${citeStr}</div>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5 pt-1">
+        <button onclick="readNodeImmediately('${item.id}')" class="px-3 py-1.5 rounded bg-[#0f4c5c] text-white hover:bg-[#166478] text-xs font-semibold">
+          🔊 Lees nu voor in Boekweergave
+        </button>
+        <button onclick="addNodeToQueue('${item.id}')" class="px-3 py-1.5 rounded bg-amber-600 text-white hover:bg-amber-700 text-xs font-semibold">
+          ➕ Zet in Voorlees-Wachtrij
+        </button>
+        <button onclick="copyCitationText('${citeStr.replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 rounded bg-white border border-slate-300 hover:bg-slate-100 text-xs font-medium">
+          📋 Kopieer Citaat
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function copyCitationText(txt) {
+  const ta = document.createElement("textarea");
+  ta.value = txt;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+}
+
+// ---------------------------------------------------------------------------
+// 5. XML VOORLEES-INTERFACE (TTS + LIVE ZIN-MARKERING + OPENAI AUDIO + WEBRTC)
+// ---------------------------------------------------------------------------
+function initVoices() {
+  const select = document.getElementById("voiceSelect");
+  if (!select || !("speechSynthesis" in window)) return;
+
+  function populate() {
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return;
+    // Sorteer zodat Nederlandse stemmen bovenaan staan
+    const sorted = [...voices].sort((a, b) => {
+      const aNL = a.lang.toLowerCase().startsWith("nl") ? -1 : 1;
+      const bNL = b.lang.toLowerCase().startsWith("nl") ? -1 : 1;
+      return aNL - bNL;
+    });
+    select.innerHTML = sorted.map((v, i) => `
+      <option value="${v.name}">${v.lang} — ${v.name}</option>
+    `).join("");
+  }
+  populate();
+  window.speechSynthesis.onvoiceschanged = populate;
+}
+
+function onTTSEngineChange() {
+  const eng = document.getElementById("ttsEngineSelect").value;
+  document.getElementById("browserVoiceWrap").classList.toggle("hidden", eng === "openai");
+  document.getElementById("openaiVoiceWrap").classList.toggle("hidden", eng !== "openai");
+  document.getElementById("openaiVoiceWrap").classList.toggle("flex", eng === "openai");
+}
+
+function splitIntoSentences(text) {
+  if (!text) return [];
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  const raw = cleaned.match(/[^.!?]+[.!?]+|\S[^.!?]*$/g) || [cleaned];
+  return raw.map(s => s.trim()).filter(Boolean);
+}
+
+function loadTextObjectIntoReader(itemObj, autoPlay = false) {
+  document.getElementById("readerCurrentBadge").textContent = itemObj.badge || "ZA ● Toegang 17 ● EAD-XML";
+  document.getElementById("readerCurrentTitle").textContent = itemObj.title || "Archiefstuk";
+  document.getElementById("readerCiteCode").textContent = itemObj.cite || "";
+
+  currentSentences = splitIntoSentences(itemObj.text);
+  currentSentenceIdx = 0;
+
+  renderReaderSentences();
+  if (autoPlay) {
+    speakCurrentSentence();
+  }
+}
+
+function renderReaderSentences() {
+  const container = document.getElementById("readerSentencesContainer");
+  document.getElementById("readerSentenceTotal").textContent = currentSentences.length;
+  document.getElementById("readerSentenceIndex").textContent = currentSentences.length ? (currentSentenceIdx + 1) : 0;
+
+  const qRaw = (document.getElementById("q")?.value || "").trim();
+
+  container.innerHTML = currentSentences.map((sent, idx) => {
+    const isAct = idx === currentSentenceIdx && isSpeaking;
+    return `<span id="reader-sent-${idx}" onclick="jumpToSentence(${idx})" class="cursor-pointer hover:bg-amber-100/80 px-1 py-0.5 rounded inline ${isAct ? 'active-sentence' : ''}">${highlightQueryTerms(sent, qRaw)} </span>`;
+  }).join("");
+
+  const activeEl = document.getElementById(`reader-sent-${currentSentenceIdx}`);
+  if (activeEl) {
+    activeEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function jumpToSentence(idx) {
+  currentSentenceIdx = idx;
+  speakCurrentSentence();
+}
+
+async function speakCurrentSentence() {
+  if (!currentSentences.length) return;
+  if (currentSentenceIdx < 0) currentSentenceIdx = 0;
+  if (currentSentenceIdx >= currentSentences.length) {
+    // Ga automatisch naar het volgende item in de wachtrij indien aanwezig
+    if (currentQueueIndex + 1 < readingQueue.length) {
+      currentQueueIndex++;
+      loadTextObjectIntoReader(readingQueue[currentQueueIndex], true);
+      renderQueueList();
+    } else {
+      stopReading();
+    }
+    return;
+  }
+
+  isSpeaking = true;
+  isPaused = false;
+  document.getElementById("globalAudioBadge").classList.remove("hidden");
+  document.getElementById("globalAudioBadge").classList.add("flex");
+  renderReaderSentences();
+
+  const sentenceText = currentSentences[currentSentenceIdx];
+  broadcastSentenceToWebRTC(sentenceText, document.getElementById("readerCurrentTitle").textContent);
+
+  const engine = document.getElementById("ttsEngineSelect").value;
+  const apiKey = (document.getElementById("openaiApiKey")?.value || "").trim();
+
+  // Optie A: OpenAI Audio Speech API (/v1/audio/speech)
+  if (engine === "openai" && apiKey.startsWith("sk-")) {
+    try {
+      if (openaiAudioPlayer) {
+        openaiAudioPlayer.pause();
+      }
+      const voice = document.getElementById("openaiVoiceSelect").value || "nova";
+      const speed = parseFloat(document.getElementById("ttsRate").value) || 1.0;
+      const resp = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "tts-1",
+          input: sentenceText,
+          voice: voice,
+          speed: speed
+        })
+      });
+      if (!resp.ok) throw new Error("OpenAI TTS status " + resp.status);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      openaiAudioPlayer = new Audio(url);
+      openaiAudioPlayer.onended = () => {
+        URL.revokeObjectURL(url);
+        if (isSpeaking && !isPaused) {
+          currentSentenceIdx++;
+          speakCurrentSentence();
+        }
+      };
+      openaiAudioPlayer.play();
+      return;
+    } catch (err) {
+      console.warn("OpenAI TTS fallback naar browser stem:", err);
+    }
+  }
+
+  // Optie B: Standaard Browser SpeechSynthesis
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(sentenceText);
+  const selectedVoiceName = document.getElementById("voiceSelect")?.value;
+  const voices = window.speechSynthesis.getVoices();
+  const matchedVoice = voices.find(v => v.name === selectedVoiceName) || voices.find(v => v.lang.toLowerCase().startsWith("nl"));
+  if (matchedVoice) utter.voice = matchedVoice;
+  utter.lang = matchedVoice?.lang || "nl-NL";
+  utter.rate = parseFloat(document.getElementById("ttsRate")?.value || "1.0");
+  utter.pitch = parseFloat(document.getElementById("ttsPitch")?.value || "1.0");
+
+  utter.onend = () => {
+    if (isSpeaking && !isPaused) {
+      currentSentenceIdx++;
+      speakCurrentSentence();
+    }
+  };
+
+  activeUtterance = utter;
+  window.speechSynthesis.speak(utter);
+}
+
+function playOrResumeReading() {
+  if (isPaused && "speechSynthesis" in window) {
+    window.speechSynthesis.resume();
+    isPaused = false;
+    isSpeaking = true;
+    return;
+  }
+  speakCurrentSentence();
+}
+
+function pauseReading() {
+  isPaused = true;
+  if (openaiAudioPlayer) openaiAudioPlayer.pause();
+  if ("speechSynthesis" in window) window.speechSynthesis.pause();
+}
+
+function stopReading() {
+  isSpeaking = false;
+  isPaused = false;
+  if (openaiAudioPlayer) openaiAudioPlayer.pause();
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  document.getElementById("globalAudioBadge").classList.add("hidden");
+  document.getElementById("globalAudioBadge").classList.remove("flex");
+  renderReaderSentences();
+}
+
+function prevSentence() {
+  if (currentSentenceIdx > 0) currentSentenceIdx--;
+  speakCurrentSentence();
+}
+
+function nextSentence() {
+  if (currentSentenceIdx + 1 < currentSentences.length) currentSentenceIdx++;
+  speakCurrentSentence();
+}
+
+function prevQueueItem() {
+  if (currentQueueIndex > 0) {
+    currentQueueIndex--;
+    loadTextObjectIntoReader(readingQueue[currentQueueIndex], true);
+    renderQueueList();
+  }
+}
+
+function nextQueueItem() {
+  if (currentQueueIndex + 1 < readingQueue.length) {
+    currentQueueIndex++;
+    loadTextObjectIntoReader(readingQueue[currentQueueIndex], true);
+    renderQueueList();
+  }
+}
+
+// Hulpfuncties om EAD-hoofdstukken, inventarisnummers en zoekresultaten in de voorlezer te zetten
+function nodeToReaderObject(item) {
+  const spokenBody = item.source === "intro"
+    ? `${item.title}. ${item.scope}`
+    : `Inventarisnummer ${item.unitid}, datering ${item.date}. ${item.title}. ${item.scope || ""}`;
+  return {
+    id: item.id,
+    badge: item.source === "za17" ? `ZA Toegang 17 ● inv.nr. ${item.unitid}` : item.unitid,
+    title: item.title,
+    cite: `ZA, BVZS, inv.nr. ${item.unitid}`,
+    text: spokenBody
+  };
+}
+
+function loadOddChapterIntoReader(idx, autoPlay) {
+  const ch = oddChapters[idx];
+  if (!ch) return;
+  // Zorg dat het voorleesvenster zichtbaar is
+  const readerWin = document.getElementById("win-reader");
+  if (readerWin.classList.contains("hidden")) toggleWindow("win-reader");
+
+  const obj = nodeToReaderObject(ch);
+  readingQueue = [obj];
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(obj, autoPlay);
+}
+
+function readAllIntroChapters() {
+  const readerWin = document.getElementById("win-reader");
+  if (readerWin.classList.contains("hidden")) toggleWindow("win-reader");
+
+  readingQueue = oddChapters.map(ch => nodeToReaderObject(ch));
+  currentQueueIndex = 0;
+  renderQueueList();
+  if (readingQueue.length) {
+    loadTextObjectIntoReader(readingQueue[0], true);
+  }
+}
+
+function openHistoricalIntroModal() {
+  loadOddChapterIntoReader(0, false);
+  document.getElementById("win-reader").scrollIntoView({ behavior: "smooth" });
+}
+
+function readNodeImmediately(nodeId) {
+  const allPool = [...eadNodes, ...naNodes];
+  const item = allPool.find(x => x.id === nodeId);
+  if (!item) return;
+  const obj = nodeToReaderObject(item);
+  readingQueue.unshift(obj);
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(obj, true);
+}
+
+function addNodeToQueue(nodeId) {
+  const allPool = [...eadNodes, ...naNodes];
+  const item = allPool.find(x => x.id === nodeId);
+  if (!item) return;
+  readingQueue.push(nodeToReaderObject(item));
+  renderQueueList();
+}
+
+function readCurrentSearchResults() {
+  if (!filteredResults.length) return;
+  readingQueue = filteredResults.slice(0, 25).map(item => nodeToReaderObject(item));
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(readingQueue[0], true);
+}
+
+function readCustomInputText() {
+  const val = document.getElementById("customReadInput").value.trim();
+  if (!val) return;
+  const obj = {
+    id: "CUSTOM-" + Date.now(),
+    badge: "Eigen Archiefnotitie",
+    title: "Handmatig ingevoerde passage",
+    cite: "Onderzoeksnotitie",
+    text: val
+  };
+  readingQueue.unshift(obj);
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(obj, true);
+}
+
+function clearReadingQueue() {
+  readingQueue = [];
+  currentQueueIndex = 0;
+  renderQueueList();
+}
+
+function renderQueueList() {
+  document.getElementById("queueCount").textContent = readingQueue.length;
+  document.getElementById("queueCountTop").textContent = readingQueue.length;
+  const list = document.getElementById("readingQueueList");
+  if (!readingQueue.length) {
+    list.innerHTML = `<div class="text-slate-500 italic">Nog geen stukken in de wachtrij. Klik bij een zoekresultaat op '➕ Wachtrij' of '🔊 Lees dit stuk voor'.</div>`;
+    return;
+  }
+  list.innerHTML = readingQueue.map((q, idx) => `
+    <div onclick="selectQueueItem(${idx})" class="p-2 rounded border cursor-pointer flex items-center justify-between gap-2 ${idx === currentQueueIndex ? 'bg-[#0f4c5c] text-white border-[#0f4c5c]' : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-800'}">
+      <div class="truncate">
+        <span class="mono-code font-bold text-[10px] mr-1">${idx + 1}.</span>
+        <span class="font-medium">${q.badge}:</span> ${q.title}
+      </div>
+      <span class="text-[10px] shrink-0">${idx === currentQueueIndex ? '▶ Actief' : 'Lees'}</span>
+    </div>
+  `).join("");
+}
+
+function selectQueueItem(idx) {
+  currentQueueIndex = idx;
+  renderQueueList();
+  loadTextObjectIntoReader(readingQueue[idx], true);
+}
+
+// ---------------------------------------------------------------------------
+// 6. WEBRTC LIVE VOORLEESKAMER & PEER-TO-PEER SYNCHRONISATIE
+// ---------------------------------------------------------------------------
+let rtcPeer = null;
+let rtcDataChannel = null;
+let localMediaStream = null;
+const syncChannel = ("BroadcastChannel" in window) ? new BroadcastChannel("bvzs_toegang17_sync") : null;
+
+if (syncChannel) {
+  syncChannel.onmessage = (ev) => {
+    if (ev.data?.type === "sentence_sync") {
+      const sub = document.getElementById("rtcLiveSubtitle");
+      if (sub) sub.textContent = `[Live Sync ● ${ev.data.title}]: "${ev.data.sentence}"`;
+    } else if (ev.data?.type === "chat_note") {
+      appendRTCLog(`[Tabblad-Peer]: ${ev.data.text}`);
+    }
+  };
+}
+
+function toggleWebRTCPanel() {
+  const p = document.getElementById("webrtcPanel");
+  p.classList.toggle("hidden");
+}
+
+function appendRTCLog(msg) {
+  const box = document.getElementById("rtcLogBox");
+  if (!box) return;
+  const d = document.createElement("div");
+  d.textContent = msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function broadcastSentenceToWebRTC(sentence, title) {
+  const sub = document.getElementById("rtcLiveSubtitle");
+  if (sub) sub.textContent = `🔊 "${sentence}"`;
+
+  const payload = JSON.stringify({ type: "sentence_sync", sentence, title });
+  if (syncChannel) syncChannel.postMessage({ type: "sentence_sync", sentence, title });
+  if (rtcDataChannel && rtcDataChannel.readyState === "open") {
+    rtcDataChannel.send(payload);
+  }
+}
+
+async function startLocalMediaRTC() {
+  try {
+    localMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    document.getElementById("localVideo").srcObject = localMediaStream;
+    appendRTCLog("[Media] Camera en microfoon geactiveerd voor voorleeskamer.");
+  } catch (e) {
+    appendRTCLog("[Media] Geen camera/microfoon gevonden of geweigerd; WebRTC DataChannel werkt wel gewoon.");
+  }
+}
+
+function ensureRTCPeer() {
+  if (rtcPeer) return rtcPeer;
+  rtcPeer = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
+  if (localMediaStream) {
+    localMediaStream.getTracks().forEach(track => rtcPeer.addTrack(track, localMediaStream));
+  }
+
+  rtcPeer.ontrack = (ev) => {
+    document.getElementById("remoteVideo").srcObject = ev.streams[0];
+  };
+
+  rtcPeer.onicecandidate = (ev) => {
+    if (!ev.candidate && rtcPeer.localDescription) {
+      document.getElementById("rtcSdpBox").value = JSON.stringify(rtcPeer.localDescription);
+    }
+  };
+
+  rtcPeer.ondatachannel = (ev) => {
+    setupRTCDataChannel(ev.channel);
+  };
+
+  return rtcPeer;
+}
+
+function setupRTCDataChannel(ch) {
+  rtcDataChannel = ch;
+  ch.onopen = () => {
+    document.getElementById("rtcConnBadge").textContent = "✓ Verbonden via WebRTC DataChannel";
+    document.getElementById("rtcConnBadge").className = "text-[11px] px-2 py-0.5 rounded bg-emerald-700 text-white mono-code";
+    appendRTCLog("[WebRTC] Peer-to-peer DataChannel geopend!");
+  };
+  ch.onmessage = (ev) => {
+    try {
+      const data = JSON.parse(ev.data);
+      if (data.type === "sentence_sync") {
+        document.getElementById("rtcLiveSubtitle").textContent = `[Peer Voorlezer ● ${data.title}]: "${data.sentence}"`;
+      } else if (data.type === "chat_note") {
+        appendRTCLog(`[Peer]: ${data.text}`);
+      }
+    } catch (e) {
+      appendRTCLog(`[Peer]: ${ev.data}`);
+    }
+  };
+}
+
+async function createRTCOffer() {
+  const pc = ensureRTCPeer();
+  const ch = pc.createDataChannel("bvzs_voorleeskamer");
+  setupRTCDataChannel(ch);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  appendRTCLog("[WebRTC] SDP Offer aangemaakt. Kopieer de JSON-code naar de tweede onderzoeker.");
+}
+
+async function createRTCAnswer() {
+  const raw = document.getElementById("rtcSdpBox").value.trim();
+  if (!raw) return;
+  try {
+    const offerDesc = JSON.parse(raw);
+    const pc = ensureRTCPeer();
+    await pc.setRemoteDescription(new RTCSessionDescription(offerDesc));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    appendRTCLog("[WebRTC] SDP Answer gegenereerd. Stuur deze code terug naar de starter.");
+  } catch (e) {
+    appendRTCLog("[Fout] Ongeldige SDP Offer JSON.");
+  }
+}
+
+async function acceptRTCAnswer() {
+  const raw = document.getElementById("rtcSdpBox").value.trim();
+  if (!raw || !rtcPeer) return;
+  try {
+    const ansDesc = JSON.parse(raw);
+    await rtcPeer.setRemoteDescription(new RTCSessionDescription(ansDesc));
+    appendRTCLog("[WebRTC] SDP Answer gekoppeld. Verbinding voltooid!");
+  } catch (e) {
+    appendRTCLog("[Fout] Kon SDP Answer niet koppelen.");
+  }
+}
+
+function copyRtcSdp() {
+  const box = document.getElementById("rtcSdpBox");
+  box.select();
+  document.execCommand("copy");
+  document.getElementById("rtcCopyMsg").textContent = "Gekopieerd!";
+  setTimeout(() => document.getElementById("rtcCopyMsg").textContent = "", 2000);
+}
+
+function sendRTCChatNote() {
+  const inp = document.getElementById("rtcChatInput");
+  const txt = inp.value.trim();
+  if (!txt) return;
+  appendRTCLog(`[Jij]: ${txt}`);
+  if (syncChannel) syncChannel.postMessage({ type: "chat_note", text: txt });
+  if (rtcDataChannel && rtcDataChannel.readyState === "open") {
+    rtcDataChannel.send(JSON.stringify({ type: "chat_note", text: txt }));
+  }
+  inp.value = "";
+}
+
+// ---------------------------------------------------------------------------
+// 7. ZOEKEN MET OPENAI & LOKALE RAG-KENNISENGINE OP DE EAD-XML
+// ---------------------------------------------------------------------------
+function toggleOpenAIConfig() {
+  document.getElementById("openaiConfigBar").classList.toggle("hidden");
+}
+
+function saveOpenAISettings() {
+  try {
+    localStorage.setItem("bvzs_openai_endpoint", document.getElementById("openaiEndpoint").value);
+    localStorage.setItem("bvzs_openai_model", document.getElementById("openaiModel").value);
+  } catch (e) {}
+}
+
+function askPresetAIQuestion(qText) {
+  document.getElementById("aiQueryInput").value = qText;
+  runOpenAISearch();
+}
+
+function retrieveTopRAGNodes(question, limit = 7) {
+  const stopWords = new Set(["welke", "hoe", "wat", "waar", "wanneer", "voor", "over", "van", "het", "een", "de", "en", "in", "op", "te", "met", "uit", "naar", "zijn", "waren", "hebben", "had"]);
+  const tokens = question.toLowerCase()
+    .replace(/[?.,!()"']/g, " ")
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stopWords.has(w));
+
+  const allPool = [...eadNodes, ...naNodes];
+  const scored = allPool.map(node => {
+    const hay = `${node.unitid} ${node.title} ${node.date} ${node.path.join(" ")} ${node.scope || ""}`.toLowerCase();
+    let score = 0;
+    tokens.forEach(t => {
+      if (hay.includes(t)) {
+        score += (node.title.toLowerCase().includes(t) ? 4 : 2);
+      }
+    });
+    return { node, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.filter(s => s.score > 0).slice(0, limit).map(s => s.node);
+  return top.length ? top : eadNodes.slice(0, limit);
+}
+
+function buildLocalRAGSynthesis(question, matchedNodes) {
+  const qLower = question.toLowerCase();
+  let paragraphs = [];
+
+  if (qLower.includes("verpacht") || qLower.includes("yersekebank") || qLower.includes("1870") || qLower.includes("1829")) {
+    paragraphs.push(
+      `Op basis van de EAD-XML van het Bestuur der Visserijen op de Zeeuwse Stromen (ZA toegang 17) verliep de uitgifte van visserijpercelen in twee duidelijk onderscheiden fasen. Na de instelling van het bestuur bij Koninklijk Besluit van 26 augustus 1825 te Tholen (ZA, BVZS, inv.nr. 2) vond in 1829 de eerste verloting van visserijpercelen plaats, te beginnen in de Braakman en op de slikken van de Oosterschelde (ZA, BVZS, inv.nrs. 248–254). Dit stelsel van verloting en concessie was bedoeld om ook minder kapitaalkrachtige vissers toegang te geven tot de visgronden.`,
+      `Het grote keerpunt kwam in 1870 met de eerste openbare verpachting bij opbod van de Yersekebank (ZA, BVZS, inv.nrs. 262–275). Hiermee eindigde de vrije oestervisserij en begon de kapitaalintensieve, kunstmatige oestercultuur met Yerseke als centrum. Alle verpachte kavels, oesterputten, mosselpercelen en kreeftenparken werden per blok en perceelnummer geregistreerd in de pachtleggers (ZA, BVZS, inv.nrs. 276–330) en ingetekend op de perceelkaarten (inv.nr. 575, overgebracht naar ZA toegang 295.1/295.2).`
+    );
+  } else if (qLower.includes("markiezaat") || qLower.includes("bergen op zoom") || qLower.includes("tholen") || qLower.includes("1707") || qLower.includes("verdronken")) {
+    paragraphs.push(
+      `Volgens de historische inleiding (<odd>) en de retroacta in NL-MdbZA_17_1_EAD.xml steunde de regelgeving op het Plakkaat op de Visscherije van de Staten van Zeeland van 2 juni 1707 (ZA, BVZS, inv.nr. 1). Inwoners van het voormalige Markiezaat van Bergen op Zoom en de stad en het eiland Tholen genoten een eeuwenoude bijzondere concessie voor het beoefenen van de weervisserij (stakenvisserij op ansjovis en haring) op de Oosterschelde en het Verdronken Land van Zuid-Beveland (waaronder de slikken bij het verdronken Reimerswaal).`,
+      `Toen Koning Willem I op 26 augustus 1825 het beheer opdroeg aan het Amortisatie Syndicaat met het ontvangkantoor te Tholen (ZA, BVZS, inv.nr. 2), bleven deze rechten beschermd. De naamlijsten van rechthebbende weervissers uit onder meer Bergen op Zoom, Tholen, Scherpenisse, Sint-Maartensdijk en Oud-Vossemeer zijn bewaard in ZA, BVZS, inv.nrs. 240–247 en 255–261.`
+    );
+  } else if (qLower.includes("mobiele") || qLower.includes("coczo") || qLower.includes("1941")) {
+    paragraphs.push(
+      `Door uitputting van de oestergronden en het optreden van de schelpziekte in de jaren 1930 ontstond de noodzaak om kweekpercelen tijdelijk te kunnen verplaatsen. Het Bestuur der Visserijen voerde daarvoor het stelsel van de 'mobiele pacht' in, in nauwe samenwerking met de Centrale Organisatie van Coöperatieve Zeeuwse Oesterkwekersverenigingen (Coczo), gedocumenteerd in ZA, BVZS, inv.nrs. 331–348.`,
+      `Tijdens de Tweede Wereldoorlog werd de pachtjuridisch herzien via het Pachtbesluit Visrecht 1941 (ZA, BVZS, inv.nrs. 349–360), waarin tevens pachtprijsherzieningen en kwijtscheldingen wegens strenge vorstschade en oorlogsomstandigheden zijn geregeld.`
+    );
+  } else if (qLower.includes("argus") || qLower.includes("isis") || qLower.includes("osiris") || qLower.includes("weervisserij")) {
+    paragraphs.push(
+      `Het toezicht op de drie Zeeuwse visserijdistricten (ingesteld bij de reglementen van 1875 en 1897, zie ZA, BVZS, inv.nrs. 229–234) werd uitgeoefend door hoofdopzieners en opzieners met speciale patrouillevaartuigen. De bouwbestekken, onderhoudsdossiers en scheepsjournalen van onder meer de boeier 'Argus' en de motorvaartuigen 'Isis' en 'Osiris' bevinden zich in ZA, BVZS, inv.nrs. 235–239.`,
+      `Voor de weervisserij op ansjovis (v-vormige houten stakenweren met fuikgat) zijn de concessieregisters en geschillen met oesterpachters te vinden in ZA, BVZS, inv.nrs. 240–261.`
+    );
+  } else if (qLower.includes("laboratorium") || qLower.includes("1906") || qLower.includes("deltawerken") || qLower.includes("1953")) {
+    paragraphs.push(
+      `Naar aanleiding van internationale bezorgdheid over tyfusbesmetting via schelpdieren werd in 1906 te Bergen op Zoom het Bacteriologisch Laboratorium van het BVZS opgericht voor water- en oesteronderzoek en de afgifte van zuiverheidscertificaten (ZA, BVZS, inv.nrs. 411–438; zie ook NA 2.11.58 inv.nrs. 89–104).`,
+      `Na de Watersnoodramp van 1 februari 1953 en de start van de Deltawerken (Deltawet 1958) veranderde het getijdenregime ingrijpend. De dossiers over het herstel van de oesterputten, de afdammingen en de uiteindelijke opheffing van het BVZS per 1 januari 1970 berusten in ZA, BVZS, inv.nrs. 576–633.`
+    );
+  } else {
+    paragraphs.push(
+      `Op basis van de doorzochte EAD-XML van het Bestuur der Visserijen op de Zeeuwse Stromen (ZA toegang 17, 1825–1969) zijn voor uw vraag "${question}" ${matchedNodes.length} relevante inventarisreeksen en hoofdstukken gevonden:`
+    );
+  }
+
+  const citeSummary = matchedNodes.slice(0, 5).map(n =>
+    `• ${n.source === 'za17' ? `ZA, BVZS, inv.nr. ${n.unitid}` : n.unitid} (${n.date}): ${n.title}`
+  ).join("\n");
+
+  paragraphs.push(`Relevante vindplaatsen in de XML-inventaris:\n${citeSummary}`);
+  return paragraphs.join("\n\n");
+}
+
+async function runOpenAISearch() {
+  const question = (document.getElementById("aiQueryInput").value || "").trim();
+  if (!question) return;
+
+  const btn = document.getElementById("btnRunAISearch");
+  btn.disabled = true;
+  btn.innerHTML = `<span>⏳ EAD-XML analyseren...</span>`;
+
+  // 1. Haal altijd eerst de beste XML-nodes op via RAG
+  const ragNodes = retrieveTopRAGNodes(question, 7);
+  lastAIRagNodes = ragNodes;
+
+  // Render RAG bronnen rechts
+  const ragBox = document.getElementById("aiRagMatchedNodes");
+  ragBox.innerHTML = ragNodes.map(n => `
+    <div class="p-2 rounded border border-slate-200 bg-[#faf6ed] flex flex-col gap-1">
+      <div class="flex items-center justify-between">
+        <span onclick="selectNodeDetail('${n.id}')" class="cursor-pointer mono-code font-bold text-[11px] text-[#0f4c5c] underline">
+          ${n.source === 'za17' ? `ZA 17 ● inv.nr. ${n.unitid}` : n.unitid}
+        </span>
+        <button onclick="readNodeImmediately('${n.id}')" class="text-[10px] px-1.5 py-0.5 rounded bg-[#0f4c5c] text-white">🔊 Lees</button>
+      </div>
+      <div class="text-slate-800 font-medium leading-snug">${n.title}</div>
+    </div>
+  `).join("");
+
+  const apiKey = (document.getElementById("openaiApiKey").value || "").trim();
+  const endpoint = (document.getElementById("openaiEndpoint").value || "https://api.openai.com/v1/chat/completions").trim();
+  const model = document.getElementById("openaiModel").value;
+
+  const ragContextString = ragNodes.map(n =>
+    `[${n.source === 'za17' ? 'ZA, BVZS, inv.nr. ' + n.unitid : n.unitid} | ${n.date}] Titel: ${n.title}. Toelichting: ${n.scope || ''}`
+  ).join("\n\n");
+
+  // 2. Indien OpenAI API-sleutel aanwezig is (of custom lokale endpoint zoals Ollama), roep OpenAI Chat Completions aan
+  if (model !== "local-rag" && (apiKey.startsWith("sk-") || endpoint.includes("localhost") || endpoint.includes("127.0.0.1"))) {
+    try {
+      document.getElementById("aiUsedModelBadge").textContent = `OpenAI API (${model})`;
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(apiKey ? { "Authorization": `Bearer ${apiKey}` } : {})
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            {
+              role: "system",
+              content: "Je bent een deskundig Nederlands archiefonderzoeker gespecialiseerd in het Bestuur der Visserijen op de Zeeuwse Stromen (BVZS, Zeeuws Archief toegang 17, 1825-1969, NL-MdbZA_17_1_EAD.xml). Beantwoord de vraag in helder Nederlands uitsluitend op basis van de meegeleverde EAD-XML context en vermeld altijd de exacte inventarisnummers in het formaat (ZA, BVZS, inv.nr. ...)."
+            },
+            {
+              role: "user",
+              content: `Onderzoeksvraag: ${question}\n\nRelevante EAD-XML fragmenten:\n${ragContextString}`
+            }
+          ],
+          temperature: 0.2
+        })
+      });
+
+      if (!resp.ok) throw new Error("OpenAI HTTP " + resp.status);
+      const data = await resp.json();
+      const answer = data.choices?.[0]?.message?.content || "";
+      if (answer) {
+        lastAIAnswerPlain = answer;
+        document.getElementById("aiAnswerText").innerHTML = answer.replace(/\n\n/g, "<br><br>").replace(/\n/g, "<br>");
+        btn.disabled = false;
+        btn.innerHTML = `<span>🤖 Analyseer EAD-XML met AI</span>`;
+        return;
+      }
+    } catch (err) {
+      console.warn("OpenAI call viel terug op ingebouwde XML-RAG engine:", err);
+    }
+  }
+
+  // 3. Anders: Directe deterministische XML-RAG Synthese (werkt altijd direct zonder externe sleutel)
+  document.getElementById("aiUsedModelBadge").textContent = "Ingebouwde XML-RAG Engine";
+  const localSynthesis = buildLocalRAGSynthesis(question, ragNodes);
+  lastAIAnswerPlain = localSynthesis;
+  document.getElementById("aiAnswerText").innerHTML = localSynthesis
+    .replace(/\n\n/g, "<br><br>")
+    .replace(/\n/g, "<br>");
+
+  btn.disabled = false;
+  btn.innerHTML = `<span>🤖 Analyseer EAD-XML met AI</span>`;
+}
+
+function readLastAIAnswer() {
+  const txt = lastAIAnswerPlain || document.getElementById("aiAnswerText").innerText;
+  if (!txt) return;
+  const obj = {
+    id: "AI-SYNTHESIS",
+    badge: "AI-RAG Synthese ● ZA Toegang 17",
+    title: document.getElementById("aiQueryInput").value || "Samenvatting uit EAD-XML",
+    cite: "ZA, BVZS, AI-Synthese",
+    text: txt
+  };
+  readingQueue.unshift(obj);
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(obj, true);
+}
+
+function readAllRAGNodes() {
+  if (!lastAIRagNodes.length) return;
+  readingQueue = lastAIRagNodes.map(n => nodeToReaderObject(n));
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(readingQueue[0], true);
+}
+
+// ---------------------------------------------------------------------------
+// 8. 3D QUATERNION KAART & UURHOEK-BANEN (OOSTERSCHELDE, THOLEN, YERSEKEBANK)
+// ---------------------------------------------------------------------------
+class Quat {
+  constructor(w = 1, x = 0, y = 0, z = 0) {
+    this.w = w; this.x = x; this.y = y; this.z = z;
+  }
+  normalize() {
+    const m = Math.hypot(this.w, this.x, this.y, this.z) || 1;
+    this.w /= m; this.x /= m; this.y /= m; this.z /= m;
+    return this;
+  }
+  multiply(b) {
+    return new Quat(
+      this.w * b.w - this.x * b.x - this.y * b.y - this.z * b.z,
+      this.w * b.x + this.x * b.w + this.y * b.z - this.z * b.y,
+      this.w * b.y - this.x * b.z + this.y * b.w + this.z * b.x,
+      this.w * b.z + this.x * b.y - this.y * b.x + this.z * b.w
+    ).normalize();
+  }
+  static fromAxisAngle(ax, ay, az, rad) {
+    const half = rad * 0.5;
+    const s = Math.sin(half);
+    return new Quat(Math.cos(half), ax * s, ay * s, az * s).normalize();
+  }
+  static slerp(qa, qb, t) {
+    let cosHalf = qa.w * qb.w + qa.x * qb.x + qa.y * qb.y + qa.z * qb.z;
+    let qbCopy = new Quat(qb.w, qb.x, qb.y, qb.z);
+    if (cosHalf < 0) {
+      qbCopy = new Quat(-qb.w, -qb.x, -qb.y, -qb.z);
+      cosHalf = -cosHalf;
+    }
+    if (cosHalf >= 0.9995) {
+      return new Quat(
+        qa.w + t * (qbCopy.w - qa.w),
+        qa.x + t * (qbCopy.x - qa.x),
+        qa.y + t * (qbCopy.y - qa.y),
+        qa.z + t * (qbCopy.z - qa.z)
+      ).normalize();
+    }
+    const halfAngle = Math.acos(cosHalf);
+    const sinHalf = Math.sqrt(1.0 - cosHalf * cosHalf);
+    const ratioA = Math.sin((1 - t) * halfAngle) / sinHalf;
+    const ratioB = Math.sin(t * halfAngle) / sinHalf;
+    return new Quat(
+      qa.w * ratioA + qbCopy.w * ratioB,
+      qa.x * ratioA + qbCopy.x * ratioB,
+      qa.y * ratioA + qbCopy.y * ratioB,
+      qa.z * ratioA + qbCopy.z * ratioB
+    ).normalize();
+  }
+  rotateVec(v) {
+    // v' = q * (0,v) * q^-1
+    const qv = new Quat(0, v.x, v.y, v.z);
+    const qConj = new Quat(this.w, -this.x, -this.y, -this.z);
+    const res = this.multiply(qv).multiply(qConj);
+    return { x: res.x, y: res.y, z: res.z };
+  }
+}
+
+let currentQuat = Quat.fromAxisAngle(1, 0, 0, 0.66).multiply(Quat.fromAxisAngle(0, 0, 1, 1.13));
+let targetQuat = null;
+let slerpProgress = 0;
+let quatAutoSpin = true;
+let loadedMapTexture = null;
+let selectedSpotIndex = 2;
+
+const BVZS_3D_HOTSPOTS = [
+  {
+    name: "Tholen & Eendracht (Ontvangkantoor 1825)",
+    inv: "ZA 17, inv.nrs. 1-2, 240-247",
+    query: "Tholen 1825",
+    x: 0.28, y: -0.42, z: 0.04,
+    color: "#38bdf8",
+    desc: "Zetel van het ontvangkantoor der domeinen en het in 1825 ingestelde Bestuur der Visserijen onder het Amortisatie Syndicaat. Inwoners van Tholen genoten samen met Bergen op Zoom een bijzondere concessie op de Oosterschelde."
+  },
+  {
+    name: "Bergen op Zoom (Markiezaat & Lab 1906)",
+    inv: "ZA 17, inv.nrs. 240-247, 411-438",
+    query: "Bergen op Zoom",
+    x: 0.62, y: -0.05, z: 0.05,
+    color: "#f59e0b",
+    desc: "Kerngebied van de ansjovis-weervisserij krachtens het Plakkaat van 2 juni 1707 en vanaf 1906 standplaats van het Bacteriologisch Laboratorium voor schelpdier- en wateronderzoek."
+  },
+  {
+    name: "Yersekebank (1e Verpachting 1870)",
+    inv: "ZA 17, inv.nrs. 262-330, 575",
+    query: "Yersekebank 1870",
+    x: -0.18, y: 0.08, z: -0.02,
+    color: "#10b981",
+    desc: "De eerste openbare verpachting van de Yersekebank in 1870 vormde het startschot voor de kunstmatige oestercultuur in Zeeland, vastgelegd in de pachtleggers inv.nrs. 276-330."
+  },
+  {
+    name: "Verdronken Land van Zuid-Beveland / Reimerswaal",
+    inv: "ZA 17, inv.nrs. 240-261",
+    query: "Verdronken Land weervisserij",
+    x: 0.22, y: 0.16, z: 0.0,
+    color: "#f43f5e",
+    desc: "Uitgestrekt intergetijdengebied rond het verdronken Reimerswaal waar de V-vormige houten ansjovisweren op de slikken stonden opgesteld en waar later geschillen tussen weervissers en oesterpachters speelden."
+  },
+  {
+    name: "Braakman (Westerschelde, 1e Verloting 1829)",
+    inv: "ZA 17, inv.nrs. 248-254",
+    query: "Braakman 1829",
+    x: -0.68, y: 0.55, z: -0.03,
+    color: "#a855f7",
+    desc: "Locatie van de allereerste verloting van visserijpercelen onder het nieuwe reglement in 1829."
+  }
+];
+
+function resizeQuatCanvas() {
+  const c = document.getElementById("quatCanvas");
+  if (!c) return;
+  const rect = c.getBoundingClientRect();
+  if (rect.width > 0 && rect.height > 0) {
+    c.width = rect.width * window.devicePixelRatio;
+    c.height = rect.height * window.devicePixelRatio;
+  }
+}
+
+function updateQuatSliders() {
+  const tauDeg = parseFloat(document.getElementById("tauSlider").value) || 0;
+  const pitchDeg = parseFloat(document.getElementById("pitchSlider").value) || 0;
+  document.getElementById("tauSliderVal").textContent = `${Math.round(tauDeg)}°`;
+  document.getElementById("pitchSliderVal").textContent = `${Math.round(pitchDeg)}°`;
+
+  const qPitch = Quat.fromAxisAngle(1, 0, 0, pitchDeg * Math.PI / 180);
+  const qTau = Quat.fromAxisAngle(0, 0, 1, tauDeg * Math.PI / 180);
+  currentQuat = qPitch.multiply(qTau);
+  targetQuat = null;
+}
+
+function resetQuaternionView() {
+  document.getElementById("tauSlider").value = 65;
+  document.getElementById("pitchSlider").value = 38;
+  updateQuatSliders();
+}
+
+function toggleQuatAutoSpin() {
+  quatAutoSpin = !quatAutoSpin;
+  document.getElementById("btnQuatSpin").textContent = quatAutoSpin ? "⏸ Rotatie Pauzeren" : "▶ Rotatie Starten";
+}
+
+function slerpToHotspot(idx) {
+  selectedSpotIndex = idx;
+  const spot = BVZS_3D_HOTSPOTS[idx];
+  if (!spot) return;
+
+  // Bereken doel-quaternion om het punt naar voren te draaien
+  const angleZ = Math.atan2(spot.x, spot.y);
+  const qPitch = Quat.fromAxisAngle(1, 0, 0, 0.58);
+  const qYaw = Quat.fromAxisAngle(0, 0, 1, -angleZ);
+  targetQuat = qPitch.multiply(qYaw);
+  slerpProgress = 0;
+
+  document.getElementById("quatSpotTitle").textContent = spot.name;
+  document.getElementById("quatSpotInv").textContent = spot.inv;
+  document.getElementById("quatSpotDesc").textContent = spot.desc;
+}
+
+function filterInventoryByQuatSpot() {
+  const spot = BVZS_3D_HOTSPOTS[selectedSpotIndex];
+  if (!spot) return;
+  document.getElementById("q").value = spot.query;
+  runSearch();
+  document.getElementById("win-search").scrollIntoView({ behavior: "smooth" });
+}
+
+function readQuatSpotAloud() {
+  const spot = BVZS_3D_HOTSPOTS[selectedSpotIndex];
+  if (!spot) return;
+  const obj = {
+    id: "QUAT-" + selectedSpotIndex,
+    badge: spot.inv,
+    title: spot.name,
+    cite: spot.inv,
+    text: `${spot.name}. Bijbehorende archiefnummers: ${spot.inv}. ${spot.desc}`
+  };
+  readingQueue.unshift(obj);
+  currentQueueIndex = 0;
+  renderQueueList();
+  loadTextObjectIntoReader(obj, true);
+}
+
+function initQuaternionCanvas() {
+  const canvas = document.getElementById("quatCanvas");
+  if (!canvas) return;
+  resizeQuatCanvas();
+  window.addEventListener("resize", resizeQuatCanvas);
+
+  let dragging = false;
+  let lastX = 0, lastY = 0;
+
+  canvas.addEventListener("mousedown", e => { dragging = true; lastX = e.clientX; lastY = e.clientY; targetQuat = null; });
+  window.addEventListener("mouseup", () => dragging = false);
+  window.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const dx = (e.clientX - lastX) * 0.008;
+    const dy = (e.clientY - lastY) * 0.008;
+    lastX = e.clientX; lastY = e.clientY;
+    const qYaw = Quat.fromAxisAngle(0, 0, 1, dx);
+    const qPitch = Quat.fromAxisAngle(1, 0, 0, dy);
+    currentQuat = qPitch.multiply(currentQuat).multiply(qYaw);
+  });
+
+  function project3D(pt, w, h) {
+    const r = currentQuat.rotateVec(pt);
+    const fov = Math.min(w, h) * 0.42;
+    const dist = 2.6;
+    const scale = fov / (dist + r.z * 0.65);
+    return {
+      sx: w * 0.5 + r.x * scale,
+      sy: h * 0.52 + r.y * scale,
+      z: r.z,
+      scale
+    };
+  }
+
+  function renderFrame() {
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // SLERP animatie of langzame uurhoek-rotatie
+    if (targetQuat) {
+      slerpProgress = Math.min(1, slerpProgress + 0.04);
+      currentQuat = Quat.slerp(currentQuat, targetQuat, slerpProgress);
+      if (slerpProgress >= 1) targetQuat = null;
+    } else if (quatAutoSpin && !dragging) {
+      const qStep = Quat.fromAxisAngle(0, 0, 1, 0.0022);
+      currentQuat = currentQuat.multiply(qStep);
+    }
+
+    // Update Quaternion HUD
+    document.getElementById("quatReadout").textContent =
+      `w: ${currentQuat.w.toFixed(4)} | x: ${currentQuat.x.toFixed(4)} | y: ${currentQuat.y.toFixed(4)} | z: ${currentQuat.z.toFixed(4)}`;
+
+    // 1. Teken Equatoriale & Uurhoek-Cirkels (3D Banen & Kruisen)
+    const rings = [0.45, 0.75, 1.02];
+    rings.forEach((rad, rIdx) => {
+      ctx.beginPath();
+      for (let a = 0; a <= 64; a++) {
+        const theta = (a / 64) * Math.PI * 2;
+        const p = project3D({ x: Math.cos(theta) * rad, y: Math.sin(theta) * rad, z: 0 }, w, h);
+        if (a === 0) ctx.moveTo(p.sx, p.sy);
+        else ctx.lineTo(p.sx, p.sy);
+      }
+      ctx.strokeStyle = rIdx === 2 ? "rgba(245, 158, 11, 0.45)" : "rgba(56, 189, 248, 0.25)";
+      ctx.lineWidth = rIdx === 2 ? 2 : 1;
+      ctx.stroke();
+    });
+
+    // Teken 3D Hemelboog (Meridiaan- & Uurhoek-boog boven het kaartvlak)
+    ctx.beginPath();
+    for (let a = 0; a <= 48; a++) {
+      const phi = (a / 48) * Math.PI;
+      const p = project3D({ x: Math.cos(phi) * 0.95, y: 0, z: -Math.sin(phi) * 0.65 }, w, h);
+      if (a === 0) ctx.moveTo(p.sx, p.sy);
+      else ctx.lineTo(p.sx, p.sy);
+    }
+    ctx.strokeStyle = "rgba(251, 191, 36, 0.35)";
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Teken de kruisen / uurhoek-assen (N-Z en O-W + diagonalen)
+    for (let k = 0; k < 12; k++) {
+      const ang = (k / 12) * Math.PI * 2;
+      const p1 = project3D({ x: 0, y: 0, z: 0 }, w, h);
+      const p2 = project3D({ x: Math.cos(ang) * 1.05, y: Math.sin(ang) * 1.05, z: 0 }, w, h);
+      ctx.beginPath();
+      ctx.moveTo(p1.sx, p1.sy);
+      ctx.lineTo(p2.sx, p2.sy);
+      ctx.strokeStyle = (k % 3 === 0) ? "rgba(245, 158, 11, 0.55)" : "rgba(148, 163, 184, 0.18)";
+      ctx.lineWidth = (k % 3 === 0) ? 1.8 : 1;
+      ctx.stroke();
+    }
+
+    // 2. Teken stilistische Oosterschelde / Tholen / Zuid-Beveland / Bergen op Zoom contouren op z=0
+    const oosterscheldePoly = [
+      { x: -0.75, y: -0.15, z: 0 },
+      { x: -0.35, y: -0.22, z: 0 },
+      { x: 0.15, y: -0.35, z: 0 },
+      { x: 0.58, y: -0.12, z: 0 },
+      { x: 0.65, y: 0.22, z: 0 },
+      { x: 0.20, y: 0.32, z: 0 },
+      { x: -0.25, y: 0.18, z: 0 },
+      { x: -0.68, y: 0.10, z: 0 }
+    ];
+    ctx.beginPath();
+    oosterscheldePoly.forEach((pt, i) => {
+      const p = project3D(pt, w, h);
+      if (i === 0) ctx.moveTo(p.sx, p.sy);
+      else ctx.lineTo(p.sx, p.sy);
+    });
+    ctx.closePath();
+    ctx.fillStyle = "rgba(15, 76, 92, 0.42)";
+    ctx.fill();
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Teken V-vormige Ansjovisweren (stakenvisserij symbolen) op het Verdronken Land
+    const werenCoords = [
+      { x: 0.32, y: 0.05 },
+      { x: 0.42, y: 0.12 },
+      { x: 0.25, y: -0.18 }
+    ];
+    werenCoords.forEach(wc => {
+      const tip = project3D({ x: wc.x, y: wc.y, z: -0.02 }, w, h);
+      const wL = project3D({ x: wc.x - 0.08, y: wc.y + 0.09, z: -0.02 }, w, h);
+      const wR = project3D({ x: wc.x + 0.08, y: wc.y + 0.09, z: -0.02 }, w, h);
+      ctx.beginPath();
+      ctx.moveTo(wL.sx, wL.sy);
+      ctx.lineTo(tip.sx, tip.sy);
+      ctx.lineTo(wR.sx, wR.sy);
+      ctx.strokeStyle = "#fde047";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // 3. Teken de 5 BVZS Hotspots met 3D-pilaartjes en labels
+    BVZS_3D_HOTSPOTS.forEach((spot, idx) => {
+      const base = project3D({ x: spot.x, y: spot.y, z: 0 }, w, h);
+      const top = project3D({ x: spot.x, y: spot.y, z: -0.16 }, w, h);
+
+      ctx.beginPath();
+      ctx.moveTo(base.sx, base.sy);
+      ctx.lineTo(top.sx, top.sy);
+      ctx.strokeStyle = spot.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(top.sx, top.sy, idx === selectedSpotIndex ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = spot.color;
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = `${Math.round(11 * window.devicePixelRatio)}px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = idx === selectedSpotIndex ? "#fde047" : "#e2e8f0";
+      ctx.fillText(spot.name.split(" (")[0], top.sx + 9, top.sy + 4);
+    });
+
+    requestAnimationFrame(renderFrame);
+  }
+
+  requestAnimationFrame(renderFrame);
+}
+
+// Wikimedia Commons Kaartzoeker
+async function searchWikimediaMaps() {
+  const q = (document.getElementById("commonsMapQuery").value || "Hattinga Zeeland").trim();
+  const box = document.getElementById("commonsMapResults");
+  box.innerHTML = `<span class="text-amber-300">Zoeken op Wikimedia Commons...</span>`;
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q + " filetype:bitmap")}&gsrlimit=5&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const pages = Object.values(data.query?.pages || {});
+    if (!pages.length) {
+      box.innerHTML = `<span>Geen kaarten gevonden voor "${q}".</span>`;
+      return;
+    }
+    box.innerHTML = pages.map(p => {
+      const thumb = p.imageinfo?.[0]?.thumburl || p.imageinfo?.[0]?.url;
+      const title = p.title.replace("File:", "");
+      return `
+        <a href="${p.imageinfo?.[0]?.url}" target="_blank" rel="noopener" class="shrink-0 bg-slate-800 border border-slate-600 rounded p-1 hover:border-amber-400 transition block w-28">
+          <img src="${thumb}" alt="${title}" class="w-full h-12 object-cover rounded" />
+          <div class="truncate text-[9px] text-slate-200 mt-0.5">${title}</div>
+        </a>
+      `;
+    }).join("");
+  } catch (e) {
+    box.innerHTML = `<span>Kon Wikimedia Commons momenteel niet bereiken.</span>`;
+  }
+}
+
+function uploadCustomMapTexture(ev) {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => { loadedMapTexture = img; };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearMapTexture() {
+  loadedMapTexture = null;
+}
+
+// ---------------------------------------------------------------------------
+// 9. EIGEN BESTANDSUPLOADS (XML & PDF) EN CSV EXPORT
+// ---------------------------------------------------------------------------
+function setupFileDropzones() {
+  const eadInput = document.getElementById("eadFile");
+  eadInput?.addEventListener("change", (ev) => {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      parseEADXmlString(reader.result);
+      document.getElementById("eadStatusPill").textContent = `Geladen: ${file.name}`;
+      document.getElementById("preloadStatusBadge").textContent = `✓ ${file.name} actief`;
+    };
+    reader.readAsText(file);
+  });
+
+  const pdfInput = document.getElementById("pdfFile");
+  pdfInput?.addEventListener("change", async (ev) => {
+    const file = ev.target.files?.[0];
+    if (!file || typeof pdfjsLib === "undefined") return;
+    document.getElementById("pdfStatus").textContent = "PDF indexeren...";
+    try {
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const extracted = [];
+      const maxPages = Math.min(pdf.numPages, 60);
+      for (let p = 1; p <= maxPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const text = content.items.map(i => i.str).join(" ").trim();
+        if (text.length > 40) {
+          extracted.push({
+            id: `PDF-P${p}`,
+            source: "na",
+            unitid: `2.11.58 (p. ${p})`,
+            title: `Nationaal Archief 2.11.58 — Pagina ${p}`,
+            date: "1911–1940",
+            yearStart: 1911,
+            yearEnd: 1940,
+            extent: "1 PDF-pagina",
+            path: ["Nationaal Archief 2.11.58 (PDF)", `Pagina ${p}`],
+            scope: text
+          });
+        }
+      }
+      naNodes = [...DEFAULT_NA_21158, ...extracted];
+      document.getElementById("pdfStatusPill").textContent = `${extracted.length} pag. geïndexeerd`;
+      document.getElementById("pdfStatus").textContent = `✓ ${file.name}`;
+      runSearch();
+    } catch (e) {
+      document.getElementById("pdfStatus").textContent = "PDF fout";
+    }
+  });
+}
+
+function exportSelectionCSV() {
+  if (!filteredResults.length) return;
+  const rows = [
+    ["Bron", "Inventarisnummer", "Titel", "Datering", "Omvang", "Rubriek", "Toelichting"]
+  ];
+  filteredResults.forEach(item => {
+    rows.push([
+      item.source,
+      item.unitid,
+      item.title,
+      item.date,
+      item.extent || "",
+      item.path.join(" > "),
+      (item.scope || "").replace(/\s+/g, " ")
+    ]);
+  });
+  const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "BVZS_Toegang17_Selectie.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// 10. INITIALISATIE BIJ OPSTARTEN
+// ---------------------------------------------------------------------------
+window.addEventListener("DOMContentLoaded", () => {
+  renderThematicChips();
+  initVoices();
+  loadEmbeddedEAD();
+  setupFileDropzones();
+  initQuaternionCanvas();
+  slerpToHotspot(2); // Focus standaard op Yersekebank (1870)
+});
+</script>
+</body>
+</html>
