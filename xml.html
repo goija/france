@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onderwerpwerkbank — Bestuur der Visserijen op de Zeeuwse Stromen (toegang 17)</title>
+<style>
+  :root{
+    --purple:#6d4aff; --purple-dark:#5335c9; --bg:#f6f4fb; --ink:#1e1b2e;
+    --muted:#6b6784; --card:#ffffff; --border:#e3dff2; --mark:#ffe58a;
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:24px}
+  header{max-width:1200px;margin:0 auto 20px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  h1 .dot{color:var(--purple)}
+  .sub{color:var(--muted);font-size:.95rem;margin-bottom:14px}
+  main{max-width:1200px;margin:0 auto;display:grid;gap:18px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .card h2{font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .step-num{background:var(--purple);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex:none}
+  input[type=file]{display:none}
+  .dropzone{border:2px dashed var(--purple);border-radius:12px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s}
+  .dropzone:hover,.dropzone.drag{background:#efeaff;border-color:var(--purple-dark)}
+  .dropzone strong{color:var(--purple-dark)}
+  .loadstate{margin-top:10px;font-size:.9rem;color:var(--muted)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  #search{flex:1;min-width:260px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:1rem}
+  button{border:none;border-radius:10px;padding:10px 16px;background:var(--purple);color:#fff;font-size:.95rem;cursor:pointer}
+  button:hover{background:var(--purple-dark)}
+  button.ghost{background:#eee9ff;color:var(--purple-dark)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .chip{padding:5px 12px;border-radius:999px;background:#eee9ff;color:var(--purple-dark);font-size:.82rem;cursor:pointer;border:1px solid transparent}
+  .chip.on{background:var(--purple);color:#fff}
+  #stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px;font-size:.9rem;color:var(--muted)}
+  #stats b{color:var(--ink)}
+  .result{border-top:1px solid var(--border);padding:12px 0}
+  .result:first-child{border-top:none}
+  .r-path{font-size:.78rem;color:var(--muted);margin-bottom:2px;word-break:break-word}
+  .r-title{font-weight:600;font-size:.97rem}
+  .r-meta{font-size:.82rem;color:var(--muted);margin:2px 0 4px}
+  .r-snippet{font-size:.9rem;line-height:1.45;color:#333}
+  mark{background:var(--mark);padding:0 2px;border-radius:3px}
+  .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+  .srclink{display:block;border:1px solid var(--border);border-radius:10px;padding:12px;text-decoration:none;color:var(--ink);transition:.15s}
+  .srclink:hover{border-color:var(--purple);background:#faf8ff}
+  .srclink .t{font-weight:600;font-size:.92rem}
+  .srclink .d{font-size:.8rem;color:var(--muted);margin-top:3px}
+  #pdfFrame{width:100%;height:640px;border:1px solid var(--border);border-radius:10px;display:none}
+  .hidden{display:none}
+  footer{max-width:1200px;margin:22px auto 0;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Werkbank visserijarchieven <span class="dot">●</span> BVZS toegang 17</h1>
+  <div class="sub">Volledig offline doorzoekbare werkbank voor <strong>NL-MdbZA_17_1_EAD.xml</strong> (Zeeuws Archief, toegang 17 — Bestuur der Visserijen op de Zeeuwse Stromen, 1825-1969) en <strong>2.11.58.pdf</strong> (Nationaal Archief).</div>
+</header>
+
+<main>
+  <!-- STAP 1: bestanden laden -->
+  <section class="card">
+    <h2><span class="step-num">1</span> Laad je lokale bestanden</h2>
+    <div class="dropzone" id="dropXml" role="button" tabindex="0">
+      <strong>Klik of sleep hier je EAD-inventaris</strong><br>
+      NL-MdbZA_17_1_EAD.xml — de volledige archiefinventaris van toegang 17
+    </div>
+    <input type="file" id="fileXml" accept=".xml">
+    <div class="loadstate" id="xmlState">Nog geen XML geladen.</div>
+
+    <div class="dropzone" id="dropPdf" style="margin-top:12px">
+      <strong>Klik of sleep hier je PDF</strong><br>
+      2.11.58.pdf — wordt in de viewport hieronder getoond (blijft volledig lokaal)
+    </div>
+    <input type="file" id="filePdf" accept=".pdf,application/pdf">
+    <iframe id="pdfFrame" title="PDF-viewer"></iframe>
+  </section>
+
+  <!-- STAP 2: zoeken -->
+  <section class="card" id="searchCard">
+    <h2><span class="step-num">2</span> Zoek in de hele inventaris</h2>
+    <div class="chips" id="chips"></div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="bijv. verpachting visserijpercelen pacht mossel oester …" disabled>
+      <button id="btnSearch" disabled>Zoeken</button>
+      <button id="btnReset" class="ghost" disabled>Wissen</button>
+    </div>
+    <div>
+      <label style="font-size:.85rem;color:var(--muted)">
+        <input type="checkbox" id="modeAll"> Alle termen moeten voorkomen (EN i.p.v. OF)
+      </label>
+    </div>
+    <div id="stats"></div>
+    <div id="results"></div>
+    <div class="toolbar" style="margin-top:14px">
+      <button id="btnCsv" class="ghost hidden">Resultaten als CSV downloaden</button>
+      <button id="btnCopy" class="ghost hidden">Resultaten kopiëren</button>
+      <a id="btnOnline" class="hidden" target="_blank" rel="noopener"><button class="ghost">Deze termen ook online in de viewer zoeken ↗</button></a>
+    </div>
+  </section>
+
+  <!-- STAP 3: online bronnen -->
+  <section class="card">
+    <h2><span class="step-num">3</span> Alle gerelateerde online bronnen</h2>
+    <div class="links">
+      <a class="srclink" target="_blank" rel="noopener" href="https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&amp;mizig=210&amp;miadt=239&amp;miview=inv2&amp;milang=nl&amp;mizk_alle=verpachting%20visserijpercelen&amp;micode=17">
+        <div class="t">Zeeuws Archief — toegang 17 (viewer, jouw zoekopdracht)</div>
+        <div class="d">Bestuur der Visserijen op de Zeeuwse Stromen (BVZS), 1825-1969, met zoekterm 'verpachting visserijpercelen'</div>
+      </a>
+      <a class="srclink" target="_blank" rel="noopener" href="https://opendata.archieven.nl/nl/datasets?filter%5Bsearch%5D=Stromen">
+        <div class="t">Opendata.archieven.nl — EAD-download toegang 17</div>
+        <div class="d">Hier staat de dataset '17 — Bestuur der Visserijen op de Zeeuwse Stromen' met Download-knop</div>
+      </a>
+      <a class="srclink" target="_blank" rel="noopener" href="https://www.zeeuwsarchief.nl/zoekgids/visserij">
+        <div class="t">Zeeuws Archief — zoekgids Visserij</div>
+        <div class="d">Aanleg en verpachting van mossel- en oesterbanken; consenten 1825-1964; dagboeken visserijpolitie 1900-1969</div>
+      </a>
+      <a class="srclink" target="_blank" rel="noopener" href="https://www.nationaalarchief.nl/onderzoeken/archief/2.11.58">
+        <div class="t">Nationaal Archief — toegang 2.11.58</div>
+        <div class="d">De online inventaris die hoort bij jouw bestand 2.11.58.pdf</div>
+      </a>
+      <a class="srclink" target="_blank" rel="noopener" href="https://www.nationaalarchief.nl/onderzoeken/archief/2.11.12/invnr/215">
+        <div class="t">Nationaal Archief — 2.11.12, inv. nr. 215</div>
+        <div class="d">'Stukken betreffende de verpachting van mosselpercelen, met nota's omtrent het pachtstelsel en de toestand van de mosselcultuur in Zeeland'</div>
+      </a>
+      <a class="srclink" target="_blank" rel="noopener" href="https://www.nationaalarchief.nl/onderzoeken/archief/2.11.22.01">
+        <div class="t">Nationaal Archief — 2.11.22.01, Afdeling Visserijen</div>
+        <div class="d">Bevat de rubriek 'Verpachting schelpdierenpercelen in de Zeeuwse stromen' (ministerie van Landbouw, (1920) 1921-1950)</div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Werkt volledig offline: bestanden worden alleen lokaal in je browser ingelezen en nergens naartoe gestuurd.
+</footer>
+
+<script>
+(function(){
+  const NS_EAD = 'urn:isbn:1-931666-22-9';
+  const DEFAULT_TERMS = ['verpachting','visserijpercelen','pacht','pachtsom','mossel','oester','perceel','loting','concent'];
+  let nodes = [];        // platte lijst van inventarisnodes
+  let lastResults = [];
+
+  const $ = id => document.getElementById(id);
+
+  /* ---------- bestandsinladen ---------- */
+  function wireDrop(zoneId, inputId, handler){
+    const zone = $(zoneId), input = $(inputId);
+    zone.addEventListener('click', ()=>input.click());
+    zone.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' ') input.click(); });
+    zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('drag'));
+    zone.addEventListener('drop', e=>{
+      e.preventDefault(); zone.classList.remove('drag');
+      if(e.dataTransfer.files.length) handler(e.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', ()=>{ if(input.files.length) handler(input.files[0]); });
+  }
+
+  wireDrop('dropXml','fileXml', loadXml);
+  wireDrop('dropPdf','filePdf', loadPdf);
+
+  function loadPdf(file){
+    const url = URL.createObjectURL(file);
+    $('pdfFrame').src = url;
+    $('pdfFrame').style.display = 'block';
+    $('xmlState').insertAdjacentHTML('afterbegin','');
+  }
+
+  function loadXml(file){
+    $('xmlState').textContent = 'Inlezen van ' + file.name + ' …';
+    const reader = new FileReader();
+    reader.onload = () => {
+      try { parseEad(reader.result); }
+      catch(err){ $('xmlState').textContent = 'Fout bij het parsen: ' + err.message; }
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  function parseEad(xmlText){
+    const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    if(doc.querySelector('parsererror')) throw new Error('XML kon niet gelezen worden (parsererror)');
+    // archieftitel
+    const titleEl = pick(doc, 'titleproper') || pick(doc,'title');
+    const archiefTitel = titleEl ? titleEl.textContent.trim() : '(onbekende toegang)';
+    // alle c-nodes (c, c01..c12) in documentvolgorde
+    let cEls = Array.from(doc.getElementsByTagNameNS(NS_EAD,'*'))
+      .filter(el => /^c\d{0,2}$/.test(el.localName));
+    if(cEls.length === 0) cEls = Array.from(doc.getElementsByTagName('c'));
+    nodes = [];
+    const stack = []; // [{id,title}]
+    let prevLevelDepth = [];
+    cEls.forEach(el => {
+      const lvl = parseInt((el.localName.match(/^c(\d*)$/)||[,''])[1]||'0',10);
+      const id = el.getAttribute('id') || '';
+      const unittitle = pickWithin(el,'unittitle');
+      const title = unittitle ? norm(unittitle.textContent) : '(zonder titel)';
+      const unitdate = pickWithin(el,'unitdate');
+      const date = unitdate ? norm(unitdate.textContent) : '';
+      const unitid = pickWithin(el,'unitid');
+      const invnr = unitid ? norm(unitid.textContent) : (id||'');
+      const level = el.getAttribute('level') || 'c'+lvl;
+      const scope = pickWithin(el,'scopecontent');
+      const note  = pickWithin(el,'note');
+      const body  = [unittitle?norm(unittitle.textContent):'', scope?norm(scope.textContent):'', note?norm(note.textContent):''].join(' ');
+      // pad: truncate ancestry stack op dit niveau
+      const path = stack.map(s=>s.title).join(' › ');
+      nodes.push({ id, invnr, title, date, level, path, body });
+      // stack bijwerken voor kinderen: houd alleen hogere/gelijke niveaus
+      while(stack.length && stack[stack.length-1].lvl >= lvl) stack.pop();
+      stack.push({lvl, title});
+    });
+    // dieptepad: bereken achteraf op basis van niveaus? vereenvoudiging: path hierboven opgebouwd.
+    $('xmlState').innerHTML = '<strong>Gereed:</strong> ' + archiefTitel + ' — ' + nodes.length.toLocaleString('nl-NL') + ' inventaris­omschrijvingen geladen.';
+    $('search').disabled = false; $('btnSearch').disabled = false; $('btnReset').disabled = false;
+    $('search').focus();
+    runSearch();
+  }
+
+  function pick(root, name){
+    let el = root.getElementsByTagNameNS(NS_EAD,name)[0];
+    if(!el) el = root.getElementsByTagName(name)[0];
+    return el||null;
+  }
+  function pickWithin(el,name){ return pick(el,name); }
+  function norm(s){ return s.replace(/\s+/g,' ').trim(); }
+
+  /* ---------- zoekterm-chips ---------- */
+  const chipBox = $('chips');
+  const active = new Set(['verpachting','visserijpercelen']);
+  DEFAULT_TERMS.forEach(t=>{
+    const c = document.createElement('button');
+    c.className = 'chip' + (active.has(t)?' on':'');
+    c.textContent = t;
+    c.addEventListener('click', ()=>{
+      if(active.has(t)){ active.delete(t); c.classList.remove('on'); }
+      else { active.add(t); c.classList.add('on'); }
+      const cur = $('search').value.trim();
+      $('search').value = cur ? cur : Array.from(active).join(' ');
+      if(!$('search').value) return;
+      runSearch();
+    });
+    chipBox.appendChild(c);
+  });
+
+  /* ---------- zoeken ---------- */
+  $('btnSearch').addEventListener('click', runSearch);
+  $('search').addEventListener('keydown', e=>{ if(e.key==='Enter') runSearch(); });
+  $('btnReset').addEventListener('click', ()=>{
+    $('search').value=''; $('results').innerHTML=''; $('stats').innerHTML='';
+    lastResults=[]; hideExport();
+  });
+  $('modeAll').addEventListener('change', runSearch);
+
+  function esc(s){ return s.replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+  function reEscape(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+  function highlight(text, terms){
+    if(!terms.length) return esc(text);
+    const re = new RegExp('(' + terms.map(reEscape).join('|') + ')','gi');
+    let out='', last=0, m;
+    while((m = re.exec(text)) !== null){
+      out += esc(text.slice(last,m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+      last = m.index + m[0].length;
+      if(m.index === re.lastIndex) re.lastIndex++;
+    }
+    return out + esc(text.slice(last));
+  }
+
+  function snippet(text, terms, len){
+    len = len||220;
+    const low = text.toLowerCase();
+    let idx = -1;
+    for(const t of terms){ const i = low.indexOf(t.toLowerCase()); if(i>=0 && (idx<0 || i<idx)) idx=i; }
+    if(idx<0) return text.slice(0,len) + (text.length>len?'…':'');
+    const start = Math.max(0, idx-90);
+    return (start>0?'… ':'') + text.slice(start, start+len) + '…';
+  }
+
+  function currentTerms(){
+    const raw = $('search').value.trim();
+    if(raw) return raw.split(/\s+/).filter(Boolean);
+    return Array.from(active);
+  }
+
+  function runSearch(){
+    const terms = currentTerms();
+    if(!terms.length){ $('stats').textContent='Geef één of meer zoektermen op.'; return; }
+    const all = $('modeAll').checked;
+    const lows = terms.map(t=>t.toLowerCase());
+    lastResults = nodes.filter(n=>{
+      const hay = (n.body + ' ' + n.path).toLowerCase();
+      return all ? lows.every(t=>hay.includes(t)) : lows.some(t=>hay.includes(t));
+    });
+    $('stats').innerHTML =
+      '<span><b>' + nodes.length.toLocaleString('nl-NL') + '</b> omschrijvingen doorzocht</span>' +
+      '<span><b>' + lastResults.length.toLocaleString('nl-NL') + '</b> treffers</span>' +
+      '<span>modus: <b>' + (all?'alle termen (EN)':'een van de termen (OF)') + '</b></span>';
+
+    const box = $('results');
+    box.innerHTML = lastResults.slice(0,400).map(r=>
+      '<div class="result">' +
+        '<div class="r-path">' + esc(r.path || 'hoofdniveau') + '</div>' +
+        '<div class="r-title">' + highlight(r.title, terms) + '</div>' +
+        '<div class="r-meta">' + (r.invnr?('inv./id: <b>'+esc(r.invnr||r.id)+'</b> — '):'') + esc(r.date) + (r.level?(' · '+esc(r.level)):'') + '</div>' +
+        '<div class="r-snippet">' + highlight(snippet(r.body, terms), terms) + '</div>' +
+      '</div>'
+    ).join('');
+    if(lastResults.length > 400){
+      box.insertAdjacentHTML('beforeend','<div class="result r-meta">… en ' + (lastResults.length-400) + ' treffers verder; exporteer met de knoppen hieronder om alles te zien.</div>');
+    }
+    // exportknoppen + online zoeklink
+    if(lastResults.length){
+      showExport(terms);
+    } else hideExport();
+  }
+
+  function showExport(terms){
+    $('btnCsv').classList.remove('hidden');
+    $('btnCopy').classList.remove('hidden');
+    $('btnOnline').classList.remove('hidden');
+    $('btnOnline').href = 'https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=' + encodeURIComponent(terms.join(' ')) + '&micode=17';
+  }
+  function hideExport(){
+    ['btnCsv','btnCopy','btnOnline'].forEach(i=>$(i).classList.add('hidden'));
+  }
+
+  function resultLines(){
+    return lastResults.map(r=>[r.invnr||r.id, r.date, r.path, r.title, r.body].map(x=>(x||'').replace(/\s+/g,' ').trim()).join(' | ')).join('\n');
+  }
+
+  $('btnCopy').addEventListener('click', ()=>{
+    const txt = 'Zoekresultaten (toegang 17, BVZS)\ninv.nr | datering | pad | titel | tekst\n\n' + resultLines();
+    navigator.clipboard.writeText(txt).then(()=>{ $('btnCopy').textContent='Gekopieerd ✓'; setTimeout(()=>$('btnCopy').textContent='Resultaten kopiëren',1500); });
+  });
+
+  $('btnCsv').addEventListener('click', ()=>{
+    const rows = [['inv_nr','datering','pad','titel','tekst'], ...lastResults.map(r=>[r.invnr||r.id, r.date, r.path, r.title, r.body])];
+    const csv = '\ufeff' + rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'zoekresultaten_toegang17.csv';
+    a.click();
+  });
+})();
+</script>
+</body>
+</html>
