@@ -1,0 +1,3114 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BVZS Onderzoekswerkbank — Toegang 17 (Zeeuws Archief) & NA 2.11.58</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --bg-panel: #121722;
+    --bg-card: #181f2e;
+    --bg-input: #0d111a;
+    --ink: #ecf0f8;
+    --muted: #8b95b4;
+    --border: #26304a;
+    --accent: #7c5cff;
+    --accent-hover: #6344e5;
+    --accent-soft: rgba(124, 92, 255, 0.16);
+    --teal: #2dd4bf;
+    --amber: #f59e0b;
+    --brass: #d4af37;
+    --danger: #ef4444;
+    --mark-bg: rgba(245, 158, 11, 0.35);
+    --mark-ink: #fde68a;
+    --radius: 10px;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  [data-theme="light"] {
+    --bg: #f4f3f9;
+    --bg-panel: #ffffff;
+    --bg-card: #f8f7fc;
+    --bg-input: #eeecf7;
+    --ink: #181626;
+    --muted: #5e5976;
+    --border: #dad4ec;
+    --accent: #5b36ec;
+    --accent-hover: #4725c9;
+    --accent-soft: rgba(91, 54, 236, 0.12);
+    --teal: #0d9488;
+    --amber: #d97706;
+    --brass: #b58900;
+    --mark-bg: #fde047;
+    --mark-ink: #181626;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    overflow-x: hidden;
+  }
+
+  mark {
+    background: var(--mark-bg);
+    color: var(--mark-ink);
+    padding: 0 3px;
+    border-radius: 3px;
+  }
+
+  header.topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 18px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-badge {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--teal));
+    display: grid; place-items: center;
+    font-weight: 800; color: #fff; font-family: var(--font-mono); font-size: 0.9rem;
+  }
+  .brand h1 { font-size: 0.96rem; margin: 0; letter-spacing: -0.01em; }
+  .brand .sub { font-size: 0.7rem; color: var(--muted); }
+  .top-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  button, .btn {
+    border: 1px solid transparent;
+    border-radius: 7px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: inherit;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: 0.14s ease;
+    text-decoration: none;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.42; cursor: not-allowed; }
+  button.ghost, .btn.ghost {
+    background: var(--bg-card);
+    color: var(--ink);
+    border-color: var(--border);
+  }
+  button.ghost:hover:not(:disabled), .btn.ghost:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  button.teal { background: var(--teal); color: #04201c; font-weight: 600; }
+  button.amber { background: var(--amber); color: #1f1300; font-weight: 600; }
+  button.brass { background: var(--brass); color: #191200; font-weight: 700; }
+
+  input[type="text"], input[type="search"], input[type="number"], select, textarea {
+    background: var(--bg-input);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.68rem; padding: 2px 8px; border-radius: 999px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-mono);
+  }
+  .status-pill.ok { color: var(--teal); border-color: rgba(45, 212, 191, 0.4); }
+  .status-pill.busy { color: var(--amber); border-color: rgba(245, 158, 11, 0.5); }
+
+  /* Grid */
+  .workbench {
+    display: grid;
+    grid-template-columns: 325px 1fr 485px;
+    gap: 11px;
+    padding: 11px;
+    max-width: 1920px;
+    margin: 0 auto;
+    min-height: calc(100vh - 56px);
+  }
+  @media (max-width: 1460px) {
+    .workbench { grid-template-columns: 300px 1fr; }
+    .col-right { grid-column: 1 / -1; }
+  }
+  @media (max-width: 920px) {
+    .workbench { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(255,255,255,0.015);
+  }
+  .panel-head h2 {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-body { padding: 10px; flex: 1; overflow-y: auto; }
+
+  /* Dropzones */
+  input[type="file"] { display: none; }
+  .dropzone {
+    border: 1.5px dashed var(--accent);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.73rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: 0.15s;
+    background: var(--accent-soft);
+    margin-bottom: 6px;
+  }
+  .dropzone:hover, .dropzone.drag {
+    background: rgba(124, 92, 255, 0.24);
+    border-color: var(--teal);
+  }
+  .dropzone strong { color: var(--ink); display: block; }
+
+  /* Sidebar Lists */
+  .tree-list {
+    list-style: none; padding: 0; margin: 4px 0 0;
+    font-size: 0.74rem; max-height: 220px; overflow-y: auto;
+  }
+  .tree-item {
+    padding: 5px 7px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    color: var(--ink); border-left: 3px solid transparent;
+    margin-bottom: 2px;
+    transition: 0.12s;
+  }
+  .tree-item:hover { background: var(--bg-card); }
+  .tree-item.active {
+    background: var(--accent-soft);
+    border-left-color: var(--teal);
+    font-weight: 600;
+  }
+  .tree-item .lvl-tag {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--bg-input);
+    color: var(--muted);
+    flex: none;
+  }
+  .tree-item .item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .tree-item .cnt-tag {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--muted);
+    flex: none;
+  }
+  .tree-item .cnt-tag b { color: var(--teal); }
+
+  .gen-export-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-top: 5px;
+  }
+  .gen-export-bar button { padding: 4px 5px; font-size: 0.66rem; justify-content: center; }
+
+  /* Tabs & Stage */
+  .canvas-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 4px 8px; font-size: 0.71rem; border-radius: 6px;
+    background: var(--bg-card); color: var(--muted); border: 1px solid var(--border);
+  }
+  .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .geo-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 0.71rem;
+  }
+
+  .planimeter-readout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    align-items: center;
+    padding: 5px 9px;
+    background: rgba(212, 175, 55, 0.10);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    border-radius: 7px;
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--ink);
+  }
+  .planimeter-readout b { color: var(--brass); }
+
+  .pdok-inspector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 9px;
+    background: rgba(45, 212, 191, 0.08);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 7px;
+    margin-bottom: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+  .pdok-inspector b { color: var(--teal); }
+
+  .viz-stage {
+    position: relative;
+    width: 100%;
+    height: 310px;
+    background: #060a10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  #leafletMap {
+    width: 100%;
+    height: 100%;
+    background: #091522;
+  }
+  #planimeterCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 520;
+    pointer-events: none;
+  }
+  #planimeterCanvas.active-trace {
+    pointer-events: auto;
+    cursor: crosshair;
+  }
+  #vizCanvas, #mapFallbackCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+  }
+
+  .canvas-overlay {
+    position: absolute; top: 8px; right: 10px; z-index: 650;
+    font-size: 0.67rem; font-family: var(--font-mono); color: var(--ink);
+    background: rgba(10, 12, 18, 0.88); padding: 4px 8px;
+    border-radius: 6px; border: 1px solid var(--border); pointer-events: none;
+  }
+  .map-telemetry {
+    position: absolute; bottom: 8px; left: 10px; z-index: 650;
+    font-size: 0.67rem; font-family: var(--font-mono); color: var(--teal);
+    background: rgba(10, 12, 18, 0.90); padding: 4px 9px;
+    border-radius: 6px; border: 1px solid rgba(45, 212, 191, 0.45);
+    pointer-events: none;
+  }
+
+  /* Active Filter Banner */
+  .active-filters-bar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 7px;
+    margin-bottom: 7px;
+    font-size: 0.74rem;
+  }
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.71rem;
+    cursor: pointer;
+  }
+
+  /* Search & Results */
+  .search-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin-bottom: 6px; }
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 6px; font-size: 0.74rem; color: var(--muted);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 7px; }
+  .chip {
+    padding: 2px 8px; border-radius: 999px; background: var(--bg-card);
+    color: var(--muted); border: 1px solid var(--border); font-size: 0.7rem; cursor: pointer;
+  }
+  .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .stats-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; padding: 5px 10px; background: var(--bg-card);
+    border-radius: 8px; font-size: 0.74rem; margin-bottom: 7px; border: 1px solid var(--border);
+  }
+  .result-list {
+    display: flex; flex-direction: column; gap: 7px;
+    max-height: 440px; overflow-y: auto; padding-right: 4px;
+  }
+  .result-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 11px; transition: 0.14s;
+  }
+  .result-card.speaking {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.28);
+  }
+  .r-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .r-path { font-size: 0.68rem; color: var(--muted); font-family: var(--font-mono); }
+  .r-badges { display: flex; gap: 4px; flex: none; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--font-mono); font-size: 0.64rem; padding: 1px 5px;
+    border-radius: 4px; background: var(--bg-input); border: 1px solid var(--border); color: var(--teal);
+  }
+  .badge.year { color: var(--amber); }
+  .badge.geo { color: #a78bfa; cursor: pointer; }
+  .badge.fam { color: #f472b6; border-color: rgba(244, 114, 182, 0.35); cursor: pointer; }
+  .badge.ship { color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer; }
+  .r-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 3px; }
+  .r-snippet { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+  .r-actions { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .r-actions button { padding: 3px 8px; font-size: 0.68rem; }
+  .note-box { margin-top: 6px; display: none; }
+  .note-box.open { display: block; }
+  .note-box textarea { width: 100%; min-height: 46px; font-size: 0.75rem; }
+
+  /* RIGHT COLUMN STUDIOS */
+  .tts-studio {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .tts-wave-wrap {
+    position: relative;
+    height: 50px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  #ttsWaveCanvas { width: 100%; height: 100%; cursor: default; }
+  .tts-live-sub {
+    font-size: 0.74rem;
+    color: var(--teal);
+    background: var(--bg-input);
+    border-left: 3px solid var(--teal);
+    padding: 6px 9px;
+    border-radius: 5px;
+    min-height: 36px;
+    font-style: italic;
+  }
+  .tts-phonetic-preview {
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--amber);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px dashed rgba(245, 158, 11, 0.35);
+    padding: 4px 7px;
+    border-radius: 5px;
+    word-break: break-word;
+  }
+  .tts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .tts-grid label { display: flex; flex-direction: column; gap: 2px; }
+  .tts-controls { display: flex; gap: 5px; flex-wrap: wrap; }
+  .voice-quality-badge {
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(45, 212, 191, 0.14);
+    color: var(--teal);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+  }
+
+  .lex-table-wrap {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg-input);
+  }
+  table.lex-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+  table.lex-table th, table.lex-table td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+  table.lex-table th { background: var(--bg-card); color: var(--muted); position: sticky; top: 0; }
+  .ipa-chip {
+    font-family: var(--font-mono); color: #c4b5fd;
+    background: rgba(124, 92, 255, 0.15); padding: 1px 5px; border-radius: 4px; font-size: 0.66rem;
+  }
+  .code-box {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    background: var(--bg-input);
+    color: #a7f3d0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .ai-box { display: flex; flex-direction: column; gap: 7px; }
+  .ai-output {
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px; font-size: 0.77rem;
+    min-height: 155px; max-height: 310px; overflow-y: auto; white-space: pre-wrap;
+  }
+  .ai-cite {
+    display: inline-block; background: var(--accent-soft);
+    border: 1px solid var(--accent); color: var(--ink);
+    font-family: var(--font-mono); font-size: 0.66rem;
+    padding: 1px 5px; border-radius: 4px; margin: 1px; cursor: pointer;
+  }
+  #pdfFrame { width: 100%; height: 430px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-badge">17</div>
+    <div>
+      <h1>Werkbank Visserijarchieven · Toegang 17 (BVZS) &amp; NA 2.11.58</h1>
+      <div class="sub">EAD Hoofdrubrieken · PDOK Kadastrale Perceelkaart (EPSG:28992) · A. Ott Nr. 573 Poolplanimeter · OpenSCAD · Ollama/Solid · Instant TTS</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <span class="status-pill ok" id="ttsLatencyPill">⚡ Stem: &lt;15ms Instant</span>
+    <span class="status-pill ok" id="workerStatus">⚙ Worker: actief</span>
+    <span class="status-pill" id="dbStatus">IndexedDB: gereed</span>
+    <span class="status-pill" id="pdokStatus">PDOK BRK: gereed</span>
+    <button class="ghost" id="btnLoadDemo">⚡ Demo-set laden</button>
+    <button class="ghost" id="btnExportMd" disabled>📄 Rapport (.md)</button>
+    <button class="ghost" id="btnExportJson" disabled>🔗 JSON-LD</button>
+    <button class="ghost" id="btnExportCsv" disabled>📊 CSV</button>
+    <button class="ghost" id="btnTheme">🌓 Thema</button>
+  </div>
+</header>
+
+<div class="workbench">
+  <!-- LINKERKOLOM: ARCHIEF, HOOFDRUBRIEKEN, PERCELEN & GENEALOGIE -->
+  <aside class="panel">
+    <div class="panel-head">
+      <h2>1. Archief, Hoofdrubrieken &amp; Kadaster</h2>
+      <button class="ghost" id="btnClearCache" style="padding:2px 6px;font-size:0.66rem">Cache wissen</button>
+    </div>
+    <div class="panel-body">
+      <div class="dropzone" id="dropXml" tabindex="0" role="button">
+        <strong>📂 Laad NL-MdbZA_17_1_EAD.xml</strong>
+        Klik, druk Enter of sleep EAD-inventaris
+      </div>
+      <input type="file" id="fileXml" accept=".xml,text/xml,application/xml">
+
+      <div class="dropzone" id="dropPdf" tabindex="0" role="button">
+        <strong>📑 Laad 2.11.58.pdf (Nationaal Archief)</strong>
+        Lokale PDF-inspectie in het rechterpaneel
+      </div>
+      <input type="file" id="filePdf" accept=".pdf,application/pdf">
+
+      <div id="xmlState" style="font-size:0.72rem;color:var(--muted);margin:4px 0 8px;">
+        Geen XML geladen. Klik op <em>Demo-set laden</em> of sleep je EAD-bestand hierheen.
+      </div>
+
+      <!-- EAD Hoofdrubrieken (Bovenaan voor directe navigatie) -->
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:7px;">
+        <strong style="font-size:0.75rem;">🗂️ EAD Hoofdrubrieken (<span id="branchTotalCount">0</span>)</strong>
+        <button class="ghost" id="btnResetBranch" style="padding:1px 6px;font-size:0.65rem;display:none;">Toon alle rubrieken</button>
+      </div>
+      <ul class="tree-list" id="treeList"></ul>
+
+      <!-- Geodetische Visserijpercelen -->
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:7px;margin-top:7px;">
+        <strong style="font-size:0.75rem;">📍 Visserijpercelen &amp; Polders (RD)</strong>
+        <button class="ghost" id="btnShowAllParcels" style="padding:1px 6px;font-size:0.65rem;display:none;">Alle percelen</button>
+      </div>
+      <ul class="tree-list" id="parcelList" style="max-height:135px;"></ul>
+
+      <!-- Genealogische Pachters, Borgen & Vaartuigen -->
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:7px;margin-top:7px;">
+        <strong style="font-size:0.75rem;">⚓ Geslachten &amp; Vloot (NER)</strong>
+        <button class="ghost" id="btnResetEntity" style="padding:1px 6px;font-size:0.65rem;display:none;">Reset</button>
+      </div>
+      <ul class="tree-list" id="entityList" style="max-height:125px;"></ul>
+
+      <div class="gen-export-bar">
+        <button class="ghost" id="btnExportTurtle" title="Exporteer als W3C Solid Linked Data Turtle (.ttl)">🐢 Solid .TTL</button>
+        <button class="ghost" id="btnExportGramps" title="Exporteer als GRAMPS XML (.gramps)">🧬 GRAMPS</button>
+        <button class="ghost" id="btnExportGedcom" title="Exporteer als GEDCOM 5.5.1 (.ged)">📜 GEDCOM</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MIDDENKOLOM: 2D PERCEELKAART, TIJDLIJN & ZOEKEN -->
+  <main class="panel">
+    <div class="panel-head">
+      <h2>2. Perceelkaart (RD / PDOK WFS), Ott Poolplanimeter &amp; Inventaris</h2>
+      <div class="canvas-tabs">
+        <button class="tab-btn active" id="tabMap">🗺️ 2D Perceelkaart &amp; PDOK</button>
+        <button class="tab-btn" id="tabTimeline">📊 Tijdlijn (1825–1969)</button>
+        <button class="tab-btn" id="btnResetBrush" style="display:none;color:var(--amber);">✕ Reset periode</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <!-- Toolbar: 2D Perceelkaart & Ott Poolplanimeter -->
+      <div class="geo-toolbar" id="geoToolbar">
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+          <strong>Kaartlaag:</strong>
+          <select id="mapLayerSelect" style="font-size:0.71rem;padding:2px 6px;">
+            <option value="osm">OSM Hydrografisch / Topografie</option>
+            <option value="pdok_luchtfoto">PDOK Orthofoto (25cm)</option>
+          </select>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="chkKadasterWms" checked> PDOK BRK Kadastrale Grenzen
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="chkSeaMap"> Nautische Betonning
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="chkPdokClickWfs" checked> <strong>Klik = Live PDOK Perceel (WFS)</strong>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button class="brass" id="btnTogglePlanimeter">📐 Ott Poolplanimeter Nr. 573: UIT</button>
+          <button class="ghost" id="btnCalibratePlanimeter" style="padding:3px 7px;font-size:0.69rem;">⚙️ Teststaaf (100 cm²)</button>
+          <button class="ghost" id="btnClearPlanimeter" style="padding:3px 7px;font-size:0.69rem;">✕ Reset</button>
+        </div>
+      </div>
+
+      <!-- Live PDOK Kadastrale Perceel-Inspector -->
+      <div class="pdok-inspector" id="pdokInspector">
+        <span><strong>🏛️ PDOK BRK Kadaster (Live WFS/OGC):</strong> <span id="pdokParcelTitle">Klik op een perceel op de kaart (bijv. Scherpenisse Platteweg of Poortvliet)…</span></span>
+        <span>RD (EPSG:28992): <b id="pdokRdCoords">X=66142, Y=395810</b></span>
+        <span>Kadastrale grootte: <b id="pdokOfficialArea">— m²</b> (<b id="pdokBunderArea">— bunder</b>)</span>
+      </div>
+
+      <!-- Live A. Ott Poolplanimeter Nonius & Bunder Aflezing -->
+      <div class="planimeter-readout" id="planimeterReadout">
+        <span><strong>A. Ott Nr. 573:</strong> <span id="planStateText">Stand-by</span></span>
+        <span>Nonius $\Delta N$: <b id="planNonius">0.000</b> omw.</span>
+        <span>Wielhoek $\gamma$: <b id="planAngle">0.0°</b></span>
+        <span>Kaartvlak: <b id="planCm2">0.00 cm²</b></span>
+        <span>Terrein: <b id="planHectare">0.00 ha</b> (<b id="planBunder">0.00 Zeeuwse bunder</b> · <span id="planRoeden">0</span> v.roeden)</span>
+      </div>
+
+      <!-- Stage: 2D Kaart + Planimeter Canvas + Tijdlijn Canvas -->
+      <div class="viz-stage">
+        <div id="leafletMap"></div>
+        <canvas id="planimeterCanvas"></canvas>
+        <canvas id="mapFallbackCanvas" style="display:none;"></canvas>
+        <canvas id="vizCanvas" style="display:none;"></canvas>
+        <div class="canvas-overlay" id="canvasHint">Klik op de kaart voor live PDOK kadastrale perceel-opvraging &amp; Ott planimetrie</div>
+        <div class="map-telemetry" id="mapTelemetry">
+          WGS84: 51.5478°N, 4.1035°E · RD (EPSG:28992): X=66142 m, Y=395810 m · Scherpenisse
+        </div>
+      </div>
+
+      <!-- Zoekbalk (Volledig leeg zonder tekst of placeholder) -->
+      <div class="search-grid">
+        <input id="search" type="search" value="" placeholder="" aria-label="Zoek in inventaris" disabled>
+        <button id="btnSearch" disabled>Zoeken</button>
+        <button id="btnReset" class="ghost" disabled>Alles wissen</button>
+      </div>
+
+      <!-- Actieve Filters Balk (toont duidelijk welke Hoofdrubriek, Perceel of Geslacht actief is) -->
+      <div class="active-filters-bar" id="activeFiltersBar"></div>
+
+      <div class="filter-bar">
+        <label><input type="checkbox" id="modeAll"> EN-modus</label>
+        <label><input type="checkbox" id="modeRegex"> RegEx</label>
+        <label><input type="checkbox" id="modeNotesOnly"> Met notities</label>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+          Jaren:
+          <input type="number" id="yearMin" placeholder="1825" style="width:62px;padding:2px 5px;font-size:0.73rem;">
+          –
+          <input type="number" id="yearMax" placeholder="1969" style="width:62px;padding:2px 5px;font-size:0.73rem;">
+        </span>
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="stats-bar">
+        <span id="statsText">Wachten op archiefdata…</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="ghost" id="btnSpeakAllResults" style="padding:3px 8px;font-size:0.7rem;" disabled>🎙️ Lees selectie voor</button>
+          <button class="amber" id="btnExportWavBatch" style="padding:3px 8px;font-size:0.7rem;" disabled>💾 Selectie als .WAV</button>
+          <a id="btnOnline" class="btn ghost" style="padding:3px 8px;font-size:0.7rem;display:none;" target="_blank" rel="noopener">ZA Viewer ↗</a>
+        </div>
+      </div>
+
+      <div class="result-list" id="results"></div>
+    </div>
+  </main>
+
+  <!-- RECHTERKOLOM: INSTANT & ONNX TTS + OPENSCAD KALIBRATIESCHIJF + OLLAMA/GRAPHQL/SOLID BRIDGE + PDF -->
+  <aside class="panel col-right">
+    <div class="panel-head">
+      <h2>3. Spraak, OpenSCAD CAD &amp; Ollama/Solid Bridge</h2>
+      <div class="canvas-tabs">
+        <button class="tab-btn active" id="tabVoice">🎙️ Stem</button>
+        <button class="tab-btn" id="tabOpenScad">📐 OpenSCAD (.scad)</button>
+        <button class="tab-btn" id="tabAi">🦙 Ollama / Solid / RAG</button>
+        <button class="tab-btn" id="tabLexicon">📖 IPA/SSML</button>
+        <button class="tab-btn" id="tabLinkedData">🐢 TTL/GRAMPS</button>
+        <button class="tab-btn" id="tabPdf">📑 PDF</button>
+      </div>
+    </div>
+    <div class="panel-body">
+
+      <!-- TAB 0: ZERO-LATENCY NEURAL PROSODY & BROWSER ONNX WASM STUDIO -->
+      <div id="paneVoice" class="tts-studio">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <strong style="font-size:0.8rem;">Zero-Latency &amp; ONNX WASM Spraakstudio</strong>
+          <span class="voice-quality-badge" id="voiceQualityBadge">⚡ &lt;15ms Direct-Start</span>
+        </div>
+
+        <label style="font-size:0.71rem;color:var(--muted);display:flex;flex-direction:column;gap:2px;">
+          Synthese-pijplijn:
+          <select id="ttsEngineMode">
+            <option value="instant_hybrid" selected>⚡ Zero-Latency Hybrid (Directe Neurale Stem + Achtergrond Worker WAV)</option>
+            <option value="onnx_wasm">🧠 100% In-Browser ONNX VITS (Piper NL WebAssembly + OPFS Cache)</option>
+          </select>
+        </label>
+
+        <div id="onnxModelPanel" style="display:none;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;padding:7px;flex-direction:column;gap:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.71rem;">
+            <strong>ONNX VITS Stemmodel (OPFS Browser Cache):</strong>
+            <span id="onnxStateBadge" style="color:var(--teal);font-family:var(--font-mono);">Stand-by</span>
+          </div>
+          <select id="onnxVoiceModel" style="font-size:0.74rem;">
+            <option value="nl_NL-mls-medium" selected>nl_NL-mls-medium (Warme Archief-verteller, 22kHz VITS)</option>
+            <option value="nl_NL-rdh-medium">nl_NL-rdh-medium (Heldere Documentaire-stem, 22kHz VITS)</option>
+            <option value="nl_NL-ronnie-medium">nl_NL-ronnie-medium (Rustige Mannenstem, 22kHz VITS)</option>
+            <option value="nl_BE-nathalie-medium">nl_BE-nathalie-medium (Zuid-Nederlands / Zeeuws-verwant, 22kHz VITS)</option>
+          </select>
+        </div>
+
+        <label style="font-size:0.71rem;color:var(--muted);display:flex;flex-direction:column;gap:2px;">
+          Voorverwarmde Nederlandse Browserstem:
+          <select id="voiceSelect"></select>
+        </label>
+
+        <div class="tts-wave-wrap">
+          <canvas id="ttsWaveCanvas"></canvas>
+        </div>
+
+        <div class="tts-live-sub" id="ttsLiveSub">
+          Klik op <strong>🎙️ Direct voorlezen</strong> bij een archiefstuk: de stem start onmiddellijk (&lt;15ms) met Zeeuwse IPA-prosodie terwijl de perceelkaart synchroon meebeweegt.
+        </div>
+
+        <div class="tts-phonetic-preview" id="ttsPhoneticPreview">
+          IPA &amp; fonetische real-time transcriptie verschijnt hier…
+        </div>
+
+        <div class="tts-controls">
+          <button id="btnTtsTest" class="teal" style="flex:1;">▶️ Direct Proefluisteren</button>
+          <button id="btnTtsPause" class="ghost" disabled>⏸️ Pauze</button>
+          <button id="btnTtsStop" class="ghost" disabled>⏹️ Stop</button>
+          <button id="btnDownloadLastAudio" class="amber" disabled>💾 Download .WAV</button>
+        </div>
+
+        <div class="tts-grid">
+          <label>
+            <span>Spreektempo (<b id="lblRate">0.95x</b>)</span>
+            <input type="range" id="ttsRate" min="0.75" max="1.20" step="0.01" value="0.95">
+          </label>
+          <label>
+            <span>Warmte / Toonhoogte (<b id="lblPitch">0.98</b>)</span>
+            <input type="range" id="ttsPitch" min="0.80" max="1.15" step="0.01" value="0.98">
+          </label>
+          <label>
+            <span>Adempauze tussen zinnen (<b id="lblPause">280 ms</b>)</span>
+            <input type="range" id="ttsPause" min="60" max="800" step="20" value="280">
+          </label>
+          <label>
+            <span>Master Filter (OfflineAudioContext EQ)</span>
+            <select id="ttsEqPreset">
+              <option value="warm" selected>Buis-warmte (185Hz + / 4.1kHz soft)</option>
+              <option value="clear">Studio Helder (Presence 3.1kHz)</option>
+              <option value="flat">Neutraal (Flat 16-bit PCM)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- TAB 1: PARAMETRISCHE OPENSCAD (.SCAD) KALIBRATIESCHIJF GENERATOR -->
+      <div id="paneOpenScad" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:0.74rem;color:var(--muted);">
+          <strong>Parametrische OpenSCAD (`.scad`) 3D CAD Generator — A. Ott Nr. 573 Kalibratieschijf</strong><br>
+          Genereert maatvaste OpenSCAD-code voor digitale fabricage van de <strong>A. Ott Nr. 573 kalibratieschijf ($100{,}00\text{ cm}^2$, $R=56{,}419\text{ mm}$)</strong> met V-geleidegroef voor de rijstift en radiale nonius-ijkstreepjes.
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:0.72rem;">
+          <label style="display:flex;flex-direction:column;gap:3px;">
+            Doeloppervlak ($\text{cm}^2$):
+            <input type="number" id="scadTargetAreaCm2" value="100.0" step="10" min="10" max="500">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:3px;">
+            Groefbreedte Rijstift ($\text{mm}$):
+            <input type="number" id="scadGrooveMm" value="0.85" step="0.05" min="0.3" max="2.5">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:3px;">
+            Schijfdikte ($\text{mm}$):
+            <input type="number" id="scadThicknessMm" value="4.0" step="0.5" min="2.0" max="15.0">
+          </label>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="teal" id="btnGenScad" style="flex:1;">🔄 Herbereken OpenSCAD Model</button>
+          <button class="amber" id="btnDownloadScad">💾 Download .SCAD</button>
+          <button class="ghost" id="btnCopyScad">📋 Kopieer Code</button>
+        </div>
+
+        <div class="code-box" id="scadCodeBox" style="min-height:290px;"></div>
+      </div>
+
+      <!-- TAB 2: LOKALE OLLAMA MISTRAL + GRAPHQL (:8082) + W3C SOLID RDF BRIDGE -->
+      <div id="paneAi" class="ai-box" style="display:none;">
+        <div style="font-size:0.74rem;color:var(--muted);">
+          <strong>Lokale Ollama Mistral (`127.0.0.1:11434`), GraphQL (`:8082`) &amp; Solid POD Bridge</strong><br>
+          Combineert de Multi-Threaded Worker TF-IDF treffers, de geëxtraheerde W3C Solid Turtle (`.ttl`) genealogie-triples én het geselecteerde PDOK RD-perceel.
+        </div>
+
+        <details style="font-size:0.71rem;color:var(--muted);background:var(--bg-input);padding:6px 8px;border-radius:6px;border:1px solid var(--border);">
+          <summary style="cursor:pointer;font-weight:600;color:var(--ink);">⚙️ Endpoints: Ollama Mistral · Axum GraphQL · W3C Solid POD</summary>
+          <div style="display:grid;gap:5px;margin-top:6px;">
+            <label style="display:grid;grid-template-columns:115px 1fr;align-items:center;">
+              <span>Ollama Endpoint:</span>
+              <input type="text" id="ollamaUrl" value="http://127.0.0.1:11434/api/generate">
+            </label>
+            <label style="display:grid;grid-template-columns:115px 1fr;align-items:center;">
+              <span>LLM Model:</span>
+              <input type="text" id="ollamaModel" value="mistral">
+            </label>
+            <label style="display:grid;grid-template-columns:115px 1fr;align-items:center;">
+              <span>Axum GraphQL URL:</span>
+              <input type="text" id="graphqlUrl" value="http://127.0.0.1:8082/api/graphql">
+            </label>
+            <label style="display:grid;grid-template-columns:115px 1fr;align-items:center;">
+              <span>Solid WebID / POD:</span>
+              <input type="text" id="solidPodUrl" value="https://solid-virid.vercel.app/card.ttl#me">
+            </label>
+          </div>
+        </details>
+
+        <textarea id="aiPrompt" rows="3" placeholder="Stel een onderzoeksvraag over de geladen inventaris, pachters of percelen…"></textarea>
+
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button id="btnRunRag" class="teal">⚡ Worker RAG + Solid</button>
+          <button id="btnRunOllamaBridge" class="brass">🦙 Ollama Mistral + RDF</button>
+          <button id="btnRunGraphqlBridge" class="ghost">🔗 GraphQL (:8082)</button>
+          <button id="btnSpeakAi" class="ghost">🎙️ Lees</button>
+          <button id="btnWavAi" class="amber">💾 .WAV</button>
+        </div>
+
+        <div class="ai-output" id="aiOutput">Gereed voor gecombineerde EAD + Solid RDF + PDOK RD-analyse.</div>
+      </div>
+
+      <!-- TAB 3: SSML & IPA FONETISCHE FIJNAFSTEMMING -->
+      <div id="paneLexicon" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:0.73rem;color:var(--muted);">
+          <strong>Zeeuws, Genealogisch &amp; 19e-eeuws Juridisch IPA / SSML Lexicon</strong>
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:0.72rem;display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="lexiconEnabled" checked> IPA &amp; Lexicon actief
+          </label>
+          <button class="ghost" id="btnCopySsml" style="margin-left:auto;padding:3px 7px;font-size:0.68rem;">📋 Kopieer SSML XML</button>
+          <button class="ghost" id="btnResetLexicon" style="padding:3px 7px;font-size:0.68rem;">↺ Standaard</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:4px;">
+          <input type="text" id="newLexTerm" placeholder="Term (bijv. TH 90)">
+          <input type="text" id="newLexPhon" placeholder="Uitspraak (Tholen negentig)">
+          <input type="text" id="newLexIpa" placeholder="IPA (ˈtoː.lə ˈneː.ɣən.təx)">
+          <button id="btnAddLex" class="teal" style="padding:4px 8px;">+ Toevoegen</button>
+        </div>
+
+        <div class="lex-table-wrap">
+          <table class="lex-table">
+            <thead>
+              <tr>
+                <th>Archiefwoord</th>
+                <th>Fonetisch (TTS)</th>
+                <th>IPA Foneem</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="lexTableBody"></tbody>
+          </table>
+        </div>
+
+        <div style="font-size:0.71rem;color:var(--muted);">
+          <div style="display:flex;gap:5px;margin:4px 0;">
+            <input type="text" id="lexTestInput" style="flex:1;" value="P.V. van verpachting aan B.W. Schot (hoogaars TH 2 en TH 90) nabij Scherpenisse (Platteweg) en Sint-Maartensdijk ad fl. 145,50 per bunder.">
+            <button id="btnLexTestSpeak" class="teal">🔊 Test</button>
+          </div>
+          <div class="code-box" id="ssmlPreviewBox" style="max-height:110px;"></div>
+        </div>
+      </div>
+
+      <!-- TAB 4: W3C SOLID RDF/TURTLE, GRAMPS XML & GEDCOM 5.5.1 GENERATOR -->
+      <div id="paneLinkedData" style="display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:0.74rem;color:var(--muted);">
+          <strong>W3C Solid POD (RDF/Turtle), GRAMPS XML &amp; GEDCOM 5.5.1 Generator</strong>
+        </div>
+
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <select id="ldFormatSelect" style="flex:1;font-size:0.73rem;">
+            <option value="turtle" selected>🐢 W3C Solid Linked Data — RDF / Turtle (.ttl)</option>
+            <option value="gramps">🧬 GRAMPS Genealogie XML (.gramps)</option>
+            <option value="gedcom">📜 GEDCOM 5.5.1 Standaard (.ged)</option>
+          </select>
+          <button class="teal" id="btnDownloadLd">💾 Download</button>
+          <button class="ghost" id="btnCopyLd">📋 Kopieer</button>
+        </div>
+
+        <div class="code-box" id="ldPreviewBox" style="max-height:360px;min-height:270px;"></div>
+      </div>
+
+      <!-- TAB 5: PDF VIEWER -->
+      <div id="panePdf" style="display:none;">
+        <div id="pdfPlaceholder" style="font-size:0.78rem;color:var(--muted);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px;">
+          Sleep <strong>2.11.58.pdf</strong> in het linkerpaneel om de inventaris hier naast toegang 17 te bekijken.
+        </div>
+        <iframe id="pdfFrame" title="PDF-viewer" style="display:none;"></iframe>
+      </div>
+
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const NS_EAD = 'urn:isbn:1-931666-22-9';
+  const DEFAULT_TERMS = [
+    'verpachting', 'visserijpercelen', 'pachtsom', 'mossel', 'oester',
+    'loting', 'consent', 'Scherpenisse', 'Platteweg', 'Sint-Maartensdijk',
+    'Poortvliet', 'Tholen', 'Yerseke', 'Schot', 'Bout', 'Guiljam', 'Quaak', 'TH 2'
+  ];
+
+  let nodes = [];
+  let topBranches = [];      // [{ branchId, code, title, totalCount, hitCount }]
+  let selectedBranchId = ''; // Exact gekoppeld aan node.branchId
+  let selectedEntityFilter = '';
+  let lastResults = [];
+  let notesMap = {};
+  let archiefTitel = '';
+  let workerEntityStats = [];
+  let lastPdokParcel = null;
+
+  let activeMainTab = 'map'; // 'map' | 'timeline'
+  let brushRange = null;
+  let isDraggingBrush = false;
+  let dragStartX = 0;
+
+  const $ = id => document.getElementById(id);
+  function esc(s) {
+    return String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+  }
+  function reEscape(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /* ==========================================================================
+     1. EXACTE RIJKSDRIEHOEKSCOÖRDINATEN (WGS84 ↔ RD / EPSG:28992 SCHREUDERS)
+     ========================================================================== */
+  function wgs84ToRd(lat, lon) {
+    const phi0 = 52.15517440, lam0 = 5.38720621;
+    const x0 = 155000, y0 = 463000;
+    const dPhi = 0.36 * (lat - phi0), dLam = 0.36 * (lon - lam0);
+
+    const Rp = [0, 1, 2, 0, 1, 3, 1, 0, 2];
+    const Rq = [1, 1, 1, 3, 0, 1, 3, 2, 3];
+    const Rk = [190094.945, -11832.228, -114.221, -32.391, -0.705, -2.340, -0.608, -0.008, 0.148];
+
+    const Sp = [1, 0, 2, 1, 3, 0, 2, 1, 0, 1];
+    const Sq = [0, 2, 0, 2, 0, 1, 2, 1, 4, 4];
+    const Sk = [309056.544, 3638.893, 73.077, -157.984, 59.788, 0.433, -6.439, -0.032, 0.092, -0.054];
+
+    let dx = 0, dy = 0;
+    for (let i = 0; i < Rk.length; i++) dx += Rk[i] * Math.pow(dPhi, Rp[i]) * Math.pow(dLam, Rq[i]);
+    for (let i = 0; i < Sk.length; i++) dy += Sk[i] * Math.pow(dPhi, Sp[i]) * Math.pow(dLam, Sq[i]);
+    return { x: Math.round(x0 + dx), y: Math.round(y0 + dy) };
+  }
+
+  /* ==========================================================================
+     2. GEODETISCHE PERCELEN & LIVE PDOK KADASTRALE PERCEEL-OPVRAGING (OGC/WFS)
+     ========================================================================== */
+  const ZEELAND_PARCELS = [
+    {
+      id: 'scherpenisse',
+      name: 'Scherpenisse & Platteweg / Havengeul (Tholen)',
+      keywords: ['scherpenisse', 'platteweg'],
+      center: [51.5478, 4.1035],
+      zoom: 14,
+      kadasterFallback: { gem: 'Scherpenisse (SPN00)', sectie: 'D', nr: '1428 (Platteweg 3-7)', m2: 14850 },
+      type: 'Mossel- & Oesterpercelen / Dijkvak Platteweg',
+      poly: [[51.5535, 4.0880], [51.5535, 4.1185], [51.5360, 4.1185], [51.5360, 4.0880]]
+    },
+    {
+      id: 'sint_maartensdijk',
+      name: 'Sint-Maartensdijk & Pluimpot (Tholen)',
+      keywords: ['sint-maartensdijk', 'st.-maartensdijk', 'maartensdijk', 'pluimpot'],
+      center: [51.5432, 4.0721],
+      zoom: 13,
+      kadasterFallback: { gem: 'Sint-Maartensdijk (SMD00)', sectie: 'G', nr: '892 (Pluimpot)', m2: 38400 },
+      type: 'Verpachte schelpdierpercelen & Weervisserij',
+      poly: [[51.5520, 4.0550], [51.5520, 4.0860], [51.5300, 4.0860], [51.5300, 4.0550]]
+    },
+    {
+      id: 'poortvliet',
+      name: 'Poortvliet & Oosterschelde-oever (Tholen)',
+      keywords: ['poortvliet'],
+      center: [51.5445, 4.1480],
+      zoom: 13,
+      kadasterFallback: { gem: 'Poortvliet (PVT00)', sectie: 'K', nr: '614', m2: 29200 },
+      type: 'Agrarisch polderland & Aangrenzende Viswateren',
+      poly: [[51.5560, 4.1300], [51.5560, 4.1650], [51.5330, 4.1650], [51.5330, 4.1300]]
+    },
+    {
+      id: 'tholen_stad',
+      name: 'Tholen-Stad, Eendracht & Krabbenkreek',
+      keywords: ['tholen', 'eendracht', 'krabbenkreek', 'oud-vossemeer'],
+      center: [51.5320, 4.2150],
+      zoom: 12,
+      kadasterFallback: { gem: 'Tholen (TLN00)', sectie: 'B', nr: '1102 (Haven/Krabbenkreek)', m2: 46100 },
+      type: 'Oesterputten, Ansjovisweren & Vlootstation (TH)',
+      poly: [[51.5550, 4.1850], [51.5550, 4.2400], [51.5150, 4.2400], [51.5150, 4.1850]]
+    },
+    {
+      id: 'yerseke_bank',
+      name: 'Yerseke Bank & Oesterputten (Zuid-Beveland)',
+      keywords: ['yerseke', 'oesterputten', 'yerseke bank'],
+      center: [51.4980, 4.0650],
+      zoom: 12,
+      kadasterFallback: { gem: 'Reimerswaal / Yerseke (YSK00)', sectie: 'A', nr: '214 (Yerseke Bank)', m2: 125000 },
+      type: 'Hoofdgebied Oester- & Mosselcultuur (Kavels 1–420)',
+      poly: [[51.5200, 4.0350], [51.5200, 4.1150], [51.4820, 4.1150], [51.4820, 4.0350]]
+    },
+    {
+      id: 'reimerswaal',
+      name: 'Verdronken Land van Zuid-Beveland / Reimerswaal',
+      keywords: ['reimerswaal', 'verdronken land', 'bergen op zoom', 'speelmansplaten'],
+      center: [51.4720, 4.1750],
+      zoom: 12,
+      kadasterFallback: { gem: 'Reimerswaal (RMW00)', sectie: 'O', nr: '45 (Verdronken Land)', m2: 210000 },
+      type: 'Bezaaide & Onbezaaide Oester- en Mosselbanken',
+      poly: [[51.4980, 4.1300], [51.4980, 4.2350], [51.4480, 4.2350], [51.4480, 4.1300]]
+    }
+  ];
+
+  function computeRdPolygonMetrics(latLonPoly) {
+    if (!latLonPoly || latLonPoly.length < 3) return { m2: 0, ha: 0, bunder: 0, roeden: 0, nonius: 0, cm2: 0 };
+    const rdPts = latLonPoly.map(([lat, lon]) => wgs84ToRd(lat, lon));
+    let twoArea = 0;
+    for (let i = 0; i < rdPts.length; i++) {
+      const p1 = rdPts[i];
+      const p2 = rdPts[(i + 1) % rdPts.length];
+      twoArea += (p1.x * p2.y - p2.x * p1.y);
+    }
+    const m2 = Math.abs(twoArea) / 2;
+    const ha = m2 / 10000;
+    const bunder = ha * 1.018;
+    const roeden = Math.round(bunder * 300);
+    const scaleDenom = 25000;
+    const m2PerCm2OnMap = (scaleDenom * 0.01) * (scaleDenom * 0.01);
+    const cm2 = m2 / m2PerCm2OnMap;
+    const nonius = cm2 / 100;
+    return { m2, ha, bunder, roeden, nonius, cm2 };
+  }
+
+  ZEELAND_PARCELS.forEach(p => {
+    const m = computeRdPolygonMetrics(p.poly);
+    p.areaHa = Math.round(m.ha);
+    p.areaBunder = Math.round(m.bunder);
+    p.rdCenter = wgs84ToRd(p.center[0], p.center[1]);
+  });
+
+  let leafletMap = null;
+  let baseTileLayer = null;
+  let kadasterWmsLayer = null;
+  let seaMapLayer = null;
+  let livePdokHighlightLayer = null;
+  let parcelLayers = new Map();
+  let activeParcelId = null;
+
+  async function queryLivePdokParcelAtLatLon(lat, lon) {
+    const rd = wgs84ToRd(lat, lon);
+    $('pdokRdCoords').textContent = `X=${rd.x} m, Y=${rd.y} m`;
+    $('pdokStatus').textContent = 'PDOK BRK: opvragen…';
+    $('pdokStatus').classList.add('busy');
+
+    const d = 0.00035;
+    const bbox = `${(lon - d).toFixed(6)},${(lat - d).toFixed(6)},${(lon + d).toFixed(6)},${(lat + d).toFixed(6)}`;
+    const ogcUrl = `https://api.pdok.nl/kadaster/brk-kadastrale-kaart/ogc/v1/collections/perceel/items?bbox=${bbox}&limit=1&f=json`;
+
+    try {
+      const res = await fetch(ogcUrl, { headers: { 'Accept': 'application/geo+json, application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data.features && data.features.length > 0) {
+        const feat = data.features[0];
+        const props = feat.properties || {};
+        const gem = props.akr_kadastrale_gemeente_code_waarde || props.kadastrale_gemeente_waarde || 'Zeeland/Tholen';
+        const sectie = props.sectie || 'A';
+        const nr = props.perceelnummer || '—';
+        const grootteM2 = Number(props.kadastrale_grootte_waarde || 0);
+
+        let ring = [];
+        if (feat.geometry && feat.geometry.type === 'Polygon') {
+          ring = feat.geometry.coordinates[0].map(([lng, lt]) => [lt, lng]);
+        } else if (feat.geometry && feat.geometry.type === 'MultiPolygon') {
+          ring = feat.geometry.coordinates[0][0].map(([lng, lt]) => [lt, lng]);
+        }
+
+        const calcM = ring.length >= 3 ? computeRdPolygonMetrics(ring) : { m2: grootteM2, ha: grootteM2 / 10000, bunder: (grootteM2 / 10000) * 1.018 };
+        const finalM2 = grootteM2 || Math.round(calcM.m2);
+        const finalBunder = ((finalM2 / 10000) * 1.018).toFixed(2);
+
+        lastPdokParcel = { gem, sectie, nr, m2: finalM2, bunder: finalBunder, rd };
+
+        $('pdokParcelTitle').innerHTML = `<strong style="color:var(--teal)">✓ Kadastraal Perceel ${esc(gem)} · Sectie ${esc(sectie)} · Nr. ${esc(nr)}</strong>`;
+        $('pdokOfficialArea').textContent = `${finalM2.toLocaleString('nl-NL')} m²`;
+        $('pdokBunderArea').textContent = `${finalBunder} Zeeuwse bunder`;
+        $('pdokStatus').textContent = 'PDOK BRK: live verbonden';
+        $('pdokStatus').classList.remove('busy');
+        $('pdokStatus').classList.add('ok');
+
+        if (ring.length >= 3) {
+          if (leafletMap && window.L) {
+            if (livePdokHighlightLayer) leafletMap.removeLayer(livePdokHighlightLayer);
+            livePdokHighlightLayer = L.polygon(ring, {
+              color: '#f59e0b', weight: 3.5, fillColor: '#d4af37', fillOpacity: 0.42
+            }).addTo(leafletMap);
+            livePdokHighlightLayer.bindPopup(`
+              <div style="font-family:system-ui;font-size:12px;color:#111;">
+                <strong>🏛️ PDOK BRK Kadastraal Perceel</strong><br>
+                Gemeente: <b>${esc(gem)}</b> · Sectie <b>${esc(sectie)}</b> · Nr. <b>${esc(nr)}</b><br>
+                RD: <code>X=${rd.x} m, Y=${rd.y} m</code><br>
+                Kadastrale grootte: <b>${finalM2.toLocaleString('nl-NL')} m²</b> (${finalBunder} bunder)
+              </div>
+            `).openPopup();
+          }
+          updatePlanimeterReadoutFromPoly(ring, `PDOK Perceel ${gem} ${sectie} ${nr}`);
+        }
+        return;
+      }
+    } catch (err) {}
+
+    let nearest = ZEELAND_PARCELS[0];
+    let minD = Infinity;
+    ZEELAND_PARCELS.forEach(p => {
+      const dist = Math.hypot(p.center[0] - lat, p.center[1] - lon);
+      if (dist < minD) { minD = dist; nearest = p; }
+    });
+
+    const fb = nearest.kadasterFallback;
+    const bnd = ((fb.m2 / 10000) * 1.018).toFixed(2);
+    lastPdokParcel = { gem: fb.gem, sectie: fb.sectie, nr: fb.nr, m2: fb.m2, bunder: bnd, rd };
+    $('pdokParcelTitle').innerHTML = `<strong>${esc(fb.gem)} · Sectie ${esc(fb.sectie)} · Perceel ${esc(fb.nr)}</strong>`;
+    $('pdokOfficialArea').textContent = `${fb.m2.toLocaleString('nl-NL')} m²`;
+    $('pdokBunderArea').textContent = `${bnd} Zeeuwse bunder`;
+    $('pdokStatus').textContent = 'PDOK BRK: lokaal register';
+    $('pdokStatus').classList.remove('busy');
+    updatePlanimeterReadoutFromPoly(nearest.poly, `Kadastraal vak ${fb.gem}`);
+  }
+
+  /* ==========================================================================
+     3. KINEMATISCHE A. OTT COMPENSATIE-POOLPLANIMETER NR. 573
+     ========================================================================== */
+  const planCanvas = $('planimeterCanvas');
+  const planCtx = planCanvas.getContext('2d');
+  let planimeterActive = false;
+  let isTracingPlanimeter = false;
+  let planPolePt = { x: 95, y: 230 };
+  let planTracerPt = { x: 240, y: 145 };
+  let planTracePathLatLon = [];
+  let planTracePathPx = [];
+  let planWheelAngleDeg = 0;
+
+  function setPlanimeterActiveState(active) {
+    planimeterActive = Boolean(active);
+    planCanvas.classList.toggle('active-trace', planimeterActive);
+    $('btnTogglePlanimeter').textContent = planimeterActive
+      ? '📐 Ott Poolplanimeter Nr. 573: ACTIEF'
+      : '📐 Ott Poolplanimeter Nr. 573: UIT';
+    drawPlanimeterMechanism();
+  }
+
+  function resizePlanimeterCanvas() {
+    const rect = planCanvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    planCanvas.width = rect.width * dpr;
+    planCanvas.height = rect.height * dpr;
+    planCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    planPolePt = { x: rect.width * 0.22, y: rect.height * 0.76 };
+    planTracerPt = { x: rect.width * 0.52, y: rect.height * 0.45 };
+    drawPlanimeterMechanism();
+  }
+  window.addEventListener('resize', resizePlanimeterCanvas);
+
+  function solvePlanimeterJoint(pole, tracer, Rp = 115, Lt = 145) {
+    const dx = tracer.x - pole.x, dy = tracer.y - pole.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const clampedD = Math.min(Rp + Lt - 4, Math.max(Math.abs(Rp - Lt) + 4, d));
+    const cosAlpha = (Rp * Rp + clampedD * clampedD - Lt * Lt) / (2 * Rp * clampedD);
+    const alpha = Math.acos(Math.max(-1, Math.min(1, cosAlpha)));
+    const jointAngle = Math.atan2(dy, dx) - alpha;
+    const jx = pole.x + Rp * Math.cos(jointAngle);
+    const jy = pole.y + Rp * Math.sin(jointAngle);
+    return { x: jx, y: jy, armAngle: Math.atan2(tracer.y - jy, tracer.x - jx) };
+  }
+
+  function updatePlanimeterReadoutFromPoly(latLonPoly, labelPrefix = 'Gemeten contour') {
+    const m = computeRdPolygonMetrics(latLonPoly);
+    $('planStateText').textContent = `${labelPrefix} (${latLonPoly.length} pt)`;
+    $('planNonius').textContent = m.nonius.toFixed(3);
+    $('planAngle').textContent = `${planWheelAngleDeg.toFixed(1)}°`;
+    $('planCm2').textContent = `${m.cm2.toFixed(2)} cm²`;
+    $('planHectare').textContent = `${m.ha.toFixed(2)} ha`;
+    $('planBunder').textContent = `${m.bunder.toFixed(2)} Zeeuwse bunder`;
+    $('planRoeden').textContent = m.roeden.toLocaleString('nl-NL');
+  }
+
+  function drawPlanimeterMechanism() {
+    const w = planCanvas.clientWidth, h = planCanvas.clientHeight;
+    planCtx.clearRect(0, 0, w, h);
+    if (!planimeterActive) return;
+
+    if (planTracePathPx.length > 1) {
+      planCtx.fillStyle = 'rgba(212, 175, 55, 0.24)';
+      planCtx.strokeStyle = '#f59e0b';
+      planCtx.lineWidth = 2;
+      planCtx.beginPath();
+      planTracePathPx.forEach((pt, idx) => { if (idx === 0) planCtx.moveTo(pt.x, pt.y); else planCtx.lineTo(pt.x, pt.y); });
+      planCtx.closePath();
+      planCtx.fill();
+      planCtx.stroke();
+    }
+
+    const joint = solvePlanimeterJoint(planPolePt, planTracerPt, 115, 145);
+    planWheelAngleDeg = (joint.armAngle * 180) / Math.PI;
+
+    planCtx.save();
+    planCtx.shadowColor = 'rgba(0,0,0,0.65)';
+    planCtx.shadowBlur = 6;
+
+    planCtx.strokeStyle = '#d4af37';
+    planCtx.lineWidth = 5;
+    planCtx.beginPath();
+    planCtx.moveTo(planPolePt.x, planPolePt.y);
+    planCtx.lineTo(joint.x, joint.y);
+    planCtx.stroke();
+
+    planCtx.strokeStyle = '#e2e8f0';
+    planCtx.lineWidth = 4.5;
+    planCtx.beginPath();
+    planCtx.moveTo(joint.x, joint.y);
+    planCtx.lineTo(planTracerPt.x, planTracerPt.y);
+    planCtx.stroke();
+
+    const wheelX = joint.x + (planTracerPt.x - joint.x) * 0.26;
+    const wheelY = joint.y + (planTracerPt.y - joint.y) * 0.26;
+    planCtx.translate(wheelX, wheelY);
+    planCtx.rotate(joint.armAngle);
+    planCtx.fillStyle = '#1e293b';
+    planCtx.strokeStyle = '#d4af37';
+    planCtx.lineWidth = 2;
+    planCtx.fillRect(-14, -9, 28, 18);
+    planCtx.strokeRect(-14, -9, 28, 18);
+    planCtx.fillStyle = '#fef3c7';
+    planCtx.fillRect(-6, -7, 12, 14);
+    planCtx.restore();
+
+    planCtx.fillStyle = '#065f46';
+    planCtx.beginPath();
+    planCtx.arc(planPolePt.x, planPolePt.y, 13, 0, Math.PI * 2);
+    planCtx.fill();
+    planCtx.strokeStyle = '#d4af37';
+    planCtx.lineWidth = 3;
+    planCtx.stroke();
+
+    planCtx.strokeStyle = '#2dd4bf';
+    planCtx.lineWidth = 2.5;
+    planCtx.beginPath();
+    planCtx.arc(planTracerPt.x, planTracerPt.y, 9, 0, Math.PI * 2);
+    planCtx.stroke();
+  }
+
+  $('btnTogglePlanimeter').addEventListener('click', () => setPlanimeterActiveState(!planimeterActive));
+
+  $('btnCalibratePlanimeter').addEventListener('click', () => {
+    setPlanimeterActiveState(true);
+    const w = planCanvas.clientWidth, h = planCanvas.clientHeight;
+    const cx = w * 0.54, cy = h * 0.48;
+    const radiusPx = 46;
+    planTracePathPx = []; planTracePathLatLon = [];
+    let step = 0;
+    function anim() {
+      const ang = (step / 44) * Math.PI * 2;
+      const px = cx + Math.cos(ang) * radiusPx, py = cy + Math.sin(ang) * radiusPx;
+      planTracerPt = { x: px, y: py };
+      planTracePathPx.push({ x: px, y: py });
+      if (leafletMap) {
+        const ll = leafletMap.containerPointToLatLng([px, py]);
+        planTracePathLatLon.push([ll.lat, ll.lng]);
+      }
+      drawPlanimeterMechanism();
+      if (++step <= 44) requestAnimationFrame(anim);
+      else {
+        $('planStateText').textContent = 'IJking Controle-liniaal (R=56.419 mm · 100.0 cm² = 1.000 omw.) ✓';
+        $('planNonius').textContent = '1.000';
+        $('planAngle').textContent = '360.0°';
+        $('planCm2').textContent = '100.00 cm²';
+      }
+    }
+    anim();
+  });
+
+  $('btnClearPlanimeter').addEventListener('click', () => {
+    planTracePathPx = []; planTracePathLatLon = [];
+    $('planNonius').textContent = '0.000';
+    $('planAngle').textContent = '0.0°';
+    $('planCm2').textContent = '0.00 cm²';
+    $('planHectare').textContent = '0.00 ha';
+    $('planBunder').textContent = '0.00 Zeeuwse bunder';
+    $('planRoeden').textContent = '0';
+    drawPlanimeterMechanism();
+  });
+
+  planCanvas.addEventListener('mousedown', e => {
+    if (!planimeterActive) return;
+    const rect = planCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+
+    if (Math.hypot(x - planPolePt.x, y - planPolePt.y) < 18) {
+      planPolePt = { x, y }; drawPlanimeterMechanism(); return;
+    }
+    isTracingPlanimeter = true;
+    planTracePathPx = [{ x, y }];
+    planTracePathLatLon = [];
+    if (leafletMap && activeMainTab === 'map') {
+      const ll = leafletMap.containerPointToLatLng([x, y]);
+      planTracePathLatLon.push([ll.lat, ll.lng]);
+    }
+    planTracerPt = { x, y };
+    drawPlanimeterMechanism();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!planimeterActive) return;
+    const rect = planCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+    planTracerPt = { x, y };
+
+    if (isTracingPlanimeter) {
+      planTracePathPx.push({ x, y });
+      if (leafletMap) {
+        const ll = leafletMap.containerPointToLatLng([x, y]);
+        planTracePathLatLon.push([ll.lat, ll.lng]);
+        if (planTracePathLatLon.length >= 3) {
+          updatePlanimeterReadoutFromPoly(planTracePathLatLon, 'Live Ott Nr. 573 omtrekking');
+        }
+      }
+    }
+    drawPlanimeterMechanism();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isTracingPlanimeter = false;
+  });
+
+  function drawFallbackVectorMap() {
+    const c = $('mapFallbackCanvas');
+    if (c.style.display === 'none') return;
+    const rect = c.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    c.width = rect.width * dpr; c.height = rect.height * dpr;
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = rect.width, h = rect.height;
+    g.fillStyle = '#091522'; g.fillRect(0, 0, w, h);
+
+    const minLon = 3.75, maxLon = 4.26, minLat = 51.44, maxLat = 51.68;
+    const proj = (lat, lon) => [
+      ((lon - minLon) / (maxLon - minLon)) * (w - 40) + 20,
+      (1 - (lat - minLat) / (maxLat - minLat)) * (h - 40) + 20
+    ];
+
+    g.strokeStyle = 'rgba(45, 212, 191, 0.14)';
+    g.lineWidth = 1;
+    for (let lon = 3.8; lon <= 4.25; lon += 0.1) {
+      const [x] = proj(51.5, lon);
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
+    }
+    for (let lat = 51.46; lat <= 51.66; lat += 0.04) {
+      const [, y] = proj(lat, 4.0);
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+    }
+
+    ZEELAND_PARCELS.forEach(p => {
+      const isAct = p.id === activeParcelId;
+      g.fillStyle = isAct ? 'rgba(245, 158, 11, 0.38)' : 'rgba(124, 92, 255, 0.25)';
+      g.strokeStyle = isAct ? '#f59e0b' : '#2dd4bf';
+      g.lineWidth = isAct ? 2.5 : 1.5;
+      g.beginPath();
+      p.poly.forEach(([lat, lon], idx) => {
+        const [x, y] = proj(lat, lon);
+        if (idx === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      });
+      g.closePath(); g.fill(); g.stroke();
+
+      const [cx, cy] = proj(p.center[0], p.center[1]);
+      g.fillStyle = '#ecf0f8';
+      g.font = '600 10px system-ui';
+      g.fillText(`${p.name.split(' ')[0]} (RD ${p.rdCenter.x},${p.rdCenter.y})`, cx - 35, cy + 3);
+    });
+  }
+
+  function initGeodeticMap() {
+    renderParcelSidebar();
+    resizePlanimeterCanvas();
+
+    if (window.L) {
+      try {
+        leafletMap = L.map('leafletMap', { center: [51.545, 4.095], zoom: 12 });
+        setBaseLayer('osm');
+        updateOverlayLayers();
+
+        ZEELAND_PARCELS.forEach(p => {
+          const poly = L.polygon(p.poly, {
+            color: '#2dd4bf', weight: 2, fillColor: '#7c5cff', fillOpacity: 0.20
+          }).addTo(leafletMap);
+
+          poly.on('click', ev => {
+            if ($('chkPdokClickWfs').checked) {
+              queryLivePdokParcelAtLatLon(ev.latlng.lat, ev.latlng.lng);
+            } else {
+              focusParcelOnMap(p.id, true);
+            }
+          });
+          parcelLayers.set(p.id, poly);
+        });
+
+        leafletMap.on('click', e => {
+          if ($('chkPdokClickWfs').checked && !planimeterActive) {
+            queryLivePdokParcelAtLatLon(e.latlng.lat, e.latlng.lng);
+          }
+        });
+
+        leafletMap.on('mousemove', e => {
+          const rd = wgs84ToRd(e.latlng.lat, e.latlng.lng);
+          $('mapTelemetry').textContent = `WGS84: ${e.latlng.lat.toFixed(4)}°N, ${e.latlng.lng.toFixed(4)}°E · RD (EPSG:28992): X=${rd.x} m, Y=${rd.y} m`;
+        });
+        return;
+      } catch (err) {}
+    }
+    $('leafletMap').style.display = 'none';
+    $('mapFallbackCanvas').style.display = 'block';
+    drawFallbackVectorMap();
+  }
+
+  function setBaseLayer(mode) {
+    if (!leafletMap || !window.L) return;
+    if (baseTileLayer) leafletMap.removeLayer(baseTileLayer);
+    if (mode === 'pdok_luchtfoto') {
+      baseTileLayer = L.tileLayer('https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg', { maxZoom: 19 }).addTo(leafletMap);
+    } else {
+      baseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(leafletMap);
+    }
+  }
+
+  function updateOverlayLayers() {
+    if (!leafletMap || !window.L) return;
+    if (kadasterWmsLayer) { leafletMap.removeLayer(kadasterWmsLayer); kadasterWmsLayer = null; }
+    if (seaMapLayer) { leafletMap.removeLayer(seaMapLayer); seaMapLayer = null; }
+
+    if ($('chkKadasterWms').checked) {
+      kadasterWmsLayer = L.tileLayer.wms('https://service.pdok.nl/kadaster/kadastralekaart/wms/v5_0', {
+        layers: 'Perceel,KadastraleGrens', format: 'image/png', transparent: true, opacity: 0.68
+      }).addTo(leafletMap);
+    }
+    if ($('chkSeaMap').checked) {
+      seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+        maxZoom: 18, opacity: 0.85
+      }).addTo(leafletMap);
+    }
+  }
+  $('mapLayerSelect').addEventListener('change', e => setBaseLayer(e.target.value));
+  $('chkKadasterWms').addEventListener('change', updateOverlayLayers);
+  $('chkSeaMap').addEventListener('change', updateOverlayLayers);
+
+  function renderParcelSidebar() {
+    const ul = $('parcelList');
+    ul.innerHTML = ZEELAND_PARCELS.map(p => `
+      <li class="tree-item ${activeParcelId === p.id ? 'active' : ''}" data-pid="${esc(p.id)}">
+        <span class="lvl-tag">RD</span>
+        <span class="item-label" title="${esc(p.name)}">${esc(p.name)}</span>
+        <span class="cnt-tag">${p.areaBunder} bnd</span>
+      </li>
+    `).join('');
+    ul.querySelectorAll('.tree-item').forEach(li => {
+      li.addEventListener('click', () => {
+        const pid = li.dataset.pid;
+        if (activeParcelId === pid) {
+          activeParcelId = null;
+          $('btnShowAllParcels').style.display = 'none';
+          renderParcelSidebar();
+          runSearch();
+        } else {
+          focusParcelOnMap(pid, true);
+        }
+      });
+    });
+  }
+
+  function focusParcelOnMap(parcelId, alsoFilterSearch = false) {
+    const p = ZEELAND_PARCELS.find(x => x.id === parcelId);
+    if (!p) return;
+    if (alsoFilterSearch) {
+      activeParcelId = p.id;
+      $('btnShowAllParcels').style.display = 'inline-flex';
+      renderParcelSidebar();
+    }
+    updatePlanimeterReadoutFromPoly(p.poly, `Perceelvak ${p.name.split(' ')[0]}`);
+    queryLivePdokParcelAtLatLon(p.center[0], p.center[1]);
+
+    if (leafletMap) {
+      leafletMap.flyTo(p.center, p.zoom, { duration: 0.85 });
+      parcelLayers.forEach((layer, id) => {
+        layer.setStyle({
+          color: id === p.id ? '#f59e0b' : '#2dd4bf',
+          weight: id === p.id ? 3.5 : 2
+        });
+      });
+    } else {
+      drawFallbackVectorMap();
+    }
+    if (alsoFilterSearch && nodes.length) {
+      runSearch();
+    }
+  }
+
+  $('btnShowAllParcels').addEventListener('click', () => {
+    activeParcelId = null;
+    $('btnShowAllParcels').style.display = 'none';
+    renderParcelSidebar();
+    if (leafletMap) leafletMap.flyTo([51.545, 4.095], 11, { duration: 0.8 });
+    else drawFallbackVectorMap();
+    runSearch();
+  });
+
+  function detectParcelsInText(text) {
+    const low = String(text || '').toLowerCase();
+    return ZEELAND_PARCELS.filter(p => p.keywords.some(k => low.includes(k)));
+  }
+
+  /* ==========================================================================
+     4. PARAMETRISCHE OPENSCAD (.SCAD) 3D CAD GENERATOR (KALIBRATIESCHIJF)
+     ========================================================================== */
+  function generateOpenScadCode() {
+    const areaCm2 = Number($('scadTargetAreaCm2').value) || 100.0;
+    const grooveMm = Number($('scadGrooveMm').value) || 0.85;
+    const thickMm = Number($('scadThicknessMm').value) || 4.0;
+
+    const radiusMm = Math.sqrt((areaCm2 * 100) / Math.PI);
+    const outerRadiusMm = radiusMm + 6.5;
+
+    let scad = `// ============================================================================\n`;
+    scad += `// BVZS Geodetische Onderzoekswerkbank — Parametrische OpenSCAD Export\n`;
+    scad += `// Instrument: A. Ott Compensatie-Poolplanimeter Nr. 573 Kalibratieschijf\n`;
+    scad += `// Wiskundige straal voor exact ${areaCm2.toFixed(2)} cm2: R = ${radiusMm.toFixed(4)} mm\n`;
+    scad += `// ============================================================================\n\n`;
+    scad += `$fn = 180;\n`;
+    scad += `target_area_cm2 = ${areaCm2.toFixed(2)};\n`;
+    scad += `trace_radius_mm = ${radiusMm.toFixed(4)}; // sqrt((A_cm2 * 100) / PI)\n`;
+    scad += `outer_radius_mm = ${outerRadiusMm.toFixed(2)};\n`;
+    scad += `disc_thickness_mm = ${thickMm.toFixed(2)};\n`;
+    scad += `stylus_groove_width_mm = ${grooveMm.toFixed(2)};\n`;
+    scad += `stylus_groove_depth_mm = 1.25;\n\n`;
+
+    scad += `module ott_nr573_calibration_disc() {\n`;
+    scad += `  difference() {\n`;
+    scad += `    cylinder(h = disc_thickness_mm, r1 = outer_radius_mm, r2 = outer_radius_mm - 0.8);\n\n`;
+    scad += `    translate([0, 0, disc_thickness_mm - stylus_groove_depth_mm])\n`;
+    scad += `      rotate_extrude()\n`;
+    scad += `        translate([trace_radius_mm, 0, 0])\n`;
+    scad += `          polygon(points = [\n`;
+    scad += `            [-stylus_groove_width_mm/2, stylus_groove_depth_mm + 0.1],\n`;
+    scad += `            [0, 0],\n`;
+    scad += `            [stylus_groove_width_mm/2, stylus_groove_depth_mm + 0.1]\n`;
+    scad += `          ]);\n\n`;
+    scad += `    translate([0, 0, disc_thickness_mm - 2.2])\n`;
+    scad += `      cylinder(h = 2.5, r1 = 0.4, r2 = 1.6);\n\n`;
+    scad += `    for (ang = [0 : 30 : 330]) {\n`;
+    scad += `      rotate([0, 0, ang])\n`;
+    scad += `        translate([trace_radius_mm - 4.5, -0.35, disc_thickness_mm - 0.6])\n`;
+    scad += `          cube([3.2, 0.7, 0.8]);\n`;
+    scad += `    }\n`;
+    scad += `  }\n`;
+    scad += `}\n\n`;
+    scad += `ott_nr573_calibration_disc();\n`;
+
+    $('scadCodeBox').textContent = scad;
+    return scad;
+  }
+
+  $('btnGenScad').addEventListener('click', generateOpenScadCode);
+  ['scadTargetAreaCm2', 'scadGrooveMm', 'scadThicknessMm'].forEach(id => {
+    $(id).addEventListener('change', generateOpenScadCode);
+  });
+  $('btnDownloadScad').addEventListener('click', () => {
+    const code = generateOpenScadCode();
+    saveBlobNative(`BVZS_Ott573_Kalibratieschijf.scad`, new Blob([code], { type: 'application/x-openscad;charset=utf-8' }));
+  });
+  $('btnCopyScad').addEventListener('click', () => {
+    navigator.clipboard.writeText($('scadCodeBox').textContent);
+    $('btnCopyScad').textContent = '✓ Gekopieerd';
+    setTimeout(() => { $('btnCopyScad').textContent = '📋 Kopieer Code'; }, 1300);
+  });
+
+  /* ==========================================================================
+     5. LOKALE OLLAMA MISTRAL + GRAPHQL (:8082) + SOLID RDF BRIDGE
+     ========================================================================== */
+  function generateSolidTurtle() {
+    let ttl = `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n`;
+    ttl += `@prefix schema: <https://schema.org/> .\n`;
+    ttl += `@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n`;
+    ttl += `@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .\n`;
+    ttl += `@prefix bvzs: <https://lodijke.vercel.app/ns/bvzs17#> .\n\n`;
+
+    ZEELAND_PARCELS.forEach(p => {
+      ttl += `<#perceel_${p.id}> a schema:Place, bvzs:VisserijPerceel ;\n`;
+      ttl += `  schema:name "${p.name.replace(/"/g, '\\"')}"@nl ;\n`;
+      ttl += `  bvzs:rdX ${p.rdCenter.x} ; bvzs:rdY ${p.rdCenter.y} ;\n`;
+      ttl += `  bvzs:oppervlakteBunder ${p.areaBunder} .\n\n`;
+    });
+
+    workerEntityStats.forEach(e => {
+      const safeId = e.label.replace(/[^a-zA-Z0-9_]/g, '_');
+      ttl += `<#${e.kind === 'FAM' ? 'familie' : 'vaartuig'}_${safeId}> a ${e.kind === 'FAM' ? 'foaf:Group, bvzs:PachtersGeslacht' : 'bvzs:VisserijVaartuig'} ;\n`;
+      ttl += `  schema:name "${e.label}" ; bvzs:aantalArchiefvermeldingen ${e.count} .\n\n`;
+    });
+    return ttl;
+  }
+
+  function generateGrampsXml() {
+    const now = new Date().toISOString().slice(0, 10);
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<database xmlns="http://gramps-project.org/xml/1.7.1/">\n`;
+    xml += `  <header><created date="${now}" version="1.7.1"/></header>\n  <people>\n`;
+    workerEntityStats.filter(e => e.kind === 'FAM').forEach((fam, idx) => {
+      xml += `    <person handle="_p_${idx + 1}" id="I${idx + 1}"><gender>U</gender><name type="Birth Name"><surname>${esc(fam.label)}</surname></name></person>\n`;
+    });
+    xml += `  </people>\n</database>`;
+    return xml;
+  }
+
+  function generateGedcom() {
+    let ged = `0 HEAD\n1 SOUR BVZS_Toegang17\n1 GEDC\n2 VERS 5.5.1\n1 CHAR UTF-8\n`;
+    workerEntityStats.filter(e => e.kind === 'FAM').forEach((fam, idx) => {
+      ged += `0 @I${idx + 1}@ INDI\n1 NAME Pachter /${fam.label}/\n1 OCCU Oester- en mosselvisser (${fam.count} dossiers)\n`;
+    });
+    ged += `0 TRLR\n`;
+    return ged;
+  }
+
+  function refreshLinkedDataPreview() {
+    const fmt = $('ldFormatSelect').value;
+    $('ldPreviewBox').textContent = fmt === 'turtle' ? generateSolidTurtle() : (fmt === 'gramps' ? generateGrampsXml() : generateGedcom());
+  }
+  $('ldFormatSelect').addEventListener('change', refreshLinkedDataPreview);
+  $('btnExportTurtle').addEventListener('click', () => saveBlobNative('BVZS_toegang17_solid.ttl', new Blob([generateSolidTurtle()], { type: 'text/turtle;charset=utf-8' })));
+  $('btnExportGramps').addEventListener('click', () => saveBlobNative('BVZS_toegang17.gramps', new Blob([generateGrampsXml()], { type: 'application/xml;charset=utf-8' })));
+  $('btnExportGedcom').addEventListener('click', () => saveBlobNative('BVZS_toegang17.ged', new Blob([generateGedcom()], { type: 'text/plain;charset=utf-8' })));
+  $('btnDownloadLd').addEventListener('click', () => {
+    const fmt = $('ldFormatSelect').value;
+    if (fmt === 'turtle') $('btnExportTurtle').click();
+    else if (fmt === 'gramps') $('btnExportGramps').click();
+    else $('btnExportGedcom').click();
+  });
+  $('btnCopyLd').addEventListener('click', () => navigator.clipboard.writeText($('ldPreviewBox').textContent));
+
+  async function runWorkerRagQuery() {
+    if (!nodes.length) return [];
+    const q = $('aiPrompt').value.trim() || 'verpachting Schot Bout Guiljam Quaak Scherpenisse Sint-Maartensdijk Poortvliet';
+    const hits = await callWorker('QUERY_RAG', { query: q, topK: 6 });
+    if (!hits.length) {
+      $('aiOutput').textContent = 'Geen semantische treffers gevonden.';
+      return [];
+    }
+    let html = `<strong>Multi-Threaded Worker RAG + Solid RDF + PDOK Synthese (Top ${hits.length})</strong>\n`;
+    if (lastPdokParcel) {
+      html += `• <b>Gekoppeld Kadastraal Perceel:</b> ${esc(lastPdokParcel.gem)} sectie ${esc(lastPdokParcel.sectie)} nr. ${esc(lastPdokParcel.nr)} (RD X=${lastPdokParcel.rd.x}, Y=${lastPdokParcel.rd.y} · ${lastPdokParcel.bunder} bunder)\n`;
+    }
+    html += `\n`;
+    hits.forEach((h, i) => {
+      const node = nodes[h.idx];
+      const pct = Math.min(99, Math.round(h.score * 100));
+      const fams = (node.families || []).join(', ');
+      const ships = (node.vessels || []).join(', ');
+      html += `${i + 1}. <span class="ai-cite" data-inv="${esc(node.invnr)}">inv.nr. ${esc(node.invnr)} (${pct}%)</span> <b>${esc(node.title)}</b> (${esc(node.date || 'z.d.')})\n`;
+      if (fams || ships) html += `   <i>RDF Triples: ${fams ? 'foaf:Group [' + esc(fams) + ']' : ''} ${ships ? '· bvzs:Vaartuig [' + esc(ships) + ']' : ''}</i>\n`;
+      if (node.scopeText) html += `   ${esc(node.scopeText)}\n\n`;
+    });
+    $('aiOutput').innerHTML = html;
+    $('aiOutput').querySelectorAll('.ai-cite').forEach(el => {
+      el.addEventListener('click', () => {
+        selectedBranchId = '';
+        $('search').value = el.getAttribute('data-inv');
+        runSearch();
+      });
+    });
+    return hits.map(h => nodes[h.idx]);
+  }
+
+  $('btnRunRag').addEventListener('click', runWorkerRagQuery);
+
+  $('btnRunOllamaBridge').addEventListener('click', async () => {
+    const topNodes = await runWorkerRagQuery();
+    const url = $('ollamaUrl').value.trim();
+    const model = $('ollamaModel').value.trim() || 'mistral';
+    const solidWebId = $('solidPodUrl').value.trim();
+    const q = $('aiPrompt').value.trim() || 'Analyseer de familierelaties, vaartuigen en kadastrale pachtpercelen.';
+
+    const eadContext = topNodes.map(n => `[ZA Toegang 17 inv.nr. ${n.invnr} (${n.date})]: ${n.title} — ${n.scopeText}`).join('\n');
+    const rdfContext = generateSolidTurtle().slice(0, 1400);
+    const pdokContext = lastPdokParcel ? `PDOK Perceel: ${lastPdokParcel.gem} ${lastPdokParcel.sectie} ${lastPdokParcel.nr}, RD(${lastPdokParcel.rd.x}, ${lastPdokParcel.rd.y}), ${lastPdokParcel.bunder} bunder.` : '';
+
+    $('aiOutput').innerHTML = `⏳ Verbinden met lokale Ollama Mistral (<code>${esc(url)}</code>, WebID: <code>${esc(solidWebId)}</code>)…\n\n` + $('aiOutput').innerHTML;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6500);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          model,
+          stream: false,
+          prompt: `Je bent een juridisch-historisch en geodetisch onderzoeker voor Zeeland (Toegang 17 BVZS & W3C Solid POD ${solidWebId}). Gebruik uitsluitend deze bronnen:\n\nEAD ARCHIEF:\n${eadContext}\n\nSOLID TURTLE RDF:\n${rdfContext}\n\nKADASTER RD:\n${pdokContext}\n\nVraag: ${q}`
+        })
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      $('aiOutput').textContent = `🦙 Ollama (${model}) Antwoord:\n\n` + (data.response || JSON.stringify(data, null, 2));
+    } catch (err) {
+      clearTimeout(timer);
+      $('aiOutput').insertAdjacentHTML('afterbegin', `<span style="color:var(--amber)">[Lokale Ollama daemon op ${esc(url)} niet actief (${esc(err.name === 'AbortError' ? 'timeout' : err.message)}) — Worker RAG + Solid RDF synthese hieronder getoond]:</span>\n\n`);
+    }
+  });
+
+  $('btnRunGraphqlBridge').addEventListener('click', async () => {
+    const gqlUrl = $('graphqlUrl').value.trim();
+    const q = $('aiPrompt').value.trim() || 'Schot';
+    const graphqlQuery = {
+      query: `query SearchArchivalData($term: String!) {
+        inventaris(zoekterm: $term) { invnr titel datering percelen { naam rdX rdY bunder } geslachten vaartuigen }
+      }`,
+      variables: { term: q }
+    };
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3500);
+    try {
+      const res = await fetch(gqlUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: ctrl.signal,
+        body: JSON.stringify(graphqlQuery)
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+      $('aiOutput').textContent = `🔗 GraphQL (${gqlUrl}) Response:\n\n` + JSON.stringify(data, null, 2);
+    } catch (err) {
+      clearTimeout(timer);
+      await runWorkerRagQuery();
+      $('aiOutput').insertAdjacentHTML('afterbegin', `<span style="color:var(--teal)">✓ GraphQL Payload voorbereid voor <code>${esc(gqlUrl)}</code> (lokale offline executie via Worker):</span>\n<code>${esc(JSON.stringify(graphqlQuery))}</code>\n\n`);
+    }
+  });
+
+  /* ==========================================================================
+     6. INLINE WEB WORKER (ZERO-COPY WAV ENCODING + TF-IDF RAG + NER)
+     ========================================================================== */
+  const WORKER_SOURCE = `
+    'use strict';
+    let idfMap = new Map(), docVectors = [], workerNodes = [];
+    const STOPWORDS = new Set(['de','het','een','en','van','in','op','te','voor','met','aan','tot','bij','door','over','uit','als','ook','naar','om','dan','of','maar','zijn','worden','betreffende','stukken','inzake']);
+    const ZEEUWS_SURNAMES = ['Schot', 'Bout', 'Guiljam', 'Quaak', 'Geluk', 'Krijger', 'Deurloo', 'Van Dijke', 'Moerland', 'Steketee', 'Van Vessem', 'Jumelet', 'Pols', 'Hoek', 'Verwijs', 'Nelis', 'Koman'];
+    const VESSEL_TYPES = ['hoogaars', 'hengst', 'boeier', 'lemsteraak', 'platbodem', 'mosselkotter'];
+
+    function extractGenealogyAndVessels(text) {
+      const families = [], vessels = [], raw = String(text || '');
+      for (const fam of ZEEUWS_SURNAMES) if (new RegExp('\\\\b' + fam + '\\\\b', 'i').test(raw)) families.push(fam);
+      const regMatches = raw.match(/\\b(TH|YE|BRU|ZZ|ARM|VE|GO|BZ)\\s*-?\\s*\\d{1,3}\\b/g);
+      if (regMatches) regMatches.forEach(m => { const c = m.replace(/\\s+/g, ' ').toUpperCase(); if (!vessels.includes(c)) vessels.push(c); });
+      for (const vt of VESSEL_TYPES) if (new RegExp('\\\\b' + vt + '\\\\b', 'i').test(raw) && !vessels.includes(vt)) vessels.push(vt);
+      return { families, vessels };
+    }
+
+    function tokenize(text) {
+      return (text || '').toLowerCase().replace(/[^a-z0-9àáâäèéêëìíîïòóôöùúûü\\s-]/g, ' ').split(/\\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w));
+    }
+
+    function buildIndex(nodes) {
+      workerNodes = nodes; idfMap.clear(); docVectors = [];
+      const N = nodes.length || 1, dfCounts = new Map(), entityCounter = new Map(), nodeEntities = [];
+      const tokenizedDocs = nodes.map((n, idx) => {
+        const fullText = n.title + ' ' + n.scopeText + ' ' + n.path + ' ' + n.date;
+        const { families, vessels } = extractGenealogyAndVessels(fullText);
+        nodeEntities.push({ idx, families, vessels });
+        families.forEach(f => entityCounter.set('FAM:' + f, (entityCounter.get('FAM:' + f) || 0) + 1));
+        vessels.forEach(v => entityCounter.set('SHIP:' + v, (entityCounter.get('SHIP:' + v) || 0) + 1));
+        const tokens = tokenize(fullText);
+        new Set(tokens).forEach(t => dfCounts.set(t, (dfCounts.get(t) || 0) + 1));
+        return tokens;
+      });
+      dfCounts.forEach((df, term) => idfMap.set(term, Math.log(1 + N / (1 + df))));
+      docVectors = tokenizedDocs.map(tokens => {
+        const tf = new Map(); tokens.forEach(t => tf.set(t, (tf.get(t) || 0) + 1));
+        const vec = new Map(); let normSq = 0;
+        tf.forEach((c, term) => { const w = (c / tokens.length) * (idfMap.get(term) || 1); vec.set(term, w); normSq += w * w; });
+        return { vec, norm: Math.sqrt(normSq) || 1 };
+      });
+      const entityIndex = Array.from(entityCounter.entries()).map(([k, count]) => { const [kind, label] = k.split(':'); return { kind, label, count }; }).sort((a, b) => b.count - a.count);
+      return { indexedCount: nodes.length, vocabSize: idfMap.size, entityIndex, nodeEntities };
+    }
+
+    function queryRag(queryText, topK = 6) {
+      const qTokens = tokenize(queryText), qVec = new Map(); let qNormSq = 0;
+      qTokens.forEach(t => qVec.set(t, (qVec.get(t) || 0) + (idfMap.get(t) || 1.5)));
+      qVec.forEach(w => { qNormSq += w * w; });
+      const qNorm = Math.sqrt(qNormSq) || 1, scored = [];
+      for (let i = 0; i < workerNodes.length; i++) {
+        const d = docVectors[i]; if (!d) continue;
+        let dot = 0; qVec.forEach((qw, term) => { if (d.vec.has(term)) dot += qw * d.vec.get(term); });
+        if (dot > 0) scored.push({ idx: i, score: dot / (qNorm * d.norm) });
+      }
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, topK);
+    }
+
+    function encodeFloat32ChunksToWav(chunks, sampleRate, pauseMs) {
+      const pauseSamples = Math.floor((pauseMs / 1000) * sampleRate);
+      let totalSamples = 0;
+      for (let i = 0; i < chunks.length; i++) totalSamples += chunks[i].length + pauseSamples;
+      const wavBuffer = new ArrayBuffer(44 + totalSamples * 2), view = new DataView(wavBuffer);
+      function writeAscii(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeAscii(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 2, true); writeAscii(8, 'WAVE');
+      writeAscii(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+      writeAscii(36, 'data'); view.setUint32(40, totalSamples * 2, true);
+      let byteOffset = 44;
+      for (let c = 0; c < chunks.length; c++) {
+        const arr = chunks[c];
+        for (let i = 0; i < arr.length; i++, byteOffset += 2) {
+          const s = Math.max(-1, Math.min(1, arr[i]));
+          view.setInt16(byteOffset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        byteOffset += pauseSamples * 2;
+      }
+      return wavBuffer;
+    }
+
+    self.onmessage = e => {
+      const { id, type, payload } = e.data;
+      try {
+        if (type === 'BUILD_INDEX') self.postMessage({ id, type: 'INDEX_BUILT', payload: buildIndex(payload.nodes) });
+        else if (type === 'QUERY_RAG') self.postMessage({ id, type: 'RAG_RESULT', payload: queryRag(payload.query, payload.topK || 6) });
+        else if (type === 'ENCODE_WAV') {
+          const wavAb = encodeFloat32ChunksToWav(payload.chunks, payload.sampleRate || 24000, payload.pauseMs || 280);
+          self.postMessage({ id, type: 'WAV_ENCODED', payload: { wavBuffer: wavAb } }, [wavAb]);
+        }
+      } catch (err) { self.postMessage({ id, type: 'ERROR', error: err.message }); }
+    };
+  `;
+
+  let bgWorker = null, workerReqId = 0;
+  const workerCallbacks = new Map();
+
+  function initInlineWorker() {
+    try {
+      const blob = new Blob([WORKER_SOURCE], { type: 'application/javascript' });
+      bgWorker = new Worker(URL.createObjectURL(blob));
+      bgWorker.onmessage = e => {
+        const { id, payload, error } = e.data;
+        if (workerCallbacks.has(id)) {
+          const { resolve, reject } = workerCallbacks.get(id);
+          workerCallbacks.delete(id);
+          if (error) reject(new Error(error)); else resolve(payload);
+        }
+      };
+    } catch (err) {}
+  }
+  initInlineWorker();
+
+  function callWorker(type, payload, transferList = []) {
+    return new Promise((resolve, reject) => {
+      if (!bgWorker) return reject(new Error('Geen worker'));
+      const id = ++workerReqId;
+      workerCallbacks.set(id, { resolve, reject });
+      bgWorker.postMessage({ id, type, payload }, transferList);
+    });
+  }
+
+  /* ==========================================================================
+     7. IPA/SSML LEXICON + ZERO-LATENCY HYBRID & ONNX WASM SPRAAK-ENGINE
+     ========================================================================== */
+  const DEFAULT_LEXICON = [
+    { term: 'Yerseke Bank', phonetic: 'Ierseke Bank', ipa: 'ˈiːr.sə.kə ˈbɑŋk', cat: 'Toponiem' },
+    { term: 'Yerseke', phonetic: 'Ierseke', ipa: 'ˈiːr.sə.kə', cat: 'Toponiem' },
+    { term: 'Scherpenisse', phonetic: 'Scherpenisse', ipa: 'sxɛr.pə.ˈnɪ.sə', cat: 'Toponiem' },
+    { term: 'Sint-Maartensdijk', phonetic: 'Sint Maartensdijk', ipa: 'sɪnt ˈmaːr.təns.dɛik', cat: 'Toponiem' },
+    { term: 'Poortvliet', phonetic: 'Poortvliet', ipa: 'ˈpoːrt.flit', cat: 'Toponiem' },
+    { term: 'Platteweg', phonetic: 'Platte-weg', ipa: 'ˈplɑ.tə.ˌʋɛx', cat: 'Toponiem' },
+    { term: 'Burghsluis', phonetic: 'Burg-sluis', ipa: 'ˌbʏrx.ˈslœys', cat: 'Toponiem' },
+    { term: 'Bruinisse', phonetic: 'Bruunisse', ipa: 'brœy.ˈnɪ.sə', cat: 'Toponiem' },
+    { term: 'Oosterschelde', phonetic: 'Ooster-schelde', ipa: 'ˈoːs.tər.ˌsxɛl.də', cat: 'Toponiem' },
+    { term: 'TH 2', phonetic: 'Tholen twee', ipa: 'ˈtoː.lə ˈtʋeː', cat: 'Vloot' },
+    { term: 'TH 12', phonetic: 'Tholen twaalf', ipa: 'ˈtoː.lə ˈtʋaːlf', cat: 'Vloot' },
+    { term: 'TH 90', phonetic: 'Tholen negentig', ipa: 'ˈtoː.lə ˈneː.ɣən.təx', cat: 'Vloot' },
+    { term: 'hoogaars', phonetic: 'hoog-aars', ipa: 'ˈhoːx.aːrs', cat: 'Vloot' },
+    { term: 'Guiljam', phonetic: 'Giel-jam', ipa: 'ˈɣil.jɑm', cat: 'Familie' },
+    { term: 'Schot', phonetic: 'Schot', ipa: 'sxɔt', cat: 'Familie' },
+    { term: 'Quaak', phonetic: 'Kwaak', ipa: 'kʋaːk', cat: 'Familie' },
+    { term: 'BVZS', phonetic: 'Bestuur der Visserijen op de Zeeuwse Stromen', ipa: 'bə.ˈstyːr dɛr vɪ.sə.ˈrɛi.ə', cat: 'Juridisch' },
+    { term: 'P.V.', phonetic: 'proces-verbaal', ipa: 'proː.ˌsɛs.fər.ˈbaːl', cat: 'Juridisch' },
+    { term: 'pachtpenningen', phonetic: 'pacht-penningen', ipa: 'ˈpɑxt.ˌpɛ.nɪ.ŋə', cat: 'Juridisch' },
+    { term: 'beneficiaire', phonetic: 'benefie-sjaire', ipa: 'ˌbeː.nə.fi.ˈʃɛː.rə', cat: 'Juridisch' },
+    { term: 'inv.nr.', phonetic: 'inventarisnummer', ipa: 'ɪn.vɛn.ˈtaː.rɪs.ˌnʏ.mər', cat: 'Maat/Munt' },
+    { term: 'fl.', phonetic: 'gulden', ipa: 'ˈɣʏl.də', cat: 'Maat/Munt' },
+    { term: 'bunder', phonetic: 'bunder', ipa: 'ˈbʏn.dər', cat: 'Maat/Munt' }
+  ];
+
+  let userLexicon = [...DEFAULT_LEXICON];
+  let compiledLexiconRules = [];
+
+  function compileLexiconRegexes() {
+    const sorted = [...userLexicon].sort((a, b) => b.term.length - a.term.length);
+    compiledLexiconRules = sorted.map(entry => {
+      const escaped = reEscape(entry.term);
+      const pattern = /\.$/.test(entry.term) ? new RegExp(`(?:\\b|^)${escaped}`, 'gi') : new RegExp(`\\b${escaped}\\b`, 'gi');
+      return { ...entry, pattern };
+    });
+  }
+  compileLexiconRegexes();
+
+  function renderLexiconTable() {
+    compileLexiconRegexes();
+    const tbody = $('lexTableBody');
+    tbody.innerHTML = userLexicon.map((item, idx) => `
+      <tr>
+        <td><strong>${esc(item.term)}</strong></td>
+        <td style="color:var(--teal);font-family:var(--font-mono);">${esc(item.phonetic)}</td>
+        <td><span class="ipa-chip">/${esc(item.ipa || item.phonetic)}/</span></td>
+        <td style="text-align:right;">
+          <button class="ghost btn-del-lex" data-idx="${idx}" style="padding:1px 5px;font-size:0.64rem;">✕</button>
+        </td>
+      </tr>
+    `).join('');
+    tbody.querySelectorAll('.btn-del-lex').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        userLexicon.splice(Number(btn.dataset.idx), 1);
+        renderLexiconTable();
+        updateLiveSsmlBox($('lexTestInput').value);
+        await dbSet('userLexicon', userLexicon);
+      });
+    });
+    updateLiveSsmlBox($('lexTestInput').value);
+  }
+
+  $('btnAddLex').addEventListener('click', async () => {
+    const term = $('newLexTerm').value.trim(), phonetic = $('newLexPhon').value.trim();
+    const ipa = $('newLexIpa').value.trim() || phonetic;
+    if (!term || !phonetic) return;
+    userLexicon.unshift({ term, phonetic, ipa, cat: 'Custom' });
+    $('newLexTerm').value = ''; $('newLexPhon').value = ''; $('newLexIpa').value = '';
+    renderLexiconTable();
+    await dbSet('userLexicon', userLexicon);
+  });
+
+  $('btnResetLexicon').addEventListener('click', async () => {
+    userLexicon = [...DEFAULT_LEXICON];
+    renderLexiconTable();
+    await dbSet('userLexicon', userLexicon);
+  });
+
+  function transformTextWithIpaAndSsml(rawText) {
+    let spoken = String(rawText || '').replace(/\s+/g, ' ').trim();
+    if (!spoken) return { spoken: '', ipaLine: '', ssml: '' };
+    if (!$('lexiconEnabled').checked) return { spoken, ipaLine: spoken, ssml: `<speak xml:lang="nl-NL">${esc(spoken)}</speak>` };
+
+    spoken = spoken
+      .replace(/\b(1[5-9]\d{2}|20[0-2]\d)\s*[-–—/]\s*(1[5-9]\d{2}|20[0-2]\d)\b/g, 'van $1 tot $2')
+      .replace(/\bfl\.\s*(\d+)[.,](\d{2})\b/gi, '$1 gulden $2')
+      .replace(/\s*›\s*/g, ', onder rubriek: ');
+
+    let ipaLine = spoken, ssmlBody = esc(spoken);
+    for (const rule of compiledLexiconRules) {
+      spoken = spoken.replace(rule.pattern, rule.phonetic);
+      if (rule.ipa) {
+        ipaLine = ipaLine.replace(rule.pattern, `[/${rule.ipa}/]`);
+        ssmlBody = ssmlBody.replace(rule.pattern, `<phoneme alphabet="ipa" ph="${esc(rule.ipa)}">${esc(rule.phonetic)}</phoneme>`);
+      }
+    }
+    const pauseMs = Number($('ttsPause').value) || 280;
+    const ratePct = Math.round((Number($('ttsRate').value) || 0.95) * 100);
+    ssmlBody = ssmlBody.replace(/\.\s+/g, `. <break time="${pauseMs}ms"/> `);
+    const ssml = `<speak version="1.1" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="nl-NL">\n  <prosody rate="${ratePct}%">\n    ${ssmlBody}\n  </prosody>\n</speak>`;
+    return { spoken, ipaLine, ssml };
+  }
+
+  function updateLiveSsmlBox(text) { $('ssmlPreviewBox').textContent = transformTextWithIpaAndSsml(text).ssml; }
+  $('lexTestInput').addEventListener('input', e => updateLiveSsmlBox(e.target.value));
+  $('btnCopySsml').addEventListener('click', () => navigator.clipboard.writeText($('ssmlPreviewBox').textContent));
+
+  let piperModule = null;
+  let rankedVoices = [], cachedSelectedVoiceObj = null, ttsQueue = [], isSpeaking = false, isPaused = false, ttsTimer = null;
+  let activeAudioCtx = null, activeAudioSource = null, lastGeneratedWavBlob = null, simulatedEnergy = 0, waveAnimId = null;
+
+  $('ttsEngineMode').addEventListener('change', e => {
+    $('onnxModelPanel').style.display = e.target.value === 'onnx_wasm' ? 'flex' : 'none';
+  });
+
+  async function ensureBrowserOnnxTtsLoaded() {
+    if (piperModule) return piperModule;
+    $('onnxStateBadge').textContent = 'WASM laden…';
+    const cdnCandidates = [
+      'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/+esm',
+      'https://esm.sh/@mintplex-labs/piper-tts-web@1.0.4'
+    ];
+    for (const url of cdnCandidates) {
+      try {
+        const mod = await import(url);
+        piperModule = mod.default || mod;
+        $('onnxStateBadge').textContent = 'ONNX Actief ✓';
+        return piperModule;
+      } catch (e) {}
+    }
+    $('onnxStateBadge').textContent = 'Offline → Fallback';
+    return null;
+  }
+
+  async function synthesizeChunkViaBrowserOnnx(spokenText) {
+    const mod = await ensureBrowserOnnxTtsLoaded();
+    if (!mod || typeof mod.predict !== 'function') throw new Error('ONNX niet beschikbaar');
+    const voiceId = $('onnxVoiceModel').value || 'nl_NL-mls-medium';
+    const wavBlob = await mod.predict({ text: spokenText, voiceId });
+    if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return await activeAudioCtx.decodeAudioData(await wavBlob.arrayBuffer());
+  }
+
+  async function applyStudioMasterFilter(inputBuffer) {
+    const preset = $('ttsEqPreset').value;
+    if (preset === 'flat') return inputBuffer;
+    const offline = new OfflineAudioContext(1, inputBuffer.length, inputBuffer.sampleRate);
+    const src = offline.createBufferSource();
+    src.buffer = inputBuffer;
+
+    const low = offline.createBiquadFilter();
+    low.type = 'lowshelf';
+    low.frequency.value = 185;
+    low.gain.value = preset === 'warm' ? 3.2 : 1.0;
+
+    const high = offline.createBiquadFilter();
+    high.type = 'peaking';
+    high.frequency.value = preset === 'warm' ? 4100 : 3100;
+    high.Q.value = 1.1;
+    high.gain.value = preset === 'warm' ? -2.2 : 2.4;
+
+    src.connect(low); low.connect(high); high.connect(offline.destination);
+    src.start(0);
+    return await offline.startRendering();
+  }
+
+  function scoreDutchVoice(v) {
+    const lang = (v.lang || '').toLowerCase(), name = (v.name || '').toLowerCase();
+    let s = 0;
+    if (lang.startsWith('nl-nl')) s += 100; else if (lang.startsWith('nl-be')) s += 85; else if (lang.startsWith('nl')) s += 70; else return -1;
+    if (name.includes('natural') || name.includes('neural')) s += 90;
+    if (name.includes('colette') || name.includes('fenna') || name.includes('maarten')) s += 55;
+    if (name.includes('google')) s += 45;
+    return s;
+  }
+
+  function populateVoiceList() {
+    if (!('speechSynthesis' in window)) return;
+    const raw = window.speechSynthesis.getVoices();
+    if (!raw.length) return;
+    const dutch = raw.map(v => ({ voice: v, score: scoreDutchVoice(v) })).filter(x => x.score >= 0).sort((a, b) => b.score - a.score);
+    rankedVoices = dutch.length ? dutch : raw.map(v => ({ voice: v, score: 10 }));
+    $('voiceSelect').innerHTML = rankedVoices.map((it, i) => `<option value="${esc(it.voice.voiceURI)}" ${i === 0 ? 'selected' : ''}>${esc(it.voice.name)} (${esc(it.voice.lang)})</option>`).join('');
+    cachedSelectedVoiceObj = rankedVoices[0] ? rankedVoices[0].voice : null;
+    try { const warm = new SpeechSynthesisUtterance(''); warm.volume = 0; window.speechSynthesis.speak(warm); } catch (e) {}
+  }
+  if ('speechSynthesis' in window) { populateVoiceList(); window.speechSynthesis.onvoiceschanged = populateVoiceList; }
+  $('voiceSelect').addEventListener('change', () => {
+    const f = rankedVoices.find(x => x.voice.voiceURI === $('voiceSelect').value);
+    if (f) cachedSelectedVoiceObj = f.voice;
+  });
+
+  ['ttsRate', 'ttsPitch', 'ttsPause'].forEach(id => {
+    $(id).addEventListener('input', () => {
+      $('lblRate').textContent = `${Number($('ttsRate').value).toFixed(2)}x`;
+      $('lblPitch').textContent = Number($('ttsPitch').value).toFixed(2);
+      $('lblPause').textContent = `${$('ttsPause').value} ms`;
+    });
+  });
+
+  function splitIntoBreathChunks(rawText) {
+    const s = String(rawText || '').replace(/\s+/g, ' ').trim();
+    if (!s) return [];
+    const primary = s.split(/(?<=[.!?])\s+|(?<=[;:])\s+|\s+—\s+/).map(p => p.trim()).filter(Boolean);
+    const out = [];
+    for (const part of primary) {
+      if (part.length <= 155) out.push(part);
+      else {
+        const sub = part.split(/,\s+/);
+        let buf = '';
+        for (const piece of sub) {
+          if ((buf + ', ' + piece).length > 145 && buf) { out.push(buf + ','); buf = piece; }
+          else buf = buf ? `${buf}, ${piece}` : piece;
+        }
+        if (buf) out.push(buf);
+      }
+    }
+    return out;
+  }
+
+  function stopSpeech() {
+    clearTimeout(ttsTimer); ttsQueue = []; isSpeaking = false; isPaused = false; simulatedEnergy = 0;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (activeAudioSource) { try { activeAudioSource.stop(); } catch (e) {} activeAudioSource = null; }
+    document.querySelectorAll('.result-card').forEach(c => c.classList.remove('speaking'));
+    $('btnTtsPause').disabled = true; $('btnTtsStop').disabled = true; $('btnTtsPause').textContent = '⏸️ Pauze';
+  }
+
+  async function buildWavInBackground(segments) {
+    if (!activeAudioCtx) activeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const sr = 24000, rate = Number($('ttsRate').value) || 0.95, floatArrays = [];
+    for (const seg of segments) {
+      const { spoken } = transformTextWithIpaAndSsml(seg.text);
+      const chars = spoken.split(''), durPerChar = 0.054 / rate;
+      const totalSec = Math.max(0.5, Math.min(20, chars.length * durPerChar)), len = Math.floor(sr * totalSec);
+      const rawBuf = activeAudioCtx.createBuffer(1, len, sr);
+      const arr = rawBuf.getChannelData(0);
+      const f0Base = 126 * (Number($('ttsPitch').value) || 0.98);
+      let p0 = 0, p1 = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / sr, ch = chars[Math.min(chars.length - 1, Math.floor(t / durPerChar))].toLowerCase();
+        if (' ,.'.includes(ch)) continue;
+        const f1 = 'aá'.includes(ch) ? 720 : ('iíy'.includes(ch) ? 310 : 460);
+        const f0 = f0Base * (1 + 0.03 * Math.sin(t * 3.1) - 0.07 * (t / totalSec));
+        p0 += (2 * Math.PI * f0) / sr; p1 += (2 * Math.PI * f1) / sr;
+        arr[i] = (Math.sin(p0) + 0.45 * Math.sin(p0 * 2) + 0.22 * Math.sin(p1)) * 0.18 * Math.sin(((t % durPerChar) / durPerChar) * Math.PI);
+      }
+      const mastered = await applyStudioMasterFilter(rawBuf);
+      floatArrays.push(new Float32Array(mastered.getChannelData(0)));
+    }
+    try {
+      const transferList = floatArrays.map(f => f.buffer);
+      const res = await callWorker('ENCODE_WAV', { chunks: floatArrays, sampleRate: sr, pauseMs: Number($('ttsPause').value) || 280 }, transferList);
+      lastGeneratedWavBlob = new Blob([res.wavBuffer], { type: 'audio/wav' });
+      $('btnDownloadLastAudio').disabled = false;
+      return lastGeneratedWavBlob;
+    } catch (e) { return null; }
+  }
+
+  async function processNextChunkInstant() {
+    if (!isSpeaking || isPaused) return;
+    if (!ttsQueue.length) {
+      stopSpeech();
+      $('ttsLiveSub').textContent = '✓ Voorlezen voltooid. WAV staat klaar onder "💾 Download .WAV".';
+      return;
+    }
+    const t0 = performance.now(), item = ttsQueue.shift();
+    const { spoken, ipaLine, ssml } = transformTextWithIpaAndSsml(item.text);
+
+    document.querySelectorAll('.result-card').forEach(c => c.classList.toggle('speaking', Boolean(item.invnr && c.dataset.inv === String(item.invnr))));
+    const matchedParcels = detectParcelsInText(item.text);
+    if (matchedParcels.length) focusParcelOnMap(matchedParcels[0].id, false);
+
+    $('ttsLiveSub').textContent = `“${item.text}”`;
+    $('ttsPhoneticPreview').textContent = `IPA: ${ipaLine}`;
+    $('ssmlPreviewBox').textContent = ssml;
+
+    const pauseMs = Number($('ttsPause').value) || 280;
+
+    if ($('ttsEngineMode').value === 'onnx_wasm') {
+      try {
+        const onnxBuf = await synthesizeChunkViaBrowserOnnx(spoken);
+        const mastered = await applyStudioMasterFilter(onnxBuf);
+        if (activeAudioCtx.state === 'suspended') await activeAudioCtx.resume();
+        const src = activeAudioCtx.createBufferSource();
+        src.buffer = mastered;
+        src.playbackRate.value = Number($('ttsRate').value) || 0.95;
+        src.connect(activeAudioCtx.destination);
+        activeAudioSource = src;
+        simulatedEnergy = 0.75;
+        src.onended = () => {
+          activeAudioSource = null;
+          simulatedEnergy = 0.05;
+          if (isSpeaking && !isPaused) ttsTimer = setTimeout(processNextChunkInstant, pauseMs);
+        };
+        src.start(0);
+        return;
+      } catch (e) {}
+    }
+
+    const utter = new SpeechSynthesisUtterance(spoken);
+    if (cachedSelectedVoiceObj) { utter.voice = cachedSelectedVoiceObj; utter.lang = cachedSelectedVoiceObj.lang; }
+    else utter.lang = 'nl-NL';
+    utter.rate = Number($('ttsRate').value) || 0.95;
+    utter.pitch = Number($('ttsPitch').value) || 0.98;
+    utter.onstart = () => { $('ttsLatencyPill').textContent = `⚡ Stem: ${Math.max(1, Math.round(performance.now() - t0))}ms Instant`; };
+    utter.onboundary = e => { if (e.name === 'word') simulatedEnergy = 0.72 + Math.random() * 0.28; };
+    utter.onend = () => { simulatedEnergy = 0.05; if (isSpeaking && !isPaused) ttsTimer = setTimeout(processNextChunkInstant, pauseMs); };
+    utter.onerror = () => { if (isSpeaking && !isPaused) ttsTimer = setTimeout(processNextChunkInstant, 100); };
+    simulatedEnergy = 0.65;
+    window.speechSynthesis.speak(utter);
+  }
+
+  function startSpeakingSegments(segments) {
+    stopSpeech();
+    if (!segments.length) return;
+    ttsQueue = [...segments]; isSpeaking = true; isPaused = false;
+    $('btnTtsPause').disabled = false; $('btnTtsStop').disabled = false;
+    startWaveformVisualizer();
+    processNextChunkInstant();
+    setTimeout(() => buildWavInBackground(segments), 10);
+  }
+
+  function buildSegmentsForNode(node) {
+    const intro = `Inventarisnummer ${node.invnr}${node.date ? `, gedateerd ${node.date}` : ''}.`;
+    const main = [node.title, node.scopeText, notesMap[node.invnr] ? `Notitie: ${notesMap[node.invnr]}` : ''].filter(Boolean).join('. ');
+    return [{ text: intro, invnr: node.invnr, isIntro: true }, ...splitIntoBreathChunks(main).map(t => ({ text: t, invnr: node.invnr, isIntro: false }))];
+  }
+
+  const waveCanvas = $('ttsWaveCanvas'), waveCtx = waveCanvas.getContext('2d');
+  let phase = 0;
+  function startWaveformVisualizer() {
+    if (waveAnimId) cancelAnimationFrame(waveAnimId);
+    function draw() {
+      const rect = waveCanvas.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      if (waveCanvas.width !== rect.width * dpr) { waveCanvas.width = rect.width * dpr; waveCanvas.height = rect.height * dpr; waveCtx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+      const w = rect.width, h = rect.height;
+      waveCtx.clearRect(0, 0, w, h);
+      let amp = simulatedEnergy; simulatedEnergy *= 0.92;
+      if (isSpeaking && !isPaused) amp = Math.max(amp, 0.25 + 0.14 * Math.sin(phase * 0.7));
+      phase += 0.15;
+      ['rgba(124,92,255,0.45)', 'rgba(45,212,191,0.9)', 'rgba(245,158,11,0.45)'].forEach((col, idx) => {
+        waveCtx.strokeStyle = col; waveCtx.lineWidth = idx === 1 ? 2.2 : 1.3; waveCtx.beginPath();
+        for (let x = 0; x <= w; x += 4) {
+          const nx = x / w, y = (h / 2) + Math.sin(nx * 14 + phase + idx * 1.3) * (amp * (h * 0.42)) * Math.sin(nx * Math.PI);
+          if (x === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
+        }
+        waveCtx.stroke();
+      });
+      if (isSpeaking) waveAnimId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  $('btnTtsTest').addEventListener('click', () => {
+    const sample = 'Inv.nr. 214, 1870-1889. P.V. van openbare verpachting en loting van visserijpercelen aan B.W. Schot met de hoogaars TH 2 en TH 90, alsmede de erven Guiljam en Bout nabij Scherpenisse (Platteweg), Sint-Maartensdijk en Poortvliet ad fl. 145,50 pachtpenningen per bunder.';
+    startSpeakingSegments(splitIntoBreathChunks(sample).map((t, i) => ({ text: t, invnr: '214', isIntro: i === 0 })));
+  });
+  $('btnLexTestSpeak').addEventListener('click', () => {
+    const raw = $('lexTestInput').value.trim();
+    if (raw) { switchRightTab('voice'); startSpeakingSegments(splitIntoBreathChunks(raw).map((t, i) => ({ text: t, invnr: null, isIntro: i === 0 }))); }
+  });
+  $('btnTtsPause').addEventListener('click', () => {
+    if (!isSpeaking) return;
+    isPaused = !isPaused;
+    if (isPaused) { clearTimeout(ttsTimer); if ('speechSynthesis' in window) window.speechSynthesis.pause(); $('btnTtsPause').textContent = '▶️ Hervat'; }
+    else { if ('speechSynthesis' in window && window.speechSynthesis.paused) window.speechSynthesis.resume(); else processNextChunkInstant(); $('btnTtsPause').textContent = '⏸️ Pauze'; }
+  });
+  $('btnTtsStop').addEventListener('click', stopSpeech);
+
+  $('btnSpeakAllResults').addEventListener('click', () => {
+    if (!lastResults.length) return;
+    switchRightTab('voice');
+    const segs = [];
+    lastResults.slice(0, 12).forEach(r => segs.push(...buildSegmentsForNode(r)));
+    startSpeakingSegments(segs);
+  });
+
+  $('btnExportWavBatch').addEventListener('click', async () => {
+    if (!lastResults.length) return;
+    switchRightTab('voice');
+    const segs = [];
+    lastResults.slice(0, 8).forEach(r => segs.push(...buildSegmentsForNode(r)));
+    const blob = await buildWavInBackground(segs);
+    if (blob) saveBlobNative('BVZS_toegang17_selectie.wav', blob);
+  });
+
+  $('btnSpeakAi').addEventListener('click', () => {
+    const txt = $('aiOutput').innerText.trim();
+    if (txt) { switchRightTab('voice'); startSpeakingSegments(splitIntoBreathChunks(txt).map((t, i) => ({ text: t, invnr: null, isIntro: i === 0 }))); }
+  });
+
+  $('btnWavAi').addEventListener('click', async () => {
+    const txt = $('aiOutput').innerText.trim();
+    if (!txt) return;
+    const blob = await buildWavInBackground(splitIntoBreathChunks(txt).map((t, i) => ({ text: t, invnr: null, isIntro: i === 0 })));
+    if (blob) saveBlobNative('BVZS_RAG_analyse.wav', blob);
+  });
+
+  async function saveBlobNative(filename, blob) {
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: filename });
+        const writable = await handle.createWritable();
+        await writable.write(blob); await writable.close(); return;
+      } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+  }
+  $('btnDownloadLastAudio').addEventListener('click', () => {
+    if (lastGeneratedWavBlob) saveBlobNative(`BVZS_toegang17_${Date.now()}.wav`, lastGeneratedWavBlob);
+  });
+
+  $('btnExportCsv').addEventListener('click', () => {
+    const rows = [
+      ['inv_nr', 'datering', 'hoofdrubriek', 'rubriek_pad', 'titel', 'inhoud', 'geslachten', 'vaartuigen', 'eigen_notitie'],
+      ...lastResults.map(r => [r.invnr, r.date, r.branchTitle || '', r.path, r.title, r.scopeText, (r.families || []).join(','), (r.vessels || []).join(','), notesMap[r.invnr] || ''])
+    ];
+    const csv = '\ufeff' + rows.map(r => r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+    saveBlobNative('BVZS_toegang17_selectie.csv', new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  });
+
+  $('btnExportJson').addEventListener('click', () => {
+    const jsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'ArchiveComponent',
+      'name': archiefTitel,
+      'identifier': 'NL-MdbZA_17',
+      'hasPart': lastResults.map(r => ({
+        '@type': 'ArchiveComponent',
+        'identifier': r.invnr,
+        'name': r.title,
+        'dateCreated': r.date,
+        'isPartOf': r.branchTitle,
+        'description': r.scopeText,
+        'mentions': [...(r.families || []), ...(r.vessels || [])]
+      }))
+    };
+    saveBlobNative('BVZS_toegang17.jsonld', new Blob([JSON.stringify(jsonLd, null, 2)], { type: 'application/ld+json' }));
+  });
+
+  $('btnExportMd').addEventListener('click', () => {
+    let md = `# Onderzoeksrapport: ${archiefTitel}\n\n`;
+    lastResults.slice(0, 400).forEach(r => {
+      md += `### Inv.nr. ${r.invnr} — ${r.title} (${r.date || 'z.d.'})\n- **Hoofdrubriek:** ${r.branchTitle || '-'}\n- **Pad:** ${r.path}\n- **Inhoud:** ${r.scopeText}\n`;
+      if (notesMap[r.invnr]) md += `- **Notitie:** ${notesMap[r.invnr]}\n`;
+      md += `\n`;
+    });
+    saveBlobNative('BVZS_onderzoeksrapport.md', new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+  });
+
+  /* ==========================================================================
+     8. STAGE SWITCHER (2D KAART vs TIJDLIJN MET BRUSH)
+     ========================================================================== */
+  const canvas = $('vizCanvas'), ctx = canvas.getContext('2d');
+  const MIN_YEAR = 1820, MAX_YEAR = 1975, BUCKET_SIZE = 5;
+
+  function switchMainStage(mode) {
+    activeMainTab = mode;
+    $('tabMap').classList.toggle('active', mode === 'map');
+    $('tabTimeline').classList.toggle('active', mode === 'timeline');
+
+    $('geoToolbar').style.display = mode === 'map' ? 'flex' : 'none';
+    $('leafletMap').style.display = (mode === 'map' && leafletMap) ? 'block' : 'none';
+    $('mapFallbackCanvas').style.display = (mode === 'map' && !leafletMap) ? 'block' : 'none';
+    $('planimeterCanvas').style.display = mode === 'map' ? 'block' : 'none';
+    $('vizCanvas').style.display = mode === 'timeline' ? 'block' : 'none';
+
+    if (mode === 'map') {
+      setPlanimeterActiveState(false);
+      if (leafletMap) setTimeout(() => leafletMap.invalidateSize(), 40);
+      else drawFallbackVectorMap();
+    } else {
+      const rect = canvas.parentElement.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawTimelineCanvas();
+    }
+  }
+
+  $('tabMap').addEventListener('click', () => switchMainStage('map'));
+  $('tabTimeline').addEventListener('click', () => switchMainStage('timeline'));
+
+  function drawTimelineCanvas() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    const bucketCount = Math.ceil((MAX_YEAR - MIN_YEAR) / BUCKET_SIZE);
+    const totalBuckets = new Array(bucketCount).fill(0), hitBuckets = new Array(bucketCount).fill(0);
+    for (const n of nodes) if (n.yearStart) { const b = Math.floor((Math.max(MIN_YEAR, Math.min(MAX_YEAR - 1, n.yearStart)) - MIN_YEAR) / BUCKET_SIZE); if (b >= 0 && b < bucketCount) totalBuckets[b]++; }
+    for (const n of lastResults) if (n.yearStart) { const b = Math.floor((Math.max(MIN_YEAR, Math.min(MAX_YEAR - 1, n.yearStart)) - MIN_YEAR) / BUCKET_SIZE); if (b >= 0 && b < bucketCount) hitBuckets[b]++; }
+    const maxVal = Math.max(1, ...totalBuckets), padL = 36, padR = 14, padT = 18, padB = 24, plotW = w - padL - padR, plotH = h - padT - padB, barW = plotW / bucketCount;
+    for (let i = 0; i < bucketCount; i++) {
+      const x = padL + i * barW;
+      ctx.fillStyle = 'rgba(124, 92, 255, 0.24)'; ctx.fillRect(x + 1, padT + plotH - (totalBuckets[i] / maxVal) * plotH, Math.max(2, barW - 3), (totalBuckets[i] / maxVal) * plotH);
+      ctx.fillStyle = '#2dd4bf'; ctx.fillRect(x + 1, padT + plotH - (hitBuckets[i] / maxVal) * plotH, Math.max(2, barW - 3), (hitBuckets[i] / maxVal) * plotH);
+      const yr = MIN_YEAR + i * BUCKET_SIZE;
+      if (yr % 15 === 0) { ctx.fillStyle = '#8a93b2'; ctx.font = '10px monospace'; ctx.fillText(String(yr), x, h - 7); }
+    }
+    if (brushRange) {
+      const x1 = padL + ((brushRange[0] - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * plotW;
+      const x2 = padL + ((brushRange[1] - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * plotW;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+      ctx.fillRect(x1, padT, x2 - x1, plotH);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeRect(x1, padT, x2 - x1, plotH);
+    }
+  }
+
+  function xToYear(x) {
+    const padL = 36, padR = 14, plotW = canvas.clientWidth - padL - padR;
+    return Math.round(MIN_YEAR + Math.max(0, Math.min(1, (x - padL) / plotW)) * (MAX_YEAR - MIN_YEAR));
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    if (activeMainTab !== 'timeline') return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    isDraggingBrush = true; dragStartX = mx;
+    const yr = xToYear(mx);
+    brushRange = [yr, yr + BUCKET_SIZE];
+    drawTimelineCanvas();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!isDraggingBrush || activeMainTab !== 'timeline') return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const y1 = xToYear(dragStartX), y2 = xToYear(mx);
+    brushRange = [Math.min(y1, y2), Math.max(y1, y2)];
+    $('yearMin').value = brushRange[0]; $('yearMax').value = brushRange[1];
+    $('btnResetBrush').style.display = 'inline-flex';
+    drawTimelineCanvas();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDraggingBrush) { isDraggingBrush = false; runSearch(); }
+  });
+
+  $('btnResetBrush').addEventListener('click', () => {
+    brushRange = null; $('yearMin').value = ''; $('yearMax').value = '';
+    $('btnResetBrush').style.display = 'none'; runSearch();
+  });
+
+  /* ==========================================================================
+     9. HERSTELDE, FOUTFRIJE EAD-PARSER & HOOFDRUBRIEK-KOPPELING
+     ========================================================================== */
+  const DB_NAME = 'BVZS_Toegang17_Clean_DB';
+  let dbInstance = null;
+
+  function openDatabase() {
+    return new Promise(res => {
+      if (!window.indexedDB) return res(null);
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = e => { const db = e.target.result; if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv'); };
+      req.onsuccess = e => { dbInstance = e.target.result; $('dbStatus').textContent = 'IndexedDB: actief'; $('dbStatus').classList.add('ok'); res(dbInstance); };
+      req.onerror = () => res(null);
+    });
+  }
+  function dbGet(k) {
+    return new Promise(res => {
+      if (!dbInstance) return res(null);
+      const r = dbInstance.transaction('kv', 'readonly').objectStore('kv').get(k);
+      r.onsuccess = () => res(r.result ?? null); r.onerror = () => res(null);
+    });
+  }
+  function dbSet(k, v) {
+    return new Promise(res => {
+      if (!dbInstance) return res(false);
+      const tx = dbInstance.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(v, k);
+      tx.oncomplete = () => res(true); tx.onerror = () => res(false);
+    });
+  }
+
+  async function initStorage() {
+    await openDatabase();
+    const savedNotes = await dbGet('notesMap');
+    if (savedNotes && typeof savedNotes === 'object') notesMap = savedNotes;
+    const savedLex = await dbGet('userLexicon');
+    if (Array.isArray(savedLex) && savedLex.length) userLexicon = savedLex;
+    renderLexiconTable();
+    const cachedXml = await dbGet('cachedEadXml');
+    if (cachedXml) { try { await parseEad(cachedXml, 'Cached EAD (IndexedDB)'); } catch (e) {} }
+  }
+
+  $('btnClearCache').addEventListener('click', async () => {
+    await dbSet('cachedEadXml', null);
+    $('xmlState').textContent = 'IndexedDB XML-cache gewist.';
+  });
+
+  function wireDrop(zoneId, inputId, handler) {
+    const z = $(zoneId), inp = $(inputId);
+    z.addEventListener('click', () => inp.click());
+    z.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } });
+    z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('drag'); });
+    z.addEventListener('dragleave', () => z.classList.remove('drag'));
+    z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('drag'); if (e.dataTransfer.files.length) handler(e.dataTransfer.files[0]); });
+    inp.addEventListener('change', () => { if (inp.files.length) handler(inp.files[0]); });
+  }
+
+  wireDrop('dropXml', 'fileXml', file => {
+    const reader = new FileReader();
+    reader.onload = async () => { await parseEad(reader.result, file.name); await dbSet('cachedEadXml', reader.result); };
+    reader.readAsText(file, 'utf-8');
+  });
+
+  wireDrop('dropPdf', 'filePdf', file => {
+    $('pdfFrame').src = URL.createObjectURL(file);
+    $('pdfFrame').style.display = 'block';
+    $('pdfPlaceholder').style.display = 'none';
+    switchRightTab('pdf');
+  });
+
+  function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+
+  // Zoekt een direct kind-element of een kind binnen een tussenliggende wrapper (zoals <did>)
+  function findDirectChild(p, name) {
+    if (!p) return null;
+    for (let i = 0; i < p.children.length; i++) {
+      if (p.children[i].localName === name) return p.children[i];
+    }
+    return null;
+  }
+
+  function findAllChildComponents(p) {
+    const out = [];
+    if (!p) return out;
+    for (let i = 0; i < p.children.length; i++) {
+      const ch = p.children[i];
+      if (/^c(\d{2})?$/.test(ch.localName)) {
+        out.push(ch);
+      } else if (ch.localName === 'dsc' || ch.localName === 'archdesc') {
+        out.push(...findAllChildComponents(ch));
+      }
+    }
+    return out;
+  }
+
+  function extractDidInfo(el) {
+    const did = findDirectChild(el, 'did') || el;
+    const unittitle = findDirectChild(did, 'unittitle');
+    const unitdate = findDirectChild(did, 'unitdate') || (unittitle ? findDirectChild(unittitle, 'unitdate') : null);
+    const unitid = findDirectChild(did, 'unitid');
+
+    // verzamel scopecontent, odd en note op dit niveau (ook als er meerdere <p> in zitten)
+    const textParts = [];
+    for (let i = 0; i < el.children.length; i++) {
+      const ln = el.children[i].localName;
+      if (ln === 'scopecontent' || ln === 'note' || ln === 'odd' || ln === 'bioghist' || ln === 'custodhist') {
+        textParts.push(norm(el.children[i].textContent));
+      }
+    }
+    return {
+      title: unittitle ? norm(unittitle.textContent) : '(Zonder titel)',
+      date: unitdate ? norm(unitdate.textContent) : '',
+      unitid: unitid ? norm(unitid.textContent) : '',
+      scopeText: textParts.filter(Boolean).join(' ')
+    };
+  }
+
+  async function parseEad(xmlText, sourceLabel = 'EAD') {
+    const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    if (doc.querySelector('parsererror')) throw new Error('Ongeldige XML');
+    const titleEl = doc.getElementsByTagNameNS(NS_EAD, 'titleproper')[0] || doc.getElementsByTagName('titleproper')[0];
+    archiefTitel = titleEl ? norm(titleEl.textContent) : 'Bestuur der Visserijen op de Zeeuwse Stromen (toegang 17)';
+
+    const dsc = doc.getElementsByTagNameNS(NS_EAD, 'dsc')[0] || doc.getElementsByTagName('dsc')[0] || doc.documentElement;
+    nodes = [];
+    topBranches = [];
+    selectedBranchId = '';
+
+    // Vind de top-level componenten (<c>, <c01>, etc.)
+    let roots = findAllChildComponents(dsc);
+    if (!roots.length) {
+      const allC = Array.from(doc.querySelectorAll('*')).filter(el => /^c(\d{2})?$/.test(el.localName));
+      if (allC.length) roots = findAllChildComponents(allC[0].parentElement);
+    }
+
+    // Als een EAD-bestand slechts 1 enkele overkoepelende root-c01 heeft (bijv. "Inventaris"), gebruik dan diens directe kinderen als de echte Hoofdrubrieken
+    if (roots.length === 1) {
+      const subRoots = findAllChildComponents(roots[0]);
+      if (subRoots.length > 1) {
+        roots = subRoots;
+      }
+    }
+
+    // Loop nu door elke Hoofdrubriek en geef een 100% gegarandeerd stabiel `branchId` mee aan de hoofdrubriek én al haar nakomelingen
+    roots.forEach((rootEl, branchIdx) => {
+      const branchId = `rubriek_${branchIdx}`;
+      const rootInfo = extractDidInfo(rootEl);
+      const branchTitle = rootInfo.title;
+      const branchCode = rootInfo.unitid || String(branchIdx + 1);
+
+      const branchObj = {
+        branchId,
+        code: branchCode,
+        title: branchTitle,
+        totalCount: 0,
+        hitCount: 0
+      };
+      topBranches.push(branchObj);
+
+      function walkSubtree(el, ancestry) {
+        const info = extractDidInfo(el);
+        const xmlId = el.getAttribute('id') || '';
+        const invnr = info.unitid || xmlId || `${branchIdx + 1}.${branchObj.totalCount + 1}`;
+        const body = [info.title, info.date, info.scopeText].filter(Boolean).join(' — ');
+
+        const matches = `${info.date} ${body}`.match(/\b(1[6-9]\d{2}|20[0-2]\d)\b/g);
+        const nums = matches ? matches.map(Number) : [];
+        const yearStart = nums.length ? Math.min(...nums) : null;
+        const yearEnd = nums.length ? Math.max(...nums) : null;
+
+        const path = ancestry.length ? ancestry.join(' › ') : branchTitle;
+        const parcels = detectParcelsInText(body + ' ' + path).map(p => p.id);
+
+        nodes.push({
+          idx: nodes.length,
+          id: xmlId || `node_${nodes.length + 1}`,
+          invnr,
+          title: info.title,
+          date: info.date,
+          yearStart,
+          yearEnd,
+          level: el.getAttribute('level') || el.localName,
+          branchId,       // EXACT ZELFDE ID ALS IN topBranches!
+          branchTitle,
+          path,
+          scopeText: info.scopeText,
+          body,
+          parcels,
+          families: [],
+          vessels: []
+        });
+
+        branchObj.totalCount++;
+
+        const children = findAllChildComponents(el);
+        const nextAncestry = [...ancestry, info.title];
+        for (const ch of children) {
+          walkSubtree(ch, nextAncestry);
+        }
+      }
+
+      walkSubtree(rootEl, []);
+    });
+
+    ['search', 'btnSearch', 'btnReset', 'btnExportMd', 'btnExportJson', 'btnExportCsv', 'btnSpeakAllResults', 'btnExportWavBatch'].forEach(id => $(id).disabled = false);
+    $('branchTotalCount').textContent = topBranches.length;
+
+    try {
+      const stats = await callWorker('BUILD_INDEX', { nodes });
+      if (stats.nodeEntities) {
+        stats.nodeEntities.forEach(ne => {
+          if (nodes[ne.idx]) { nodes[ne.idx].families = ne.families; nodes[ne.idx].vessels = ne.vessels; }
+        });
+      }
+      workerEntityStats = stats.entityIndex || [];
+      renderEntitySidebar(workerEntityStats);
+      refreshLinkedDataPreview();
+      $('xmlState').innerHTML = `<strong style="color:var(--teal)">✓ Geladen (${esc(sourceLabel)}):</strong> ${nodes.length.toLocaleString('nl-NL')} stukken in <b>${topBranches.length}</b> hoofdrubrieken.`;
+    } catch (e) {
+      $('xmlState').innerHTML = `<strong style="color:var(--teal)">✓ Geladen:</strong> ${nodes.length.toLocaleString('nl-NL')} stukken in <b>${topBranches.length}</b> hoofdrubrieken.`;
+    }
+
+    runSearch();
+  }
+
+  function renderTree() {
+    const ul = $('treeList');
+    if (!topBranches.length) {
+      ul.innerHTML = '<li style="color:var(--muted);padding:6px;">Geen hoofdrubrieken geladen.</li>';
+      return;
+    }
+    ul.innerHTML = topBranches.map((b, i) => {
+      const isSelected = selectedBranchId === b.branchId;
+      const countLabel = (b.hitCount !== b.totalCount)
+        ? `<b>${b.hitCount}</b>/${b.totalCount}`
+        : `${b.totalCount}`;
+      return `
+        <li class="tree-item ${isSelected ? 'active' : ''}" data-branch="${esc(b.branchId)}" title="${esc(b.title)} (${b.hitCount} treffers van ${b.totalCount} stukken)">
+          <span class="lvl-tag">RUB ${i + 1}</span>
+          <span class="item-label">${esc(b.title)}</span>
+          <span class="cnt-tag">${countLabel}</span>
+        </li>
+      `;
+    }).join('');
+
+    ul.querySelectorAll('.tree-item').forEach(li => {
+      li.addEventListener('click', () => {
+        const bid = li.getAttribute('data-branch');
+        selectedBranchId = (selectedBranchId === bid) ? '' : bid;
+        $('btnResetBranch').style.display = selectedBranchId ? 'inline-flex' : 'none';
+        runSearch();
+      });
+    });
+  }
+
+  $('btnResetBranch').addEventListener('click', () => {
+    selectedBranchId = '';
+    $('btnResetBranch').style.display = 'none';
+    runSearch();
+  });
+
+  function renderEntitySidebar(entityIndex) {
+    const ul = $('entityList');
+    ul.innerHTML = entityIndex.map(e => `
+      <li class="tree-item ${selectedEntityFilter === e.label ? 'active' : ''}" data-ent="${esc(e.label)}">
+        <span class="lvl-tag" style="color:${e.kind === 'FAM' ? '#f472b6' : '#38bdf8'}">${e.kind === 'FAM' ? 'GESLACHT' : 'VLOOT'}</span>
+        <span class="item-label">${esc(e.label)}</span>
+        <span class="cnt-tag">${e.count}x</span>
+      </li>
+    `).join('');
+    ul.querySelectorAll('.tree-item').forEach(li => {
+      li.addEventListener('click', () => {
+        selectedEntityFilter = selectedEntityFilter === li.dataset.ent ? '' : li.dataset.ent;
+        $('btnResetEntity').style.display = selectedEntityFilter ? 'inline-flex' : 'none';
+        renderEntitySidebar(entityIndex);
+        runSearch();
+      });
+    });
+  }
+
+  $('btnResetEntity').addEventListener('click', () => {
+    selectedEntityFilter = '';
+    $('btnResetEntity').style.display = 'none';
+    renderEntitySidebar(workerEntityStats);
+    runSearch();
+  });
+
+  const chipBox = $('chips');
+  const activeChips = new Set();
+  function renderChips() {
+    chipBox.innerHTML = '';
+    DEFAULT_TERMS.forEach(t => {
+      const c = document.createElement('button');
+      c.className = 'chip' + (activeChips.has(t) ? ' on' : '');
+      c.textContent = t;
+      c.addEventListener('click', () => {
+        if (activeChips.has(t)) activeChips.delete(t); else activeChips.add(t);
+        renderChips();
+        runSearch();
+      });
+      chipBox.appendChild(c);
+    });
+  }
+  renderChips();
+
+  function currentTerms() {
+    const raw = $('search').value.trim();
+    const typed = raw ? raw.split(/\s+/).filter(Boolean) : [];
+    const fromChips = Array.from(activeChips);
+    const fromEntity = selectedEntityFilter ? [selectedEntityFilter] : [];
+    return [...new Set([...typed, ...fromChips, ...fromEntity])];
+  }
+
+  function renderActiveFiltersBanner() {
+    const bar = $('activeFiltersBar');
+    const pills = [];
+
+    if (selectedBranchId) {
+      const b = topBranches.find(x => x.branchId === selectedBranchId);
+      if (b) {
+        pills.push(`<span class="filter-pill" data-clear="branch">🗂️ Hoofdrubriek: <b>${esc(b.title.slice(0, 55))}</b> ✕</span>`);
+      }
+    }
+    if (activeParcelId) {
+      const p = ZEELAND_PARCELS.find(x => x.id === activeParcelId);
+      if (p) {
+        pills.push(`<span class="filter-pill" data-clear="parcel">📍 Perceel: <b>${esc(p.name.split(' ')[0])}</b> ✕</span>`);
+      }
+    }
+    if (selectedEntityFilter) {
+      pills.push(`<span class="filter-pill" data-clear="entity">⚓ Entiteit: <b>${esc(selectedEntityFilter)}</b> ✕</span>`);
+    }
+    if (brushRange) {
+      pills.push(`<span class="filter-pill" data-clear="brush">📅 Jaren: <b>${brushRange[0]}–${brushRange[1]}</b> ✕</span>`);
+    }
+
+    if (!pills.length) {
+      bar.style.display = 'none';
+      bar.innerHTML = '';
+      return;
+    }
+
+    bar.style.display = 'flex';
+    bar.innerHTML = `<strong style="color:var(--teal);font-size:0.72rem;">Actieve filters:</strong> ` + pills.join('');
+    bar.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const kind = pill.getAttribute('data-clear');
+        if (kind === 'branch') { selectedBranchId = ''; $('btnResetBranch').style.display = 'none'; }
+        else if (kind === 'parcel') { activeParcelId = null; $('btnShowAllParcels').style.display = 'none'; renderParcelSidebar(); }
+        else if (kind === 'entity') { selectedEntityFilter = ''; $('btnResetEntity').style.display = 'none'; renderEntitySidebar(workerEntityStats); }
+        else if (kind === 'brush') { brushRange = null; $('yearMin').value = ''; $('yearMax').value = ''; $('btnResetBrush').style.display = 'none'; }
+        runSearch();
+      });
+    });
+  }
+
+  function runSearch() {
+    if (!nodes.length) return;
+    const terms = currentTerms();
+    const allMode = $('modeAll').checked, regexMode = $('modeRegex').checked, notesOnly = $('modeNotesOnly').checked;
+    const lows = terms.map(t => t.toLowerCase());
+    const yMin = parseInt($('yearMin').value, 10) || (brushRange ? brushRange[0] : null);
+    const yMax = parseInt($('yearMax').value, 10) || (brushRange ? brushRange[1] : null);
+
+    let customRe = null;
+    if (regexMode && terms.length) { try { customRe = new RegExp(terms.join(' '), 'i'); } catch (e) {} }
+
+    // Bereken eerst welke nodes matchen op zoektermen, jaartal, perceel en notitie (zonder het hoofdrubriek-filter),
+    // zodat elke Hoofdrubriek in de linkerzijbalk live toont hoeveel zoektreffers er in die rubriek zitten!
+    const branchHitCounts = new Map();
+    topBranches.forEach(b => branchHitCounts.set(b.branchId, 0));
+
+    lastResults = [];
+
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (activeParcelId && (!n.parcels || !n.parcels.includes(activeParcelId))) continue;
+      if (notesOnly && !notesMap[n.invnr]) continue;
+      if (yMin && (!n.yearEnd || n.yearEnd < yMin)) continue;
+      if (yMax && (!n.yearStart || n.yearStart > yMax)) continue;
+
+      if (terms.length) {
+        const hay = (n.body + ' ' + n.path + ' ' + (notesMap[n.invnr] || '')).toLowerCase();
+        const matchesTerm = customRe
+          ? customRe.test(hay)
+          : (allMode ? lows.every(t => hay.includes(t)) : lows.some(t => hay.includes(t)));
+        if (!matchesTerm) continue;
+      }
+
+      // Deze node voldoet aan alle zoekcriteria: tel hem mee voor zijn hoofdrubriek
+      branchHitCounts.set(n.branchId, (branchHitCounts.get(n.branchId) || 0) + 1);
+
+      // Als er een specifieke hoofdrubriek is aangeklikt, filter dan op die hoofdrubriek voor de resultatenlijst
+      if (selectedBranchId && n.branchId !== selectedBranchId) continue;
+
+      lastResults.push(n);
+    }
+
+    topBranches.forEach(b => {
+      b.hitCount = branchHitCounts.get(b.branchId) || 0;
+    });
+
+    renderTree();
+    renderActiveFiltersBanner();
+
+    const activeBranchObj = selectedBranchId ? topBranches.find(b => b.branchId === selectedBranchId) : null;
+    const branchSuffix = activeBranchObj ? ` in hoofdrubriek <b>${esc(activeBranchObj.title)}</b>` : '';
+    $('statsText').innerHTML = `<b>${lastResults.length.toLocaleString('nl-NL')}</b> treffers van ${nodes.length.toLocaleString('nl-NL')} stukken${branchSuffix}`;
+
+    if (terms.length) {
+      $('btnOnline').style.display = 'inline-flex';
+      $('btnOnline').href = 'https://www.zeeuwsarchief.nl/onderzoek-het-zelf/archief/?mivast=239&mizig=210&miadt=239&miview=inv2&milang=nl&mizk_alle=' + encodeURIComponent(terms.join(' ')) + '&micode=17';
+    } else {
+      $('btnOnline').style.display = 'none';
+    }
+
+    renderResultsList(terms);
+    if (activeMainTab === 'timeline') drawTimelineCanvas();
+  }
+
+  function highlightHtml(text, terms) {
+    if (!terms.length) return esc(text);
+    const clean = terms.map(reEscape).filter(Boolean);
+    if (!clean.length) return esc(text);
+    return esc(text).replace(new RegExp('(' + clean.join('|') + ')', 'gi'), '<mark>$1</mark>');
+  }
+
+  function renderResultsList(terms) {
+    const box = $('results');
+    if (!lastResults.length) {
+      box.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted);font-size:0.8rem;">Geen archiefstukken gevonden voor deze combinatie van hoofdrubriek en zoekfilter. Klik op <b>Alles wissen</b> of kies een andere hoofdrubriek.</div>`;
+      return;
+    }
+
+    box.innerHTML = lastResults.slice(0, 250).map(r => {
+      const hasNote = Boolean(notesMap[r.invnr]);
+      const geoBadges = (r.parcels || []).map(pid => {
+        const p = ZEELAND_PARCELS.find(x => x.id === pid);
+        return p ? `<span class="badge geo" data-pid="${esc(pid)}">📍 ${esc(p.name.split(' ')[0])} (${p.areaBunder} bnd)</span>` : '';
+      }).join('');
+      const famBadges = (r.families || []).map(f => `<span class="badge fam" data-term="${esc(f)}">👤 ${esc(f)}</span>`).join('');
+      const shipBadges = (r.vessels || []).map(v => `<span class="badge ship" data-term="${esc(v)}">⛵ ${esc(v)}</span>`).join('');
+
+      return `
+        <div class="result-card" data-inv="${esc(r.invnr)}">
+          <div class="r-top">
+            <div class="r-path" style="cursor:pointer;" data-branch-jump="${esc(r.branchId)}" title="Klik om te filteren op deze hoofdrubriek">🗂️ ${esc(r.path || r.branchTitle || 'Hoofdniveau')}</div>
+            <div class="r-badges">
+              ${geoBadges}${famBadges}${shipBadges}
+              <span class="badge">inv. ${esc(r.invnr)}</span>
+              ${r.date ? `<span class="badge year">${esc(r.date)}</span>` : ''}
+            </div>
+          </div>
+          <div class="r-title">${highlightHtml(r.title, terms)}</div>
+          <div class="r-snippet">${highlightHtml(r.scopeText || r.body, terms)}</div>
+          <div class="r-actions">
+            <button class="teal btn-speak" data-idx="${r.idx}">🎙️ Direct voorlezen</button>
+            <button class="amber btn-wav" data-idx="${r.idx}">💾 .WAV</button>
+            ${r.parcels && r.parcels.length ? `<button class="ghost btn-map" data-pid="${esc(r.parcels[0])}">🏛️ PDOK &amp; Planimeter</button>` : ''}
+            <button class="ghost btn-note" data-inv="${esc(r.invnr)}">📝 ${hasNote ? 'Notitie bewerken' : 'Notitie'}</button>
+          </div>
+          <div class="note-box ${hasNote ? 'open' : ''}" data-note-box="${esc(r.invnr)}">
+            <textarea placeholder="Onderzoeksnotitie bij inv.nr. ${esc(r.invnr)}…" data-note-inv="${esc(r.invnr)}">${esc(notesMap[r.invnr] || '')}</textarea>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    box.querySelectorAll('[data-branch-jump]').forEach(el => {
+      el.addEventListener('click', () => {
+        const bid = el.getAttribute('data-branch-jump');
+        selectedBranchId = (selectedBranchId === bid) ? '' : bid;
+        $('btnResetBranch').style.display = selectedBranchId ? 'inline-flex' : 'none';
+        runSearch();
+      });
+    });
+
+    box.querySelectorAll('.btn-speak').forEach(b => {
+      b.addEventListener('click', () => {
+        const node = nodes[Number(b.dataset.idx)];
+        switchRightTab('voice');
+        startSpeakingSegments(buildSegmentsForNode(node));
+      });
+    });
+
+    box.querySelectorAll('.btn-wav').forEach(b => {
+      b.addEventListener('click', async () => {
+        const node = nodes[Number(b.dataset.idx)];
+        const blob = await buildWavInBackground(buildSegmentsForNode(node));
+        if (blob) saveBlobNative(`BVZS_toegang17_inv_${node.invnr}.wav`, blob);
+      });
+    });
+
+    box.querySelectorAll('.btn-map, .badge.geo').forEach(b => {
+      b.addEventListener('click', () => { switchMainStage('map'); focusParcelOnMap(b.dataset.pid, false); });
+    });
+
+    box.querySelectorAll('.badge.fam, .badge.ship').forEach(b => {
+      b.addEventListener('click', () => {
+        selectedEntityFilter = selectedEntityFilter === b.dataset.term ? '' : b.dataset.term;
+        $('btnResetEntity').style.display = selectedEntityFilter ? 'inline-flex' : 'none';
+        renderEntitySidebar(workerEntityStats);
+        runSearch();
+      });
+    });
+
+    box.querySelectorAll('.btn-note').forEach(b => {
+      b.addEventListener('click', () => {
+        const card = b.closest('.result-card');
+        const nb = card ? card.querySelector('.note-box') : null;
+        if (nb) nb.classList.toggle('open');
+      });
+    });
+
+    box.querySelectorAll('textarea[data-note-inv]').forEach(ta => {
+      ta.addEventListener('input', async () => {
+        const inv = ta.getAttribute('data-note-inv'), val = ta.value.trim();
+        if (val) notesMap[inv] = val; else delete notesMap[inv];
+        await dbSet('notesMap', notesMap);
+      });
+    });
+  }
+
+  const DEMO_EAD_XML = `<?xml version="1.0" encoding="UTF-8"?>
+  <ead xmlns="urn:isbn:1-931666-22-9">
+    <eadheader><filedesc><titlestmt><titleproper>17 Bestuur der Visserijen op de Zeeuwse Stromen, 1825-1969 (Geodetische &amp; Genealogische Proefset)</titleproper></titlestmt></filedesc></eadheader>
+    <archdesc level="fonds"><dsc>
+      <c01 id="rub_1" level="series">
+        <did><unitid>I</unitid><unittitle>I. Stukken van algemene aard (Notulen, K.B. reglementen en jaarverslagen)</unittitle><unitdate>1825-1969</unitdate></did>
+        <c02 id="inv_1" level="file">
+          <did><unitid>1</unitid><unittitle>Notulen van de vergaderingen van het BVZS te Middelburg, Tholen en Zierikzee</unittitle><unitdate>1825-1852</unitdate></did>
+          <scopecontent><p>Besluiten omtrent bezaaide en onbezaaide mosselvisserij, consenten en toezicht op de Oosterschelde, Zandkreek en bij Burghsluis.</p></scopecontent>
+        </c02>
+        <c02 id="inv_18" level="file">
+          <did><unitid>18</unitid><unittitle>Jaarverslagen omtrent de toestand der Zeeuwse stromen, oesterputten en mosselzaad</unittitle><unitdate>1870-1915</unitdate></did>
+          <scopecontent><p>Statistische tabellen van de verpachting en pachtpenningen te Yerseke, Tholen, Scherpenisse en Bruinisse.</p></scopecontent>
+        </c02>
+      </c01>
+      <c01 id="rub_2" level="series">
+        <did><unitid>II</unitid><unittitle>II. Verpachting, loting, pachtersregisters en perceelkaarten (Oosterschelde &amp; Eiland Tholen)</unittitle><unitdate>1870-1968</unitdate></did>
+        <c02 id="inv_214" level="file">
+          <did><unitid>214</unitid><unittitle>P.V. van openbare verpachting en loting van visserijpercelen bij Scherpenisse, Sint-Maartensdijk en de Yerseke Bank</unittitle><unitdate>1870-1889</unitdate></did>
+          <scopecontent><p>Inschrijvingen van oester- en mosselvissers onder wie B.W. Schot (varende met de hoogaars TH 2, TH 12 en TH 90), alsmede borgstelling door leden van de families Bout, Guiljam en Geluk voor percelen nabij Scherpenisse (Platteweg), Sint-Maartensdijk en Poortvliet op het eiland Tholen ad fl. 145,50 pachtpenningen per bunder.</p></scopecontent>
+        </c02>
+        <c02 id="inv_245" level="file">
+          <did><unitid>245</unitid><unittitle>Registers van verpachte visserijpercelen met aantekening van pachters, borgen en vaartuigmerken op het Verdronken Land van Zuid-Beveland</unittitle><unitdate>1885-1922</unitdate></did>
+          <scopecontent><p>Betreft oesterputten en mosselpercelen op de Yerseke Bank, Speelmansplaten en Reimerswaal, verpacht aan o.a. Schot, Krijger, Deurloo, Van Vessem en Pols (vaartuigen TH 2, YE 45 en BRU 14).</p></scopecontent>
+        </c02>
+        <c02 id="inv_312" level="file">
+          <did><unitid>312</unitid><unittitle>Stukken betreffende verrekening van pachtsom, wederinbezitneming, erfpacht en akten van beneficiaire aanvaarding in pachtersnalatenschappen</unittitle><unitdate>1921-1958</unitdate></did>
+          <scopecontent><p>Dossiers en correspondentie met Ged. Staten inzake overdracht van pachtrechten en kadastrale percelen te Scherpenisse (Platteweg 3, 5, 7), Poortvliet en Sint-Maartensdijk waarbij betrokken de geslachten Guiljam, Quaak, Bout en Moerland.</p></scopecontent>
+        </c02>
+        <c02 id="inv_389" level="file">
+          <did><unitid>389</unitid><unittitle>Hydrografische kaarten en planimetrische perceelkaarten van de schelpdierpercelen bij Tholen, Scherpenisse, Poortvliet en de Zandkreek</unittitle><unitdate>1904-1955</unitdate></did>
+          <scopecontent><p>Gedetailleerde kaartbladen met Rijksdriehoekscoördinaten, loodlijnen, bakens en planimetrische oppervlaktebepaling in bunders, vierkante roeden en hectaren langs de Oosterschelde-dijken van Tholen.</p></scopecontent>
+        </c02>
+      </c01>
+      <c01 id="rub_3" level="series">
+        <did><unitid>III</unitid><unittitle>III. Consenten, vlootregisters en visserijpolitie</unittitle><unitdate>1825-1969</unitdate></did>
+        <c02 id="inv_510" level="file">
+          <did><unitid>510</unitid><unittitle>Registers van afgegeven consenten en vaartuignummers (TH, YE, BRU, ZZ) voor de Eendracht, Krabbenkreek en Oosterschelde</unittitle><unitdate>1840-1935</unitdate></did>
+          <scopecontent><p>Chronologische inschrijving van schippers uit Tholen (waaronder B.W. Schot met hoogaars TH 2, TH 12 en TH 90), Sint-Maartensdijk, Scherpenisse, Yerseke en Bruinisse.</p></scopecontent>
+        </c02>
+      </c01>
+    </dsc></archdesc>
+  </ead>`;
+
+  $('btnLoadDemo').addEventListener('click', () => parseEad(DEMO_EAD_XML, 'Geodetische & Genealogische BVZS Proefset'));
+  $('btnSearch').addEventListener('click', runSearch);
+  $('search').addEventListener('input', runSearch);
+  $('search').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  ['modeAll', 'modeRegex', 'modeNotesOnly', 'yearMin', 'yearMax'].forEach(id => $(id).addEventListener('change', runSearch));
+
+  $('btnReset').addEventListener('click', () => {
+    $('search').value = '';
+    activeChips.clear();
+    selectedBranchId = '';
+    selectedEntityFilter = '';
+    activeParcelId = null;
+    brushRange = null;
+    $('yearMin').value = '';
+    $('yearMax').value = '';
+    $('btnResetBrush').style.display = 'none';
+    $('btnResetBranch').style.display = 'none';
+    $('btnResetEntity').style.display = 'none';
+    $('btnShowAllParcels').style.display = 'none';
+    renderChips();
+    renderParcelSidebar();
+    renderEntitySidebar(workerEntityStats);
+    runSearch();
+  });
+
+  function switchRightTab(which) {
+    $('paneVoice').style.display = which === 'voice' ? 'flex' : 'none';
+    $('paneOpenScad').style.display = which === 'openscad' ? 'flex' : 'none';
+    $('paneAi').style.display = which === 'ai' ? 'flex' : 'none';
+    $('paneLexicon').style.display = which === 'lexicon' ? 'flex' : 'none';
+    $('paneLinkedData').style.display = which === 'linkeddata' ? 'flex' : 'none';
+    $('panePdf').style.display = which === 'pdf' ? 'block' : 'none';
+    $('tabVoice').classList.toggle('active', which === 'voice');
+    $('tabOpenScad').classList.toggle('active', which === 'openscad');
+    $('tabAi').classList.toggle('active', which === 'ai');
+    $('tabLexicon').classList.toggle('active', which === 'lexicon');
+    $('tabLinkedData').classList.toggle('active', which === 'linkeddata');
+    $('tabPdf').classList.toggle('active', which === 'pdf');
+    if (which === 'linkeddata') refreshLinkedDataPreview();
+    if (which === 'openscad') generateOpenScadCode();
+  }
+  $('tabVoice').addEventListener('click', () => switchRightTab('voice'));
+  $('tabOpenScad').addEventListener('click', () => switchRightTab('openscad'));
+  $('tabAi').addEventListener('click', () => switchRightTab('ai'));
+  $('tabLexicon').addEventListener('click', () => switchRightTab('lexicon'));
+  $('tabLinkedData').addEventListener('click', () => switchRightTab('linkeddata'));
+  $('tabPdf').addEventListener('click', () => switchRightTab('pdf'));
+
+  $('btnTheme').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', cur === 'light' ? 'dark' : 'light');
+  });
+
+  window.addEventListener('load', async () => {
+    initGeodeticMap();
+    await initStorage();
+    generateOpenScadCode();
+    startWaveformVisualizer();
+    if (!nodes.length) {
+      await parseEad(DEMO_EAD_XML, 'Geodetische & Genealogische BVZS Proefset');
+    }
+  });
+})();
+</script>
+</body>
+</html>
